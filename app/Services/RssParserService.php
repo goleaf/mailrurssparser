@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Models\Article;
+use App\Models\RssFeed;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 use SimpleXMLElement;
@@ -359,5 +362,70 @@ class RssParserService
         }
 
         return $items;
+    }
+
+    /**
+     * @return array<string, int|string|null>
+     */
+    public function parseFeed(RssFeed $feed): array
+    {
+        $result = [
+            'feed_title' => $feed->title,
+            'new' => 0,
+            'skipped' => 0,
+            'errors' => 0,
+            'error_message' => null,
+        ];
+
+        try {
+            $xml = $this->fetchFeedXml($feed->url);
+            $items = $this->getFeedItems($xml);
+
+            foreach ($items as $item) {
+                try {
+                    $article = $this->processItem($item, $feed->category_id, $feed->id);
+
+                    if ($article !== null) {
+                        $result['new']++;
+                    } else {
+                        $result['skipped']++;
+                    }
+                } catch (\Throwable $e) {
+                    $result['errors']++;
+                    Log::warning('Item parse error: '.$e->getMessage());
+                }
+            }
+
+            $feed->last_parsed_at = now();
+            $feed->last_run_new_count = $result['new'];
+            $feed->last_run_skip_count = $result['skipped'];
+            $feed->articles_parsed_total = DB::raw('articles_parsed_total + '.$result['new']);
+            $feed->last_error = null;
+            $feed->save();
+        } catch (\Throwable $e) {
+            $result['error_message'] = $e->getMessage();
+            Log::error('Feed parse failed ['.$feed->title.']: '.$e->getMessage());
+
+            $feed->last_error = $e->getMessage();
+            $feed->save();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<int, array<string, int|string|null>>
+     */
+    public function parseAllFeeds(): array
+    {
+        $results = [];
+
+        $feeds = RssFeed::active()->with('category')->get();
+
+        foreach ($feeds as $feed) {
+            $results[$feed->id] = $this->parseFeed($feed);
+        }
+
+        return $results;
     }
 }

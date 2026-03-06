@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Article;
+use App\Models\RssFeed;
 use App\Services\RssParserService;
 use Illuminate\Support\Facades\Http;
 
@@ -151,4 +153,83 @@ XML;
         ->and($article->source_url)->toBe('https://example.test/article')
         ->and($article->category_id)->toBe(1)
         ->and($article->rss_feed_id)->toBe(2);
+});
+
+it('parses a feed and updates counters', function () {
+    if (! trait_exists(Laravel\Scout\Searchable::class)) {
+        $this->markTestSkipped('Laravel Scout is not installed.');
+    }
+
+    Http::fake(function ($request) {
+        $url = $request->url();
+        $xml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<rss>
+  <channel>
+    <title>Test</title>
+    <item>
+      <title>Item for {$url}</title>
+      <link>{$url}/item</link>
+      <description><![CDATA[<p>Body</p>]]></description>
+    </item>
+  </channel>
+</rss>
+XML;
+
+        return Http::response($xml, 200);
+    });
+
+    $feed = RssFeed::factory()->create([
+        'articles_parsed_total' => 5,
+    ]);
+
+    $service = new RssParserService;
+
+    $result = $service->parseFeed($feed);
+
+    $feed->refresh();
+
+    expect($result['new'])->toBe(1)
+        ->and($result['skipped'])->toBe(0)
+        ->and($result['errors'])->toBe(0)
+        ->and($feed->last_parsed_at)->not->toBeNull()
+        ->and($feed->last_run_new_count)->toBe(1)
+        ->and($feed->last_run_skip_count)->toBe(0)
+        ->and($feed->articles_parsed_total)->toBe(6)
+        ->and(Article::query()->where('rss_feed_id', $feed->id)->count())->toBe(1);
+});
+
+it('parses all active feeds and returns results keyed by id', function () {
+    if (! trait_exists(Laravel\Scout\Searchable::class)) {
+        $this->markTestSkipped('Laravel Scout is not installed.');
+    }
+
+    Http::fake(function ($request) {
+        $url = $request->url();
+        $xml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<rss>
+  <channel>
+    <title>Test</title>
+    <item>
+      <title>Item for {$url}</title>
+      <link>{$url}/item</link>
+      <description><![CDATA[<p>Body</p>]]></description>
+    </item>
+  </channel>
+</rss>
+XML;
+
+        return Http::response($xml, 200);
+    });
+
+    $first = RssFeed::factory()->create(['is_active' => true]);
+    $second = RssFeed::factory()->create(['is_active' => true]);
+    RssFeed::factory()->create(['is_active' => false]);
+
+    $service = new RssParserService;
+
+    $results = $service->parseAllFeeds();
+
+    expect($results)->toHaveKeys([$first->id, $second->id]);
 });
