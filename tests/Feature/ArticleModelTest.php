@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Article;
+use App\Models\ArticleView;
 use App\Models\Tag;
 
 beforeEach(function () {
@@ -63,4 +64,18 @@ it('formats the reading time text', function () {
     $article = Article::factory()->make(['reading_time' => 7]);
 
     expect($article->reading_time_text)->toBe('7 мин чтения');
+});
+
+it('increments views once per ip per hour', function () {
+    $article = Article::factory()->create(['views_count' => 0]);
+
+    $article->incrementViews('203.0.113.10', 'session-1');
+
+    expect($article->refresh()->views_count)->toBe(1)
+        ->and(ArticleView::query()->where('article_id', $article->id)->count())->toBe(1);
+
+    $article->incrementViews('203.0.113.10', 'session-1');
+
+    expect($article->refresh()->views_count)->toBe(1)
+        ->and(ArticleView::query()->where('article_id', $article->id)->count())->toBe(1);
 });

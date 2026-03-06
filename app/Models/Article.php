@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Scout\Searchable;
 
@@ -172,9 +173,24 @@ class Article extends Model
 
     public function incrementViews(string $ip, ?string $sessionId = null): void
     {
-        $this->increment('views_count');
+        $threshold = now()->subHour();
 
-        $this->views()->create([
+        $hasRecentView = ArticleView::query()
+            ->where('article_id', $this->id)
+            ->where('ip_address', $ip)
+            ->where('viewed_at', '>=', $threshold)
+            ->exists();
+
+        if ($hasRecentView) {
+            return;
+        }
+
+        DB::table('articles')
+            ->where('id', $this->id)
+            ->increment('views_count');
+
+        ArticleView::query()->create([
+            'article_id' => $this->id,
             'ip_address' => $ip,
             'session_id' => $sessionId,
             'viewed_at' => now(),
