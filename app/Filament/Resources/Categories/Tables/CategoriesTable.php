@@ -28,8 +28,8 @@ class CategoriesTable
                 ToggleColumn::make('is_active')
                     ->sortable(),
                 TextColumn::make('articles_count')
-                    ->label('Articles')
-                    ->sortable(),
+                    ->counts('articles')
+                    ->label('Articles'),
                 TextColumn::make('order')
                     ->sortable(),
             ])
