@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Article;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -10,6 +11,75 @@ use SimpleXMLElement;
 
 class RssParserService
 {
+    private const TRANSLIT = [
+        'а' => 'a',
+        'б' => 'b',
+        'в' => 'v',
+        'г' => 'g',
+        'д' => 'd',
+        'е' => 'e',
+        'ё' => 'yo',
+        'ж' => 'zh',
+        'з' => 'z',
+        'и' => 'i',
+        'й' => 'y',
+        'к' => 'k',
+        'л' => 'l',
+        'м' => 'm',
+        'н' => 'n',
+        'о' => 'o',
+        'п' => 'p',
+        'р' => 'r',
+        'с' => 's',
+        'т' => 't',
+        'у' => 'u',
+        'ф' => 'f',
+        'х' => 'kh',
+        'ц' => 'ts',
+        'ч' => 'ch',
+        'ш' => 'sh',
+        'щ' => 'shch',
+        'ъ' => '',
+        'ы' => 'y',
+        'ь' => '',
+        'э' => 'e',
+        'ю' => 'yu',
+        'я' => 'ya',
+        'А' => 'A',
+        'Б' => 'B',
+        'В' => 'V',
+        'Г' => 'G',
+        'Д' => 'D',
+        'Е' => 'E',
+        'Ё' => 'Yo',
+        'Ж' => 'Zh',
+        'З' => 'Z',
+        'И' => 'I',
+        'Й' => 'Y',
+        'К' => 'K',
+        'Л' => 'L',
+        'М' => 'M',
+        'Н' => 'N',
+        'О' => 'O',
+        'П' => 'P',
+        'Р' => 'R',
+        'С' => 'S',
+        'Т' => 'T',
+        'У' => 'U',
+        'Ф' => 'F',
+        'Х' => 'Kh',
+        'Ц' => 'Ts',
+        'Ч' => 'Ch',
+        'Ш' => 'Sh',
+        'Щ' => 'Shch',
+        'Ъ' => '',
+        'Ы' => 'Y',
+        'Ь' => '',
+        'Э' => 'E',
+        'Ю' => 'Yu',
+        'Я' => 'Ya',
+    ];
+
     /**
      * @throws \RuntimeException
      */
@@ -173,6 +243,98 @@ class RssParserService
         }
 
         return max(1, (int) ceil($wordCount / $wordsPerMinute));
+    }
+
+    private function isDuplicate(string $guid, string $url): bool
+    {
+        return Article::query()
+            ->where(function ($query) use ($guid, $url): void {
+                $query->where('source_guid', $guid)->orWhere('source_url', $url);
+            })
+            ->exists();
+    }
+
+    private function generateUniqueSlug(string $title): string
+    {
+        $transliterated = strtr($title, self::TRANSLIT);
+
+        if (function_exists('iconv')) {
+            $iconv = iconv('UTF-8', 'ASCII//TRANSLIT', $title);
+
+            if ($iconv !== false) {
+                $transliterated = $iconv;
+            }
+        }
+
+        $slug = Str::slug($transliterated);
+
+        if ($slug === '') {
+            $slug = 'article-'.time();
+        }
+
+        $baseSlug = $slug;
+        $suffix = 2;
+
+        while (Article::query()->where('slug', $slug)->exists()) {
+            $slug = $baseSlug.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createArticle(array $data): Article
+    {
+        return Article::create($data);
+    }
+
+    private function processItem(SimpleXMLElement $item, int $categoryId, int $rssFeedId): ?Article
+    {
+        $title = $this->extractTitle($item);
+        $link = $this->extractLink($item);
+        $guid = $this->extractGuid($item);
+        $description = $this->extractDescription($item);
+        $imageUrl = $this->extractImage($item);
+        $publishedAt = $this->extractPubDate($item) ?? now();
+
+        if ($title === '' || $link === '') {
+            return null;
+        }
+
+        if ($this->isDuplicate($guid, $link)) {
+            return null;
+        }
+
+        $rawDescription = (string) $item->description;
+        $namespaces = $item->getNamespaces(true);
+
+        if ($rawDescription === '' && isset($namespaces['content'])) {
+            $content = $item->children($namespaces['content']);
+            $rawDescription = (string) $content->encoded;
+        }
+
+        $data = [
+            'category_id' => $categoryId,
+            'rss_feed_id' => $rssFeedId,
+            'title' => $title,
+            'slug' => $this->generateUniqueSlug($title),
+            'source_url' => $link,
+            'source_guid' => $guid,
+            'image_url' => $imageUrl,
+            'short_description' => $this->makeShortDescription($description),
+            'rss_content' => $rawDescription,
+            'author' => config('rss.article.default_author'),
+            'source_name' => 'Новости Mail',
+            'status' => config('rss.article.default_status'),
+            'reading_time' => $this->calculateReadingTime($description),
+            'published_at' => $publishedAt,
+            'rss_parsed_at' => now(),
+        ];
+
+        return $this->createArticle($data);
     }
 
     /**
