@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use RuntimeException;
 use SimpleXMLElement;
 
@@ -41,6 +43,136 @@ class RssParserService
         }
 
         return $xml;
+    }
+
+    private function extractTitle(SimpleXMLElement $item): string
+    {
+        $title = (string) $item->title;
+
+        if ($title === '') {
+            return '';
+        }
+
+        return html_entity_decode(trim($title));
+    }
+
+    private function extractLink(SimpleXMLElement $item): string
+    {
+        $link = trim((string) $item->link);
+
+        if ($link === '') {
+            $link = trim((string) $item->guid);
+        }
+
+        return $link;
+    }
+
+    private function extractGuid(SimpleXMLElement $item): string
+    {
+        $guid = trim((string) $item->guid);
+
+        if ($guid === '') {
+            $guid = $this->extractLink($item);
+        }
+
+        return $guid;
+    }
+
+    private function extractDescription(SimpleXMLElement $item): string
+    {
+        $description = '';
+        $namespaces = $item->getNamespaces(true);
+
+        if (isset($namespaces['content'])) {
+            $content = $item->children($namespaces['content']);
+            $description = (string) $content->encoded;
+        }
+
+        if ($description === '') {
+            $description = (string) $item->description;
+        }
+
+        return trim(strip_tags($description));
+    }
+
+    private function extractImage(SimpleXMLElement $item): ?string
+    {
+        if (isset($item->enclosure)) {
+            $attributes = $item->enclosure->attributes();
+            $url = trim((string) ($attributes['url'] ?? ''));
+            $type = (string) ($attributes['type'] ?? '');
+
+            if ($url !== '' && str_starts_with($type, 'image/')) {
+                return $url;
+            }
+        }
+
+        $namespaces = $item->getNamespaces(true);
+
+        if (isset($namespaces['media'])) {
+            $media = $item->children($namespaces['media']);
+            $thumbnailUrl = trim((string) ($media->thumbnail->attributes()['url'] ?? ''));
+
+            if ($thumbnailUrl !== '') {
+                return $thumbnailUrl;
+            }
+
+            foreach ($media->content as $mediaContent) {
+                $attributes = $mediaContent->attributes();
+                $url = trim((string) ($attributes['url'] ?? ''));
+                $type = (string) ($attributes['type'] ?? '');
+
+                if ($url !== '' && str_starts_with($type, 'image')) {
+                    return $url;
+                }
+            }
+        }
+
+        $description = (string) $item->description;
+
+        if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/', $description, $matches) === 1) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    private function extractPubDate(SimpleXMLElement $item): ?Carbon
+    {
+        $pubDate = trim((string) $item->pubDate);
+
+        if ($pubDate === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($pubDate);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function makeShortDescription(string $text, int $length = 300): string
+    {
+        $text = trim(strip_tags($text));
+
+        if ($text === '') {
+            return '';
+        }
+
+        return Str::limit($text, $length, '...');
+    }
+
+    private function calculateReadingTime(string $text): int
+    {
+        $wordCount = str_word_count(strip_tags($text));
+        $wordsPerMinute = (int) config('rss.article.words_per_minute', 200);
+
+        if ($wordsPerMinute <= 0) {
+            $wordsPerMinute = 200;
+        }
+
+        return max(1, (int) ceil($wordCount / $wordsPerMinute));
     }
 
     /**
