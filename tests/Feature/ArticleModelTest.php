@@ -79,3 +79,17 @@ it('increments views once per ip per hour', function () {
     expect($article->refresh()->views_count)->toBe(1)
         ->and(ArticleView::query()->where('article_id', $article->id)->count())->toBe(1);
 });
+
+it('resolves encoded ids in queries', function () {
+    $article = Article::factory()->create();
+
+    $encodedId = $article->id_encoded;
+
+    expect($encodedId)->toBeString()->not->toBe('');
+
+    $resolved = Article::find($encodedId);
+
+    expect($resolved)->not->toBeNull()
+        ->and($resolved->is($article))->toBeTrue()
+        ->and(Article::query()->where('id', $encodedId)->exists())->toBeTrue();
+});

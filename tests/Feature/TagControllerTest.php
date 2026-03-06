@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\TagController;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\Tag;
+use Attla\EncodedAttributes\Factory as EncodedFactory;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
@@ -15,8 +16,8 @@ beforeEach(function () {
 it('lists tags ordered by usage count', function () {
     Route::get('/api/tags', [TagController::class, 'index'])->name('api.tags.index');
 
-    Tag::factory()->create(['name' => 'Low', 'usage_count' => 1]);
-    Tag::factory()->create(['name' => 'High', 'usage_count' => 10]);
+    $low = Tag::factory()->create(['name' => 'Low', 'usage_count' => 1]);
+    $high = Tag::factory()->create(['name' => 'High', 'usage_count' => 10]);
 
     $response = $this->getJson('/api/tags');
 
@@ -25,6 +26,7 @@ it('lists tags ordered by usage count', function () {
     $payload = $response->json('data');
 
     expect($payload[0]['name'])->toBe('High')
+        ->and(EncodedFactory::resolve($payload[0]['id_encoded']))->toBe($high->id)
         ->and($payload)->toHaveCount(2);
 });
 
@@ -40,6 +42,7 @@ it('shows tag details with article count', function () {
     $payload = $response->json('data');
 
     expect($payload['slug'])->toBe('featured')
+        ->and(EncodedFactory::resolve($payload['id_encoded']))->toBe($tag->id)
         ->and($payload)->toHaveKey('article_count');
 });
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Attla\EncodedAttributes\HasEncodedAttributes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RssFeed extends Model
 {
+    use HasEncodedAttributes;
+
     /** @use HasFactory<\Database\Factories\RssFeedFactory> */
     use HasFactory;
 

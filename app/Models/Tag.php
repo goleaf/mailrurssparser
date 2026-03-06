@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Attla\EncodedAttributes\HasEncodedAttributes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,6 +10,8 @@ use Illuminate\Support\Str;
 
 class Tag extends Model
 {
+    use HasEncodedAttributes;
+
     /** @use HasFactory<\Database\Factories\TagFactory> */
     use HasFactory;
 

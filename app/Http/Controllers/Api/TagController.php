@@ -23,6 +23,7 @@ class TagController extends Controller
             'data' => $tags->map(function (Tag $tag): array {
                 return [
                     'id' => $tag->id,
+                    'id_encoded' => $tag->id_encoded,
                     'name' => $tag->name,
                     'slug' => $tag->slug,
                     'color' => $tag->color,
@@ -44,6 +45,7 @@ class TagController extends Controller
         return response()->json([
             'data' => [
                 'id' => $tag->id,
+                'id_encoded' => $tag->id_encoded,
                 'name' => $tag->name,
                 'slug' => $tag->slug,
                 'color' => $tag->color,

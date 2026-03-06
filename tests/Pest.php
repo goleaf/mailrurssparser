@@ -15,6 +15,14 @@ pest()->extend(Tests\TestCase::class)
     ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
+beforeEach(function () {
+    $path = storage_path('tntsearch');
+
+    if (! is_dir($path)) {
+        mkdir($path, 0777, true);
+    }
+});
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

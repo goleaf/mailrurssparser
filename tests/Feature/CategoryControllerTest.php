@@ -5,6 +5,7 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\SubCategory;
+use Attla\EncodedAttributes\Factory as EncodedFactory;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
@@ -22,7 +23,7 @@ it('lists active categories with sub categories', function () {
         'is_active' => true,
     ]);
 
-    SubCategory::factory()->create([
+    $subCategory = SubCategory::factory()->create([
         'category_id' => $category->id,
         'name' => 'Local',
         'slug' => 'local',
@@ -42,8 +43,10 @@ it('lists active categories with sub categories', function () {
 
     expect($payload)->toHaveCount(1)
         ->and($payload[0]['slug'])->toBe('politics')
+        ->and(EncodedFactory::resolve($payload[0]['id_encoded']))->toBe($category->id)
         ->and($payload[0]['article_count'])->toBe(1)
-        ->and($payload[0]['sub_categories'])->toHaveCount(1);
+        ->and($payload[0]['sub_categories'])->toHaveCount(1)
+        ->and(EncodedFactory::resolve($payload[0]['sub_categories'][0]['id_encoded']))->toBe($subCategory->id);
 });
 
 it('shows a category with feeds', function () {
@@ -54,7 +57,7 @@ it('shows a category with feeds', function () {
         'name' => 'Economics',
     ]);
 
-    RssFeed::factory()->create([
+    $feed = RssFeed::factory()->create([
         'category_id' => $category->id,
         'title' => 'Economics Feed',
     ]);
@@ -66,7 +69,9 @@ it('shows a category with feeds', function () {
     $payload = $response->json('data');
 
     expect($payload['slug'])->toBe('economics')
-        ->and($payload['rss_feeds'])->toHaveCount(1);
+        ->and(EncodedFactory::resolve($payload['id_encoded']))->toBe($category->id)
+        ->and($payload['rss_feeds'])->toHaveCount(1)
+        ->and(EncodedFactory::resolve($payload['rss_feeds'][0]['id_encoded']))->toBe($feed->id);
 });
 
 it('returns category articles with filters', function () {

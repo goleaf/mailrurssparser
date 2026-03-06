@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Attla\EncodedAttributes\HasEncodedAttributes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ArticleView extends Model
 {
+    use HasEncodedAttributes;
+
     /** @use HasFactory<\Database\Factories\ArticleViewFactory> */
     use HasFactory;
 

@@ -6,6 +6,7 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\Tag;
+use Attla\EncodedAttributes\Factory as EncodedFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,18 +48,22 @@ it('builds the article resource payload', function () {
 
     $article->tags()->attach($tag);
 
-    Route::get('/articles/{article}', fn () => null)->name('api.articles.show');
+    $route = Route::get('/articles/{article}', fn () => null)->name('api.articles.show');
     $request = Request::create('/articles/'.$article->id, 'GET');
-    $request->setRouteResolver(fn () => Route::current());
+    $request->setRouteResolver(fn () => $route);
 
     $resource = (new ArticleResource($article->load(['category', 'subCategory', 'tags'])))
         ->toArray($request);
 
     expect($resource['id'])->toBe($article->id)
+        ->and(EncodedFactory::resolve($resource['id_encoded']))->toBe($article->id)
         ->and($resource['title'])->toBe('Test Article')
         ->and($resource['category']['slug'])->toBe('politics')
+        ->and(EncodedFactory::resolve($resource['category']['id_encoded']))->toBe($category->id)
         ->and($resource['sub_category']['slug'])->toBe('local')
+        ->and(EncodedFactory::resolve($resource['sub_category']['id_encoded']))->toBe($subCategory->id)
         ->and($resource['tags'])->toHaveCount(1)
+        ->and(EncodedFactory::resolve($resource['tags'][0]['id_encoded']))->toBe($tag->id)
         ->and($resource['full_description'])->toBe('Full');
 });
 

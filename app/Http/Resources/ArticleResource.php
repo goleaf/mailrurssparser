@@ -16,6 +16,7 @@ class ArticleResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'id_encoded' => $this->id_encoded,
             'title' => $this->title,
             'slug' => $this->slug,
             'short_description' => $this->short_description,
@@ -33,6 +34,7 @@ class ArticleResource extends JsonResource
             'published_at_human' => $this->published_at?->diffForHumans(),
             'category' => [
                 'id' => $this->category->id,
+                'id_encoded' => $this->category->id_encoded,
                 'name' => $this->category->name,
                 'slug' => $this->category->slug,
                 'color' => $this->category->color,
@@ -40,11 +42,13 @@ class ArticleResource extends JsonResource
             ],
             'sub_category' => $this->whenLoaded('subCategory', fn () => [
                 'id' => $this->subCategory->id,
+                'id_encoded' => $this->subCategory->id_encoded,
                 'name' => $this->subCategory->name,
                 'slug' => $this->subCategory->slug,
             ]),
             'tags' => $this->whenLoaded('tags', fn () => $this->tags->map(fn ($tag) => [
                 'id' => $tag->id,
+                'id_encoded' => $tag->id_encoded,
                 'name' => $tag->name,
                 'slug' => $tag->slug,
                 'color' => $tag->color,

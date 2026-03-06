@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\PincrypFactory;
+use Attla\Pincryp\Config as PincrypConfig;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton('pincryp', function ($app): PincrypFactory {
+            $config = $app['config']->get('pincryp', []);
+
+            return new PincrypFactory(new PincrypConfig(is_array($config) ? $config : []));
+        });
     }
 
     /**

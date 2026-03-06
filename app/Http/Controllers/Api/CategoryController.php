@@ -26,6 +26,7 @@ class CategoryController extends Controller
             'data' => $categories->map(function (Category $category): array {
                 return [
                     'id' => $category->id,
+                    'id_encoded' => $category->id_encoded,
                     'name' => $category->name,
                     'slug' => $category->slug,
                     'color' => $category->color,
@@ -36,6 +37,7 @@ class CategoryController extends Controller
                     'sub_categories' => $category->subCategories->map(function ($subCategory): array {
                         return [
                             'id' => $subCategory->id,
+                            'id_encoded' => $subCategory->id_encoded,
                             'name' => $subCategory->name,
                             'slug' => $subCategory->slug,
                             'description' => $subCategory->description,
@@ -59,6 +61,7 @@ class CategoryController extends Controller
         return response()->json([
             'data' => [
                 'id' => $category->id,
+                'id_encoded' => $category->id_encoded,
                 'name' => $category->name,
                 'slug' => $category->slug,
                 'color' => $category->color,
@@ -69,6 +72,7 @@ class CategoryController extends Controller
                 'sub_categories' => $category->subCategories->map(function ($subCategory): array {
                     return [
                         'id' => $subCategory->id,
+                        'id_encoded' => $subCategory->id_encoded,
                         'name' => $subCategory->name,
                         'slug' => $subCategory->slug,
                         'description' => $subCategory->description,
@@ -77,6 +81,7 @@ class CategoryController extends Controller
                 'rss_feeds' => $category->rssFeeds->map(function ($feed): array {
                     return [
                         'id' => $feed->id,
+                        'id_encoded' => $feed->id_encoded,
                         'title' => $feed->title,
                         'url' => $feed->url,
                         'is_active' => $feed->is_active,

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Attla\EncodedAttributes\HasEncodedAttributes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,8 @@ use Illuminate\Support\Str;
 
 class Category extends Model
 {
+    use HasEncodedAttributes;
+
     /** @use HasFactory<\Database\Factories\CategoryFactory> */
     use HasFactory;
 

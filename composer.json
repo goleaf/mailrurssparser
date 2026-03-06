@@ -7,8 +7,13 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "attla/data-token": "dev-main",
+        "attla/encoded-attributes": "dev-main",
+        "attla/pincryp": "dev-main",
+        "attla/support": "dev-main",
         "filament/filament": "^5.0",
         "guzzlehttp/guzzle": "^7.0",
+        "hisorange/browser-detect": "^4.5",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
@@ -40,6 +45,74 @@
             "Tests\\": "tests/"
         }
     },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "attla/support",
+                "version": "dev-main",
+                "type": "library",
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/attla/support.git",
+                    "reference": "main"
+                },
+                "autoload": {
+                    "psr-4": {
+                        "Attla\\Support\\": "src/"
+                    }
+                },
+                "require": {
+                    "php": ">=7.2.5",
+                    "illuminate/database": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                    "illuminate/contracts": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                    "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0"
+                },
+                "extra": {
+                    "laravel": {
+                        "providers": [
+                            "Attla\\Support\\Laravel\\ServiceProvider"
+                        ]
+                    }
+                },
+                "minimum-stability": "dev",
+                "prefer-stable": true
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "attla/data-token",
+                "version": "dev-main",
+                "type": "library",
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/attla/data-token.git",
+                    "reference": "main"
+                },
+                "autoload": {
+                    "psr-4": {
+                        "Attla\\DataToken\\": "src/"
+                    }
+                },
+                "require": {
+                    "php": ">=7.2.5",
+                    "attla/pincryp": "dev-main",
+                    "hisorange/browser-detect": "^4.5.2",
+                    "nesbot/carbon": "^2.31|^3.0"
+                },
+                "extra": {
+                    "laravel": {
+                        "aliases": {
+                            "DataToken": "Attla\\DataToken\\Facade"
+                        }
+                    }
+                },
+                "minimum-stability": "dev",
+                "prefer-stable": true
+            }
+        }
+    ],
     "scripts": {
         "setup": [
             "composer install",
