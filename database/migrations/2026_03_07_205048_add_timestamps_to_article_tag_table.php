@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('article_tag', function (Blueprint $table) {
-            //
+            $table->timestamps();
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('article_tag', function (Blueprint $table) {
-            //
+            $table->dropColumn(['created_at', 'updated_at']);
         });
     }
 };

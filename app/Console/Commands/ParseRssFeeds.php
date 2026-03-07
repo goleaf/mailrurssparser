@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Article;
 use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
@@ -36,7 +35,7 @@ class ParseRssFeeds extends Command
         $feeds = $this->buildFeedsQuery()->get();
 
         if ($feeds->isEmpty()) {
-            $this->warn('No matching feeds found.');
+            $this->warn('No matching active feeds found.');
 
             return SymfonyCommand::FAILURE;
         }
@@ -147,15 +146,17 @@ class ParseRssFeeds extends Command
             });
         }
 
-        if (! $this->option('force')) {
-            $query->where('is_active', true);
-        }
-
         if ($this->option('due')) {
-            $query->where(function (Builder $query): void {
-                $query->whereNull('next_parse_at')
-                    ->orWhere('next_parse_at', '<=', now());
-            });
+            if ($this->option('force')) {
+                $query->where(function (Builder $query): void {
+                    $query->whereNull('next_parse_at')
+                        ->orWhere('next_parse_at', '<=', now());
+                });
+            } else {
+                $query->dueForParsing();
+            }
+        } elseif (! $this->option('force')) {
+            $query->active();
         }
 
         return $query->orderBy('category_id')->orderBy('title');
@@ -176,7 +177,13 @@ class ParseRssFeeds extends Command
 
     private function handleUrlPreview(RssParserService $parser, string $url): int
     {
-        $items = $parser->previewFeed($url);
+        $temporaryFeed = new RssFeed([
+            'title' => 'Preview Feed',
+            'url' => $url,
+            'source_name' => 'Preview',
+            'is_active' => false,
+        ]);
+        $items = $parser->previewFeed($temporaryFeed->url);
 
         if ($this->option('json')) {
             $this->line((string) json_encode($items, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -185,7 +192,7 @@ class ParseRssFeeds extends Command
         }
 
         $this->table(
-            ['Title', 'Link', 'Published', 'Image'],
+            ['Title', 'Link', 'PubDate', 'Image?'],
             collect($items)->map(function (array $item): array {
                 return [
                     $item['title'],
@@ -252,7 +259,7 @@ class ParseRssFeeds extends Command
         );
 
         $categoryTotals = Category::query()
-            ->withCount(['articles' => fn (Builder $query) => $query->published()])
+            ->withCount('articles')
             ->orderByDesc('articles_count')
             ->limit(10)
             ->get();

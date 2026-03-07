@@ -115,7 +115,7 @@ class Article extends Model
 
     public function tags(): BelongsToMany
     {
-        return $this->belongsToMany(Tag::class);
+        return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 
     public function views(): HasMany
@@ -214,8 +214,7 @@ class Article extends Model
         return $query->where(function (Builder $query) use ($like): void {
             $query->where('title', 'like', $like)
                 ->orWhere('short_description', 'like', $like)
-                ->orWhere('full_description', 'like', $like)
-                ->orWhere('author', 'like', $like);
+                ->orWhere('full_description', 'like', $like);
         });
     }
 
@@ -259,7 +258,7 @@ class Article extends Model
 
     public function getReadingTimeTextAttribute(): string
     {
-        return $this->reading_time.' мин';
+        return $this->reading_time.' мин чтения';
     }
 
     public function getMetaTitleAttribute(?string $value): string
@@ -285,14 +284,14 @@ class Article extends Model
     /**
      * @param  array<string, mixed>  $meta
      */
-    public function incrementViews(string $ipHash, ?string $sessionHash = null, array $meta = []): void
+    public function incrementViews(string $ipHash, string $sessionHash, array $meta = []): void
     {
         $hasRecentView = ArticleView::query()
             ->where('article_id', $this->id)
             ->where(function (Builder $query) use ($ipHash, $sessionHash): void {
                 $query->where('ip_hash', $ipHash);
 
-                if ($sessionHash !== null && $sessionHash !== '') {
+                if ($sessionHash !== '') {
                     $query->orWhere('session_hash', $sessionHash);
                 }
             })
@@ -318,13 +317,13 @@ class Article extends Model
         ArticleView::query()->create([
             'article_id' => $this->id,
             'ip_hash' => $ipHash,
-            'session_hash' => $sessionHash,
+            'session_hash' => $sessionHash !== '' ? $sessionHash : null,
             'country_code' => $meta['country_code'] ?? null,
             'device_type' => $meta['device_type'] ?? null,
             'referrer_type' => $meta['referrer_type'] ?? null,
             'referrer_domain' => $meta['referrer_domain'] ?? null,
             'ip_address' => $meta['ip_address'] ?? null,
-            'session_id' => $meta['session_id'] ?? $sessionHash,
+            'session_id' => $meta['session_id'] ?? ($sessionHash !== '' ? $sessionHash : null),
             'user_agent' => $meta['user_agent'] ?? null,
             'referer' => $meta['referer'] ?? null,
             'viewed_at' => now(),
@@ -335,7 +334,7 @@ class Article extends Model
 
     public function incrementShares(): void
     {
-        DB::table('articles')->whereKey($this->id)->increment('shares_count');
+        DB::table('articles')->where('id', $this->id)->increment('shares_count');
         $this->refresh();
     }
 
@@ -347,7 +346,7 @@ class Article extends Model
             + ($this->importance * 10);
 
         DB::table('articles')
-            ->whereKey($this->id)
+            ->where('id', $this->id)
             ->update(['engagement_score' => $score]);
 
         $this->refresh();
@@ -391,8 +390,9 @@ class Article extends Model
         return [
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
-            'canonical_url' => $this->canonical_url,
+            'canonical_url' => $this->canonical_url ?: rtrim((string) config('app.url'), '/').'#/articles/'.$this->slug,
             'structured_data' => $this->structured_data ?? $this->generateStructuredData(),
+            'image_url' => $this->image_url,
         ];
     }
 
@@ -452,10 +452,7 @@ class Article extends Model
             }
 
             $article->slug = $slug;
-
-            if (($article->reading_time === null || $article->reading_time < 1)) {
-                $article->reading_time = static::calculateReadingTime((string) ($article->rss_content ?? $article->full_description ?? ''));
-            }
+            $article->reading_time = static::calculateReadingTime((string) ($article->rss_content ?? $article->full_description ?? ''));
         });
 
         static::updating(function (Article $article): void {

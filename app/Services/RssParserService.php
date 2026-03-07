@@ -144,7 +144,7 @@ class RssParserService
                 $this->logger()->error("HTTP error for {$currentUrl}: {$status}");
 
                 if ($attempt === $maxRetries) {
-                    throw new RuntimeException("Feed fetch failed: HTTP {$status} for {$currentUrl}");
+                    break;
                 }
 
                 sleep(1);
@@ -202,6 +202,9 @@ class RssParserService
             $converted = iconv('Windows-1251', 'UTF-8//IGNORE', $body);
 
             if ($converted !== false) {
+                $converted = preg_replace('/(<\?xml[^>]+encoding=["\'])[^"\']+(["\'])/i', '$1UTF-8$2', $converted) ?? $converted;
+                $converted = preg_replace('/(<meta[^>]+charset=)[a-zA-Z0-9\-_]+/i', '$1UTF-8', $converted) ?? $converted;
+
                 return $converted;
             }
         }
@@ -211,6 +214,7 @@ class RssParserService
 
     private function sanitizeText(string $text): string
     {
+        $text = preg_replace('/<(script|iframe|style|object|embed|form)\b[^>]*>.*?<\/\1>/is', '', $text) ?? $text;
         $text = strip_tags($text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
@@ -405,6 +409,20 @@ class RssParserService
     {
         $values = [trim((string) $item->pubDate)];
         $namespaces = $item->getNamespaces(true);
+        $formats = [
+            DATE_RSS,
+            DATE_ATOM,
+            DATE_ISO8601,
+            'Y-m-d\TH:i:sP',
+            'Y-m-d H:i:s',
+            'd.m.Y H:i:s',
+            'd.m.Y H:i',
+            'd.m.Y',
+            'd M Y H:i:s',
+            'd M Y H:i',
+            'd F Y H:i:s',
+            'd F Y H:i',
+        ];
 
         if (isset($namespaces['dc'])) {
             $dc = $item->children($namespaces['dc']);
@@ -414,6 +432,13 @@ class RssParserService
         foreach ($values as $value) {
             if ($value === '') {
                 continue;
+            }
+
+            foreach ($formats as $format) {
+                try {
+                    return Carbon::createFromFormat($format, $value);
+                } catch (Throwable) {
+                }
             }
 
             try {
@@ -518,11 +543,27 @@ class RssParserService
      */
     private function buildArticleData(SimpleXMLElement $item, int $categoryId, int $rssFeedId, RssFeed $feed): array
     {
+        /** @var array<string, mixed> $extraSettings */
+        $extraSettings = is_array($feed->extra_settings) ? $feed->extra_settings : [];
         $title = $this->extractTitle($item);
         $description = $this->extractDescription($item);
         $fullHtml = $this->extractFullHtml($item);
         $content = $fullHtml !== '' ? $fullHtml : $description;
         $isFeatured = $feed->auto_featured && ! Article::query()->where('rss_feed_id', $rssFeedId)->exists();
+        $shortDescriptionLength = (int) ($extraSettings['short_description_length'] ?? config('rss.article.short_description_length', 300));
+        $status = is_string($extraSettings['status'] ?? null)
+            ? (string) $extraSettings['status']
+            : ($feed->auto_publish ? 'published' : 'draft');
+        $contentType = is_string($extraSettings['content_type'] ?? null)
+            ? (string) $extraSettings['content_type']
+            : 'news';
+        $sourceName = is_string($extraSettings['source_name'] ?? null) && $extraSettings['source_name'] !== ''
+            ? (string) $extraSettings['source_name']
+            : $feed->source_name;
+        $author = $this->extractAuthor($item)
+            ?? (is_string($extraSettings['default_author'] ?? null) && $extraSettings['default_author'] !== ''
+                ? (string) $extraSettings['default_author']
+                : $sourceName);
 
         return [
             'category_id' => $categoryId,
@@ -535,13 +576,13 @@ class RssParserService
             'image_caption' => null,
             'short_description' => $this->makeShortDescription(
                 $description,
-                (int) config('rss.article.short_description_length', 300),
+                $shortDescriptionLength,
             ),
             'rss_content' => $content,
-            'author' => $this->extractAuthor($item) ?? $feed->source_name,
-            'source_name' => $feed->source_name,
-            'status' => $feed->auto_publish ? 'published' : 'draft',
-            'content_type' => 'news',
+            'author' => $author,
+            'source_name' => $sourceName,
+            'status' => $status,
+            'content_type' => $contentType,
             'is_featured' => $isFeatured,
             'importance' => $this->guessImportance($title, $description),
             'reading_time' => $this->calculateReadingTime($content),
@@ -620,16 +661,12 @@ class RssParserService
                 $tagIds = collect($this->extractCategories($item))
                     ->map(function (string $name): int {
                         $tag = Tag::query()->firstOrCreate(
-                            ['slug' => $this->makeTagSlug($name)],
+                            ['name' => $name],
                             [
-                                'name' => $name,
+                                'slug' => $this->makeTagSlug($name),
                                 'color' => '#6B7280',
                             ],
                         );
-
-                        if ($tag->name !== $name) {
-                            $tag->update(['name' => $name]);
-                        }
 
                         return $tag->id;
                     })
@@ -715,7 +752,7 @@ class RssParserService
                 'duration_ms' => $durationMs,
                 'success' => $errors === 0 && $error === null,
                 'error_message' => $error,
-                'item_errors' => $itemErrors === [] ? null : $itemErrors,
+                'item_errors' => $itemErrors,
             ]);
         }
 
