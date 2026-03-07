@@ -88,11 +88,50 @@ class StatsController extends Controller
             ->orderBy('label')
             ->get();
 
-        return response()->json([
+        $response = [
             'labels' => $rows->pluck('label')->all(),
             'data' => $rows->pluck('count')->map(fn ($count) => (int) $count)->all(),
             'period' => $period,
-        ]);
+        ];
+
+        if ($type === 'articles') {
+            $seriesRows = Article::query()
+                ->selectRaw("strftime('{$format}', articles.published_at) as label, categories.id as category_id, categories.name as category_name, categories.color as category_color, COUNT(*) as count")
+                ->join('categories', 'categories.id', '=', 'articles.category_id')
+                ->published()
+                ->where('articles.published_at', '>=', $start)
+                ->groupByRaw('label, categories.id, categories.name, categories.color')
+                ->orderBy('label')
+                ->get();
+
+            $topCategoryIds = $seriesRows
+                ->groupBy('category_id')
+                ->map(fn ($group) => $group->sum('count'))
+                ->sortDesc()
+                ->keys()
+                ->take(5)
+                ->all();
+
+            $seriesGroups = $seriesRows
+                ->whereIn('category_id', $topCategoryIds)
+                ->groupBy('category_id');
+
+            $response['series'] = $seriesGroups->map(function ($group, $categoryId) use ($response): array {
+                $firstRow = $group->first();
+                $countsByLabel = $group->pluck('count', 'label');
+
+                return [
+                    'id' => (int) $categoryId,
+                    'name' => $firstRow->category_name,
+                    'color' => $firstRow->category_color ?: '#3B82F6',
+                    'data' => collect($response['labels'])
+                        ->map(fn ($label): int => (int) ($countsByLabel[$label] ?? 0))
+                        ->all(),
+                ];
+            })->values()->all();
+        }
+
+        return response()->json($response);
     }
 
     public function popular(StatsPopularRequest $request): JsonResponse
@@ -151,6 +190,8 @@ class StatsController extends Controller
                 'slug' => $article?->slug,
                 'category' => $article?->category?->name,
                 'view_count' => (int) $row->view_count,
+                'shares_count' => (int) ($article?->shares_count ?? 0),
+                'bookmarks_count' => (int) ($article?->bookmarks_count ?? 0),
                 'change_percent' => $change,
             ];
         })->values();
