@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 use SimpleXMLElement;
+use Throwable;
 
 class RssParserService
 {
@@ -88,6 +89,7 @@ class RssParserService
      */
     private function fetchFeedXml(string $url): SimpleXMLElement
     {
+        $logger = Log::channel('rss');
         $response = Http::timeout(config('rss.parser.timeout', 30))
             ->connectTimeout(config('rss.parser.connect_timeout', 10))
             ->withHeaders(['User-Agent' => config('rss.parser.user_agent')])
@@ -95,6 +97,8 @@ class RssParserService
             ->get($url);
 
         if (! $response->successful()) {
+            $logger->error('HTTP error for '.$url.': '.$response->status());
+
             throw new RuntimeException('Feed fetch failed: HTTP '.$response->status().' for '.$url);
         }
 
@@ -107,11 +111,14 @@ class RssParserService
             $errors = libxml_get_errors();
             $message = $errors[0]->message ?? 'Invalid XML.';
             libxml_clear_errors();
+            $logger->error('XML parse error for '.$url.': '.trim($message));
 
             throw new RuntimeException(trim($message));
         }
 
         if (! isset($xml->channel)) {
+            $logger->error('XML parse error for '.$url.': Invalid RSS: no channel element');
+
             throw new RuntimeException('Invalid RSS: no channel element in '.$url);
         }
 
@@ -277,7 +284,7 @@ class RssParserService
         $baseSlug = $slug;
         $suffix = 2;
 
-        while (Article::where('slug', $slug)->exists()) {
+        while (Article::withTrashed()->where('slug', $slug)->exists()) {
             $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }
@@ -295,48 +302,64 @@ class RssParserService
 
     private function processItem(SimpleXMLElement $item, int $categoryId, int $rssFeedId): ?Article
     {
-        $title = $this->extractTitle($item);
-        $link = $this->extractLink($item);
-        $guid = $this->extractGuid($item);
-        $description = $this->extractDescription($item);
-        $imageUrl = $this->extractImage($item);
-        $publishedAt = $this->extractPubDate($item) ?? now();
+        $logger = Log::channel('rss');
 
-        if ($title === '' || $link === '') {
+        try {
+            $title = $this->extractTitle($item);
+
+            if (config('app.debug')) {
+                $logger->debug('Processing item: '.$title);
+            }
+
+            $link = $this->extractLink($item);
+            $guid = $this->extractGuid($item);
+            $description = $this->extractDescription($item);
+            $imageUrl = $this->extractImage($item);
+            $publishedAt = $this->extractPubDate($item) ?? now();
+
+            if ($title === '' || $link === '') {
+                return null;
+            }
+
+            if ($this->isDuplicate($guid, $link)) {
+                $logger->warning('Duplicate found: '.$guid);
+
+                return null;
+            }
+
+            $rawDescription = (string) $item->description;
+            $namespaces = $item->getNamespaces(true);
+
+            if ($rawDescription === '' && isset($namespaces['content'])) {
+                $content = $item->children($namespaces['content']);
+                $rawDescription = (string) $content->encoded;
+            }
+
+            $data = [
+                'category_id' => $categoryId,
+                'rss_feed_id' => $rssFeedId,
+                'title' => $title,
+                'slug' => $this->generateUniqueSlug($title),
+                'source_url' => $link,
+                'source_guid' => $guid,
+                'image_url' => $imageUrl,
+                'short_description' => $this->makeShortDescription($description),
+                'rss_content' => $rawDescription,
+                'author' => config('rss.article.default_author'),
+                'source_name' => 'Новости Mail',
+                'status' => config('rss.article.default_status'),
+                'reading_time' => $this->calculateReadingTime($description),
+                'published_at' => $publishedAt,
+                'rss_parsed_at' => now(),
+            ];
+
+            return $this->createArticle($data);
+        } catch (Throwable $e) {
+            $itemTitle = isset($title) && $title !== '' ? $title : trim((string) $item->title);
+            $logger->warning('Item failed: '.$e->getMessage().' for item '.$itemTitle);
+
             return null;
         }
-
-        if ($this->isDuplicate($guid, $link)) {
-            return null;
-        }
-
-        $rawDescription = (string) $item->description;
-        $namespaces = $item->getNamespaces(true);
-
-        if ($rawDescription === '' && isset($namespaces['content'])) {
-            $content = $item->children($namespaces['content']);
-            $rawDescription = (string) $content->encoded;
-        }
-
-        $data = [
-            'category_id' => $categoryId,
-            'rss_feed_id' => $rssFeedId,
-            'title' => $title,
-            'slug' => $this->generateUniqueSlug($title),
-            'source_url' => $link,
-            'source_guid' => $guid,
-            'image_url' => $imageUrl,
-            'short_description' => $this->makeShortDescription($description),
-            'rss_content' => $rawDescription,
-            'author' => config('rss.article.default_author'),
-            'source_name' => 'Новости Mail',
-            'status' => config('rss.article.default_status'),
-            'reading_time' => $this->calculateReadingTime($description),
-            'published_at' => $publishedAt,
-            'rss_parsed_at' => now(),
-        ];
-
-        return $this->createArticle($data);
     }
 
     /**
@@ -368,6 +391,7 @@ class RssParserService
      */
     public function parseFeed(RssFeed $feed): array
     {
+        $logger = Log::channel('rss');
         $result = [
             'feed_title' => $feed->title,
             'new' => 0,
@@ -377,6 +401,7 @@ class RssParserService
         ];
 
         try {
+            $logger->info('Starting parse of feed: '.$feed->title.' ('.$feed->url.')');
             $xml = $this->fetchFeedXml($feed->url);
             $items = $this->getFeedItems($xml);
 
@@ -389,21 +414,28 @@ class RssParserService
                     } else {
                         $result['skipped']++;
                     }
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     $result['errors']++;
-                    Log::warning('Item parse error: '.$e->getMessage());
+                    $logger->warning('Item parse error: '.$e->getMessage());
                 }
             }
 
-            $feed->last_parsed_at = now();
-            $feed->last_run_new_count = $result['new'];
-            $feed->last_run_skip_count = $result['skipped'];
-            $feed->articles_parsed_total = DB::raw('articles_parsed_total + '.$result['new']);
-            $feed->last_error = null;
-            $feed->save();
-        } catch (\Throwable $e) {
+            RssFeed::query()
+                ->whereKey($feed->id)
+                ->update([
+                    'last_parsed_at' => now(),
+                    'last_run_new_count' => $result['new'],
+                    'last_run_skip_count' => $result['skipped'],
+                    'articles_parsed_total' => DB::raw('articles_parsed_total + '.$result['new']),
+                    'last_error' => null,
+                ]);
+
+            $feed->refresh();
+
+            $logger->info('Feed parsed: '.$result['new'].' new, '.$result['skipped'].' skipped, '.$result['errors'].' errors');
+        } catch (Throwable $e) {
             $result['error_message'] = $e->getMessage();
-            Log::error('Feed parse failed ['.$feed->title.']: '.$e->getMessage());
+            $logger->error('Feed parse failed ['.$feed->title.']: '.$e->getMessage());
 
             $feed->last_error = $e->getMessage();
             $feed->save();

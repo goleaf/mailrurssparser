@@ -144,15 +144,37 @@ XML;
 
     $item = simplexml_load_string($xmlString, 'SimpleXMLElement', LIBXML_NOCDATA);
 
+    $feed = RssFeed::factory()->create();
     $service = new RssParserService;
 
-    $article = invokePrivateMethod($service, 'processItem', $item, 1, 2);
+    $article = invokePrivateMethod($service, 'processItem', $item, $feed->category_id, $feed->id);
 
     expect($article)->not->toBeNull()
         ->and($article->title)->toBe('Article title')
         ->and($article->source_url)->toBe('https://example.test/article')
-        ->and($article->category_id)->toBe(1)
-        ->and($article->rss_feed_id)->toBe(2);
+        ->and($article->category_id)->toBe($feed->category_id)
+        ->and($article->rss_feed_id)->toBe($feed->id);
+});
+
+it('returns null when item processing fails', function () {
+    if (! trait_exists(Laravel\Scout\Searchable::class)) {
+        $this->markTestSkipped('Laravel Scout is not installed.');
+    }
+
+    $xmlString = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<item>
+  <title>Broken article</title>
+  <link>https://example.test/broken</link>
+  <description><![CDATA[<p>Hello world</p>]]></description>
+</item>
+XML;
+
+    $item = simplexml_load_string($xmlString, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+    $service = new RssParserService;
+
+    expect(invokePrivateMethod($service, 'processItem', $item, 999, 999))->toBeNull();
 });
 
 it('parses a feed and updates counters', function () {
