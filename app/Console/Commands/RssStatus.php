@@ -94,13 +94,15 @@ class RssStatus extends Command
         }
 
         if ($feed->last_error !== null && $feed->last_error !== '') {
-            return '⚠ Errors:'.$feed->consecutive_failures;
+            return '⚠ Errors:'.max(1, (int) $feed->last_run_error_count);
         }
 
         if ($feed->next_parse_at === null || $feed->next_parse_at->lte(now())) {
             return '⏰ Due Now';
         }
 
-        return '⏳ in '.$feed->next_parse_at->diffForHumans(now(), true);
+        $minutesUntilNextRun = max(1, (int) ceil(now()->diffInSeconds($feed->next_parse_at) / 60));
+
+        return "⏳ in {$minutesUntilNextRun}m";
     }
 }
