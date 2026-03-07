@@ -7,17 +7,18 @@ use App\Services\RssParserService;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Collection;
 use UnitEnum;
 
 class ManageRssFeeds extends Page
 {
-    protected static ?string $navigationLabel = 'RSS Parser';
+    protected static ?string $navigationLabel = 'RSS Менеджер';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rss';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Settings';
+    protected static string|UnitEnum|null $navigationGroup = 'Контент';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 5;
 
     protected string $view = 'filament.pages.manage-rss-feeds';
 
@@ -29,11 +30,13 @@ class ManageRssFeeds extends Page
     /**
      * @var array<int|string, array<string, mixed>>
      */
-    public array $parseResults = [];
+    public array $results = [];
 
     public bool $isParsing = false;
 
-    public ?int $selectedFeedId = null;
+    public ?int $parsingFeedId = null;
+
+    public string $filterCategory = '';
 
     public function mount(): void
     {
@@ -43,18 +46,19 @@ class ManageRssFeeds extends Page
     public function parseAll(): void
     {
         $this->isParsing = true;
-        $this->selectedFeedId = null;
+        $this->parsingFeedId = null;
 
         try {
-            $results = app(RssParserService::class)->parseAllFeeds();
-            $this->parseResults = $results;
+            $allResults = app(RssParserService::class)->parseAllFeeds('filament');
+
+            $this->results = $allResults;
             $this->refreshFeeds();
 
-            $newCount = collect($results)->sum(fn (array $result): int => (int) ($result['new'] ?? 0));
+            $newArticles = collect($allResults)->sum(fn (array $result): int => (int) ($result['new'] ?? 0));
 
             Notification::make()
-                ->title('Parse Complete')
-                ->body("Total new articles: {$newCount}")
+                ->title('Parsing complete')
+                ->body("Parsing complete: {$newArticles} new articles")
                 ->success()
                 ->send();
         } finally {
@@ -62,20 +66,21 @@ class ManageRssFeeds extends Page
         }
     }
 
-    public function parseSingleFeed(int $feedId): void
+    public function parseFeed(int $feedId): void
     {
         $this->isParsing = true;
-        $this->selectedFeedId = $feedId;
+        $this->parsingFeedId = $feedId;
 
         try {
             $feed = RssFeed::query()->findOrFail($feedId);
-            $result = app(RssParserService::class)->parseFeed($feed);
-            $this->parseResults = [$feedId => $result];
+            $result = app(RssParserService::class)->parseFeed($feed, 'filament');
+
+            $this->results[$feedId] = $result;
             $this->refreshFeeds();
 
             $notification = Notification::make()
-                ->title(empty($result['error']) ? 'Feed Parsed' : 'Feed Parse Failed')
-                ->body(empty($result['error']) ? "New: {$result['new']}, Skipped: {$result['skip']}" : (string) $result['error']);
+                ->title(empty($result['error']) ? 'Feed parsed' : 'Feed parse failed')
+                ->body(empty($result['error']) ? "New: {$result['new']}, Skipped: {$result['skip']}, Errors: {$result['errors']}" : (string) $result['error']);
 
             if (empty($result['error'])) {
                 $notification->success();
@@ -86,27 +91,77 @@ class ManageRssFeeds extends Page
             $notification->send();
         } finally {
             $this->isParsing = false;
-            $this->selectedFeedId = null;
+            $this->parsingFeedId = null;
         }
+    }
+
+    public function toggleFeed(int $feedId): void
+    {
+        $feed = RssFeed::query()->findOrFail($feedId);
+
+        $feed->update([
+            'is_active' => ! $feed->is_active,
+        ]);
+
+        $this->refreshFeeds();
+
+        Notification::make()
+            ->title($feed->fresh()->is_active ? 'Feed enabled' : 'Feed disabled')
+            ->success()
+            ->send();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getCategoryOptionsProperty(): array
+    {
+        return collect($this->feeds)
+            ->mapWithKeys(function (array $feed): array {
+                $slug = data_get($feed, 'category.slug');
+                $name = data_get($feed, 'category.name');
+
+                if (! is_string($slug) || $slug === '' || ! is_string($name) || $name === '') {
+                    return [];
+                }
+
+                return [$slug => $name];
+            })
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getFilteredFeedsProperty(): array
+    {
+        return array_values(array_filter($this->feeds, function (array $feed): bool {
+            if ($this->filterCategory === '') {
+                return true;
+            }
+
+            return data_get($feed, 'category.slug') === $this->filterCategory;
+        }));
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public function getGroupedFeedsProperty(): array
+    {
+        return collect($this->filteredFeeds)
+            ->groupBy(fn (array $feed): string => (string) (data_get($feed, 'category.name') ?: 'Без категории'))
+            ->map(fn (Collection $feeds): array => $feeds->all())
+            ->all();
     }
 
     protected function refreshFeeds(): void
     {
         $this->feeds = RssFeed::query()
             ->with('category')
+            ->orderBy('category_id')
             ->orderBy('title')
             ->get()
-            ->map(function (RssFeed $feed): array {
-                return [
-                    'id' => $feed->id,
-                    'title' => $feed->title,
-                    'category_name' => $feed->category?->name ?? 'Uncategorized',
-                    'last_parsed_at' => $feed->last_parsed_at?->diffForHumans() ?? 'Never',
-                    'status' => $feed->is_active ? 'Active' : 'Inactive',
-                    'new_count' => $feed->last_run_new_count,
-                    'error' => $feed->last_error,
-                ];
-            })
-            ->all();
+            ->toArray();
     }
 }

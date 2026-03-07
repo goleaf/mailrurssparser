@@ -25,6 +25,7 @@ it('parses all feeds from the custom page', function () {
     $parser = \Mockery::mock(RssParserService::class);
     $parser->shouldReceive('parseAllFeeds')
         ->once()
+        ->with('filament')
         ->andReturn([
             1 => [
                 'feed' => 'Feed 1',
@@ -40,7 +41,7 @@ it('parses all feeds from the custom page', function () {
     Livewire::test(ManageRssFeeds::class)
         ->call('parseAll')
         ->assertSet('isParsing', false)
-        ->assertSet('parseResults.1.new', 2);
+        ->assertSet('results.1.new', 2);
 });
 
 it('parses a single feed from the custom page', function () {
@@ -51,7 +52,7 @@ it('parses a single feed from the custom page', function () {
     $parser = \Mockery::mock(RssParserService::class);
     $parser->shouldReceive('parseFeed')
         ->once()
-        ->with(\Mockery::type(RssFeed::class))
+        ->withArgs(fn (RssFeed $rssFeed, string $triggeredBy): bool => $rssFeed->is($feed) && $triggeredBy === 'filament')
         ->andReturn([
             'feed' => $feed->title,
             'new' => 1,
@@ -63,7 +64,17 @@ it('parses a single feed from the custom page', function () {
     app()->instance(RssParserService::class, $parser);
 
     Livewire::test(ManageRssFeeds::class)
-        ->call('parseSingleFeed', $feed->id)
-        ->assertSet("parseResults.{$feed->id}.new", 1)
-        ->assertSet('selectedFeedId', null);
+        ->call('parseFeed', $feed->id)
+        ->assertSet("results.{$feed->id}.new", 1)
+        ->assertSet('parsingFeedId', null);
+});
+
+it('toggles a feed active state from the custom page', function () {
+    $this->actingAs(User::factory()->create());
+
+    $feed = RssFeed::factory()->create(['is_active' => true]);
+
+    Livewire::test(ManageRssFeeds::class)
+        ->call('toggleFeed', $feed->id)
+        ->assertSet('feeds.0.is_active', false);
 });
