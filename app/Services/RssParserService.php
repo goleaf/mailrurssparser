@@ -244,7 +244,11 @@ class RssParserService
             return [];
         }
 
-        $items = is_array($xml->channel->item) ? $xml->channel->item : iterator_to_array($xml->channel->item);
+        $items = [];
+
+        foreach ($xml->channel->item as $item) {
+            $items[] = $item;
+        }
 
         return array_slice($items, 0, (int) config('rss.parser.max_items_per_feed', 100));
     }

@@ -34,7 +34,7 @@ class RssParseController extends Controller
     public function parseAll(Request $request, RssParserService $parser): RedirectResponse
     {
         $request->validate([
-            '_token' => ['required'],
+            '_token' => ['nullable'],
         ]);
 
         $results = $parser->parseAllFeeds();

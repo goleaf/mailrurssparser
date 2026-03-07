@@ -45,7 +45,7 @@ class ArticleController extends Controller
                 'referrer_type' => $this->detectReferrerType($request),
                 'referrer_domain' => parse_url((string) $request->headers->get('referer'), PHP_URL_HOST),
                 'ip_address' => $request->ip(),
-                'session_id' => $request->session()->getId(),
+                'session_id' => $request->hasSession() ? $request->session()->getId() : null,
                 'user_agent' => (string) $request->userAgent(),
                 'referer' => $request->headers->get('referer'),
             ],
@@ -212,7 +212,9 @@ class ArticleController extends Controller
 
     private function hashSession(Request $request): string
     {
-        return hash('sha256', $request->session()->getId().($request->userAgent() ?? ''));
+        $sessionId = $request->hasSession() ? $request->session()->getId() : 'stateless';
+
+        return hash('sha256', $sessionId.($request->userAgent() ?? ''));
     }
 
     private function detectDeviceType(Request $request): string
