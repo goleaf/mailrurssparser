@@ -63,4 +63,9 @@ class ArticleCollection extends ResourceCollection
             'meta' => array_merge($meta, $this->extraMeta),
         ];
     }
+
+    public function jsonOptions(): int
+    {
+        return parent::jsonOptions() | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE;
+    }
 }
