@@ -89,12 +89,9 @@ class SearchController extends Controller
                 ->all();
         }
 
-        return (new ArticleCollection($articles))->additional([
-            'meta' => [
-                'query' => $term,
-                'total' => $articles->total(),
-                'suggestions' => $suggestions,
-            ],
+        return (new ArticleCollection($articles))->extraMeta([
+            'query' => $term,
+            'suggestions' => $suggestions,
         ]);
     }
 
@@ -133,9 +130,7 @@ class SearchController extends Controller
         $sentences = preg_split('/(?<=[.!?])\s+/u', $content) ?: [$content];
         $match = collect($sentences)
             ->first(fn (string $sentence): bool => stripos($sentence, $term) !== false) ?? Str::limit($content, 220);
-
-        $escapedTerm = preg_quote($term, '/');
-        $excerpt = preg_replace("/({$escapedTerm})/iu", '<mark>$1</mark>', $match) ?? $match;
+        $excerpt = $this->highlightTerm($match, $term);
 
         return response()->json(['excerpt' => $excerpt]);
     }
@@ -180,5 +175,20 @@ class SearchController extends Controller
             END DESC',
             [$term, $term.'%', '%'.$escaped.'%', '%'.$escaped.'%', '%'.$escaped.'%', '%'.$escaped.'%'],
         )->orderByDesc('published_at');
+    }
+
+    private function highlightTerm(string $text, string $term): string
+    {
+        $position = mb_stripos($text, $term);
+
+        if ($position === false) {
+            return $text;
+        }
+
+        $before = mb_substr($text, 0, $position);
+        $match = mb_substr($text, $position, mb_strlen($term));
+        $after = mb_substr($text, $position + mb_strlen($term));
+
+        return $before.'<mark>'.$match.'</mark>'.$after;
     }
 }
