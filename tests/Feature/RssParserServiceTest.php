@@ -371,3 +371,40 @@ XML, 200),
         ->and($results)->not->toHaveKey($futureFeed->id)
         ->and($results)->not->toHaveKey($inactiveFeed->id);
 });
+
+it('imports the first feed item from a url as a draft article', function () {
+    Http::fake([
+        'https://example.test/import.xml' => Http::response(<<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<rss>
+  <channel>
+    <item>
+      <title>Imported article</title>
+      <link>https://example.test/imported-article</link>
+      <description><![CDATA[<p>Import body text for the CMS resource.</p>]]></description>
+      <category>Политика</category>
+      <pubDate>Mon, 01 Jan 2024 12:00:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>
+XML, 200),
+    ]);
+
+    $feed = RssFeed::factory()->create([
+        'url' => 'https://example.test/import.xml',
+        'auto_publish' => true,
+    ]);
+
+    $article = Article::withoutSyncingToSearch(function () use ($feed): Article {
+        return (new RssParserService)->importArticleFromUrl($feed->url);
+    });
+
+    expect($article)->toBeInstanceOf(Article::class)
+        ->and($article->status)->toBe('draft')
+        ->and($article->rss_feed_id)->toBe($feed->id)
+        ->and($article->title)->toBe('Imported article')
+        ->and($article->source_url)->toBe('https://example.test/imported-article')
+        ->and($article->tags)->toHaveCount(1)
+        ->and($article->tags->first()?->name)->toBe('Политика')
+        ->and(Article::query()->whereKey($article->id)->exists())->toBeTrue();
+});

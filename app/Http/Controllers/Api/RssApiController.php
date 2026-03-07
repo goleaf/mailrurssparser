@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\RssFeed;
 use App\Services\RssParserService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class RssApiController extends Controller
 {
@@ -16,7 +17,7 @@ class RssApiController extends Controller
             $statusLabel = match (true) {
                 ! $feed->is_active => 'Disabled',
                 $feed->last_error !== null && $feed->last_error !== '' => 'Error',
-                $feed->next_parse_at === null || $feed->next_parse_at->lte(now()) => 'Due',
+                $feed->next_parse_at !== null && $feed->next_parse_at->lte(now()) => 'Due',
                 default => 'OK',
             };
 
@@ -37,23 +38,27 @@ class RssApiController extends Controller
         return response()->json(['data' => $feeds]);
     }
 
-    public function parseFeed(RssParserService $parser, int $feedId): JsonResponse
+    public function parseFeed(Request $request, int $feedId): JsonResponse
     {
+        unset($request);
+
         $feed = RssFeed::query()->findOrFail($feedId);
-        $result = $parser->parseFeed($feed, 'api');
+        $result = app(RssParserService::class)->parseFeed($feed, 'api');
 
         return response()->json([
-            'success' => empty($result['error']),
+            'success' => ! isset($result['error']),
             ...$result,
         ]);
     }
 
-    public function parseAll(RssParserService $parser): JsonResponse
+    public function parseAll(Request $request): JsonResponse
     {
-        $results = $parser->parseAllFeeds('api');
+        unset($request);
+
+        $results = app(RssParserService::class)->parseAllFeeds('api');
 
         return response()->json([
-            'success' => collect($results)->every(fn (array $result): bool => empty($result['error'])),
+            'success' => collect($results)->every(fn (array $result): bool => ! isset($result['error'])),
             'results' => $results,
             'totals' => [
                 'new' => collect($results)->sum('new'),
@@ -63,9 +68,10 @@ class RssApiController extends Controller
         ]);
     }
 
-    public function parseCategory(RssParserService $parser, string $slug): JsonResponse
+    public function parseCategory(string $slug): JsonResponse
     {
         $category = Category::query()->where('slug', $slug)->firstOrFail();
+        $parser = app(RssParserService::class);
         $results = RssFeed::query()
             ->active()
             ->where('category_id', $category->id)
@@ -74,7 +80,7 @@ class RssApiController extends Controller
             ->values();
 
         return response()->json([
-            'success' => $results->every(fn (array $result): bool => empty($result['error'])),
+            'success' => $results->every(fn (array $result): bool => ! isset($result['error'])),
             'results' => $results,
             'totals' => [
                 'new' => $results->sum('new'),

@@ -6,6 +6,7 @@ use App\Models\RssFeed;
 use App\Services\RssParserService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
@@ -23,24 +24,19 @@ class RssFeedsTable
                     ->searchable(),
                 TextColumn::make('category.name')
                     ->badge(),
-                TextColumn::make('url')
-                    ->limit(60)
-                    ->copyable(),
                 ToggleColumn::make('is_active'),
                 TextColumn::make('last_parsed_at')
-                    ->dateTime('d M H:i')
-                    ->label('Last Parsed')
                     ->since(),
                 TextColumn::make('last_run_new_count')
-                    ->label('Last New')
                     ->badge()
                     ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'success' : 'gray'),
                 TextColumn::make('articles_parsed_total')
-                    ->label('Total')
                     ->numeric(),
+                TextColumn::make('consecutive_failures')
+                    ->badge()
+                    ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'danger' : 'gray'),
                 TextColumn::make('last_error')
-                    ->label('Error')
-                    ->limit(40)
+                    ->limit(30)
                     ->color(fn (?string $state): string => filled($state) ? 'danger' : 'gray'),
             ])
             ->filters([
@@ -52,7 +48,7 @@ class RssFeedsTable
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->action(function (RssFeed $record, RssParserService $parser): void {
-                        $result = $parser->parseFeed($record);
+                        $result = $parser->parseFeed($record, 'filament');
 
                         if (! empty($result['error'])) {
                             Notification::make()
@@ -71,6 +67,7 @@ class RssFeedsTable
                             ->send();
                     }),
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

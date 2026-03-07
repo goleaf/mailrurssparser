@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Categories\Tables;
 
 use App\Models\Category;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\ColorColumn;
@@ -25,17 +26,24 @@ class CategoriesTable
                 TextColumn::make('rss_key')
                     ->badge(),
                 ColorColumn::make('color'),
-                ToggleColumn::make('is_active')
-                    ->sortable(),
-                TextColumn::make('articles_count')
-                    ->counts('articles')
-                    ->label('Articles'),
                 TextColumn::make('order')
                     ->sortable(),
+                ToggleColumn::make('is_active')
+                    ->sortable(),
+                TextColumn::make('articles_count_cache')
+                    ->numeric()
+                    ->label('Articles'),
             ])
             ->filters([
                 TernaryFilter::make('is_active'),
             ])
+            ->defaultSort('order')
+            ->reorderable('order')
+            ->reorderRecordsTriggerAction(
+                fn (Action $action, bool $isReordering): Action => $action
+                    ->label($isReordering ? 'Завершить сортировку' : 'Изменить порядок')
+                    ->icon('heroicon-o-arrows-up-down'),
+            )
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make()

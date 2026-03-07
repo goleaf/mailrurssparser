@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Categories\Schemas;
+namespace App\Filament\Resources\Tags\Schemas;
 
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Textarea;
@@ -12,7 +12,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 
-class CategoryForm
+class TagForm
 {
     public static function configure(Schema $schema): Schema
     {
@@ -35,44 +35,23 @@ class CategoryForm
                                     ->unique(ignoreRecord: true),
                                 ColorPicker::make('color')
                                     ->required()
-                                    ->default('#3B82F6'),
-                                TextInput::make('icon')
-                                    ->nullable()
-                                    ->maxLength(10)
-                                    ->hint('Emoji, например 🏛️'),
-                                TextInput::make('rss_url')
-                                    ->url()
-                                    ->nullable()
-                                    ->placeholder('https://news.mail.ru/rss/politics/'),
-                                TextInput::make('rss_key')
-                                    ->nullable()
-                                    ->maxLength(50),
+                                    ->default('#6B7280'),
+                                TextInput::make('usage_count')
+                                    ->numeric()
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->default(0),
                             ]),
                         Textarea::make('description')
                             ->nullable()
                             ->rows(3)
                             ->columnSpanFull(),
-                        TextInput::make('meta_title')
-                            ->nullable()
-                            ->maxLength(255),
-                        Textarea::make('meta_description')
-                            ->nullable()
-                            ->rows(3)
-                            ->columnSpanFull(),
-                    ])
-                    ->columns(2),
-                Section::make('Настройки')
-                    ->schema([
-                        Grid::make(4)
+                        Grid::make(2)
                             ->schema([
-                                TextInput::make('order')
-                                    ->numeric()
-                                    ->integer()
-                                    ->default(0),
-                                Toggle::make('is_active')
-                                    ->default(true),
-                                Toggle::make('show_in_menu')
-                                    ->default(true),
+                                Toggle::make('is_trending')
+                                    ->default(false),
+                                Toggle::make('is_featured')
+                                    ->default(false),
                             ]),
                     ]),
             ]);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\Category;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 
 class SeoController extends Controller
 {
@@ -12,23 +13,35 @@ class SeoController extends Controller
     {
         $baseUrl = rtrim((string) config('app.url'), '/');
         $urls = [
-            '<url><loc>'.$baseUrl.'/#/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>',
+            $this->urlTag(
+                loc: $baseUrl.'/#/',
+                changefreq: 'hourly',
+                priority: '1.0',
+            ),
         ];
 
-        Category::query()->active()->get(['slug'])->each(function (Category $category) use (&$urls, $baseUrl): void {
-            $urls[] = '<url><loc>'.$baseUrl.'/#/category/'.$category->slug.'</loc><changefreq>hourly</changefreq><priority>0.7</priority></url>';
+        Category::query()->get(['slug'])->each(function (Category $category) use (&$urls, $baseUrl): void {
+            $urls[] = $this->urlTag(
+                loc: $baseUrl.'/#/category/'.$category->slug,
+                changefreq: 'hourly',
+                priority: '0.7',
+            );
         });
 
         Article::query()
             ->published()
-            ->select(['slug', 'published_at', 'updated_at'])
-            ->orderByDesc('published_at')
-            ->chunk(500, function ($articles) use (&$urls, $baseUrl): void {
+            ->select(['id', 'slug', 'published_at', 'updated_at'])
+            ->orderBy('id')
+            ->chunkById(500, function (Collection $articles) use (&$urls, $baseUrl): void {
                 foreach ($articles as $article) {
                     $lastModified = $article->updated_at?->toAtomString() ?? $article->published_at?->toAtomString();
-                    $urls[] = '<url><loc>'.$baseUrl.'/#/articles/'.$article->slug.'</loc><lastmod>'.$lastModified.'</lastmod><priority>0.8</priority></url>';
+                    $urls[] = $this->urlTag(
+                        loc: $baseUrl.'/#/articles/'.$article->slug,
+                        lastmod: $lastModified,
+                        priority: '0.8',
+                    );
                 }
-            });
+            }, column: 'id');
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'
             .'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
@@ -51,26 +64,58 @@ class SeoController extends Controller
             ->limit(50)
             ->get()
             ->map(function (Article $article) use ($baseUrl): string {
-                $title = htmlspecialchars((string) $article->title, ENT_XML1);
-                $description = htmlspecialchars((string) ($article->short_description ?? ''), ENT_XML1);
                 $link = $baseUrl.'/#/articles/'.$article->slug;
-                $category = htmlspecialchars((string) $article->category?->name, ENT_XML1);
                 $pubDate = $article->published_at?->toRfc2822String() ?? now()->toRfc2822String();
 
-                return "<item><title>{$title}</title><link>{$link}</link><guid>{$link}</guid><description>{$description}</description><category>{$category}</category><pubDate>{$pubDate}</pubDate></item>";
+                return '<item>'
+                    .'<title>'.$this->escapeXml((string) $article->title).'</title>'
+                    .'<link>'.$this->escapeXml($link).'</link>'
+                    .'<guid>'.$this->escapeXml($link).'</guid>'
+                    .'<description>'.$this->escapeXml((string) ($article->short_description ?? '')).'</description>'
+                    .'<category>'.$this->escapeXml((string) $article->category?->name).'</category>'
+                    .'<pubDate>'.$this->escapeXml($pubDate).'</pubDate>'
+                    .'</item>';
             })
             ->implode('');
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'
             .'<rss version="2.0"><channel>'
-            .'<title>'.htmlspecialchars((string) config('app.name', 'Новостной портал'), ENT_XML1).'</title>'
-            .'<link>'.$baseUrl.'</link>'
-            .'<description>Последние новости портала</description>'
+            .'<title>'.$this->escapeXml((string) config('app.name', 'Новостной портал')).'</title>'
+            .'<link>'.$this->escapeXml($baseUrl).'</link>'
+            .'<description>'.$this->escapeXml('Последние новости портала').'</description>'
+            .'<language>ru</language>'
+            .'<lastBuildDate>'.$this->escapeXml(now()->toRfc2822String()).'</lastBuildDate>'
             .$items
             .'</channel></rss>';
 
         return response($xml, 200, [
             'Content-Type' => 'application/rss+xml',
         ]);
+    }
+
+    private function urlTag(string $loc, ?string $changefreq = null, ?string $priority = null, ?string $lastmod = null): string
+    {
+        $segments = [
+            '<loc>'.$this->escapeXml($loc).'</loc>',
+        ];
+
+        if ($lastmod !== null) {
+            $segments[] = '<lastmod>'.$this->escapeXml($lastmod).'</lastmod>';
+        }
+
+        if ($changefreq !== null) {
+            $segments[] = '<changefreq>'.$this->escapeXml($changefreq).'</changefreq>';
+        }
+
+        if ($priority !== null) {
+            $segments[] = '<priority>'.$this->escapeXml($priority).'</priority>';
+        }
+
+        return '<url>'.implode('', $segments).'</url>';
+    }
+
+    private function escapeXml(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 }

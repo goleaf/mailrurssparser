@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\RssFeeds\Pages;
 
 use App\Filament\Resources\RssFeeds\RssFeedResource;
+use App\Models\RssParseLog;
 use App\Services\RssParserService;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Contracts\View\View;
 
 class ListRssFeeds extends ListRecords
 {
@@ -18,9 +20,9 @@ class ListRssFeeds extends ListRecords
         return [
             CreateAction::make(),
             Action::make('parseAllFeeds')
-                ->label('Parse All Feeds')
+                ->label('Parse All Active')
                 ->action(function (RssParserService $parser): void {
-                    $results = $parser->parseAllFeeds();
+                    $results = $parser->parseAllFeeds('filament');
 
                     $newCount = 0;
                     $skippedCount = 0;
@@ -54,5 +56,16 @@ class ListRssFeeds extends ListRecords
                     $notification->send();
                 }),
         ];
+    }
+
+    public function getFooter(): ?View
+    {
+        return view('filament.resources.rss-feeds.pages.parse-log-footer', [
+            'logs' => RssParseLog::query()
+                ->with('rssFeed')
+                ->latest('started_at')
+                ->limit(5)
+                ->get(),
+        ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Article;
+use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
 use App\Models\Tag;
@@ -631,6 +632,31 @@ class RssParserService
         return Article::query()->create($data);
     }
 
+    /**
+     * @param  array<int, string>  $categories
+     */
+    private function syncArticleTags(Article $article, array $categories): void
+    {
+        $tagIds = collect($categories)
+            ->map(function (string $name): int {
+                $tag = Tag::query()->firstOrCreate(
+                    ['name' => $name],
+                    [
+                        'slug' => $this->makeTagSlug($name),
+                        'color' => '#6B7280',
+                    ],
+                );
+
+                return $tag->id;
+            })
+            ->values()
+            ->all();
+
+        if ($tagIds !== []) {
+            $article->syncTags($tagIds);
+        }
+    }
+
     private function processItem(SimpleXMLElement $item, int $categoryId, int $rssFeedId, RssFeed $feed): ?Article
     {
         $title = $this->extractTitle($item);
@@ -658,24 +684,7 @@ class RssParserService
 
             return DB::transaction(function () use ($item, $data): Article {
                 $article = $this->createArticle($data);
-                $tagIds = collect($this->extractCategories($item))
-                    ->map(function (string $name): int {
-                        $tag = Tag::query()->firstOrCreate(
-                            ['name' => $name],
-                            [
-                                'slug' => $this->makeTagSlug($name),
-                                'color' => '#6B7280',
-                            ],
-                        );
-
-                        return $tag->id;
-                    })
-                    ->values()
-                    ->all();
-
-                if ($tagIds !== []) {
-                    $article->syncTags($tagIds);
-                }
+                $this->syncArticleTags($article, $this->extractCategories($item));
 
                 return $article;
             });
@@ -857,5 +866,75 @@ class RssParserService
                 ];
             })
             ->all();
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function importArticleFromUrl(string $url): Article
+    {
+        $feed = RssFeed::query()
+            ->with('category')
+            ->firstWhere('url', $url);
+
+        if (! $feed instanceof RssFeed) {
+            $category = Category::query()
+                ->where(function ($query): void {
+                    $query->where('slug', 'main')
+                        ->orWhere('is_active', true);
+                })
+                ->orderByRaw("case when slug = 'main' then 0 else 1 end")
+                ->orderBy('order')
+                ->first();
+
+            if (! $category instanceof Category) {
+                throw new RuntimeException('Нужна хотя бы одна категория для импорта статьи.');
+            }
+
+            $feed = new RssFeed([
+                'category_id' => $category->id,
+                'title' => 'Imported Feed',
+                'url' => $url,
+                'source_name' => 'Новости Mail',
+                'auto_publish' => false,
+                'auto_featured' => false,
+                'fetch_interval' => 15,
+            ]);
+            $feed->setRelation('category', $category);
+        }
+
+        $xml = $this->fetchFeedXml($url);
+        $item = $this->getFeedItems($xml)[0] ?? null;
+
+        if (! $item instanceof SimpleXMLElement) {
+            throw new RuntimeException('В RSS-ленте не найдено ни одного материала.');
+        }
+
+        $guid = $this->extractGuid($item);
+        $link = $this->extractLink($item);
+
+        if ($guid === '' && $link === '') {
+            throw new RuntimeException('Не удалось определить ссылку или GUID материала.');
+        }
+
+        if ($this->isDuplicate($guid, $link)) {
+            throw new RuntimeException('Материал уже существует в базе.');
+        }
+
+        $data = $this->buildArticleData($item, $feed->category_id, $feed->id ?? 0, $feed);
+        $data['rss_feed_id'] = $feed->exists ? $feed->id : null;
+        $data['status'] = 'draft';
+        $data['is_featured'] = false;
+
+        if (($data['title'] ?? '') === '') {
+            throw new RuntimeException('Не удалось определить заголовок материала.');
+        }
+
+        return DB::transaction(function () use ($item, $data): Article {
+            $article = $this->createArticle($data);
+            $this->syncArticleTags($article, $this->extractCategories($item));
+
+            return $article;
+        });
     }
 }
