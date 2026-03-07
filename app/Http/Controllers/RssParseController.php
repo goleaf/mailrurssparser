@@ -41,7 +41,7 @@ class RssParseController extends Controller
 
         $summary = collect($results)->reduce(function (array $carry, array $result): array {
             $carry['new'] += (int) ($result['new'] ?? 0);
-            $carry['skipped'] += (int) ($result['skipped'] ?? 0);
+            $carry['skipped'] += (int) ($result['skip'] ?? 0);
             $carry['errors'] += (int) ($result['errors'] ?? 0);
 
             return $carry;
@@ -62,16 +62,16 @@ class RssParseController extends Controller
         $result = $parser->parseFeed($feed);
         $feed->refresh();
 
-        $success = empty($result['error_message']);
+        $success = empty($result['error']);
 
         return response()->json([
             'success' => $success,
             'new' => (int) ($result['new'] ?? 0),
-            'skipped' => (int) ($result['skipped'] ?? 0),
+            'skipped' => (int) ($result['skip'] ?? 0),
             'errors' => (int) ($result['errors'] ?? 0),
             'message' => $success
-                ? "New: {$result['new']}, Skipped: {$result['skipped']}"
-                : (string) $result['error_message'],
+                ? "New: {$result['new']}, Skipped: {$result['skip']}"
+                : (string) $result['error'],
             'last_parsed_at' => $feed->last_parsed_at?->toIso8601String(),
             'last_parsed_at_human' => $feed->last_parsed_at?->format('d.m.Y H:i') ?? 'Never',
             'articles_parsed_total' => $feed->articles_parsed_total,
@@ -103,13 +103,13 @@ class RssParseController extends Controller
 
         $summary = $results->reduce(function (array $carry, array $result): array {
             $carry['new'] += (int) ($result['new'] ?? 0);
-            $carry['skipped'] += (int) ($result['skipped'] ?? 0);
+            $carry['skipped'] += (int) ($result['skip'] ?? 0);
             $carry['errors'] += (int) ($result['errors'] ?? 0);
 
             return $carry;
         }, ['new' => 0, 'skipped' => 0, 'errors' => 0]);
 
-        $success = $results->every(fn (array $result): bool => empty($result['error_message']));
+        $success = $results->every(fn (array $result): bool => empty($result['error']));
 
         return response()->json([
             'success' => $success,

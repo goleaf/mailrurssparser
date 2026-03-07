@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Controllers\SeoController;
 use App\Http\Controllers\RssParseController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
+
+Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
+Route::get('rss.xml', [SeoController::class, 'rss'])->name('rss-feed');
 
 Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),

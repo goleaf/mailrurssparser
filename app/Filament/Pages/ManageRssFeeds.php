@@ -74,10 +74,10 @@ class ManageRssFeeds extends Page
             $this->refreshFeeds();
 
             $notification = Notification::make()
-                ->title(empty($result['error_message']) ? 'Feed Parsed' : 'Feed Parse Failed')
-                ->body(empty($result['error_message']) ? "New: {$result['new']}, Skipped: {$result['skipped']}" : (string) $result['error_message']);
+                ->title(empty($result['error']) ? 'Feed Parsed' : 'Feed Parse Failed')
+                ->body(empty($result['error']) ? "New: {$result['new']}, Skipped: {$result['skip']}" : (string) $result['error']);
 
-            if (empty($result['error_message'])) {
+            if (empty($result['error'])) {
                 $notification->success();
             } else {
                 $notification->danger();

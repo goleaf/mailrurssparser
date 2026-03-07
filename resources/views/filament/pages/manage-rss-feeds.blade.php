@@ -72,12 +72,12 @@
                 <div class="mt-4 space-y-3">
                     @foreach ($this->parseResults as $result)
                         <div class="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-white/10">
-                            <div class="font-medium text-gray-950 dark:text-white">{{ $result['feed_title'] }}</div>
+                            <div class="font-medium text-gray-950 dark:text-white">{{ $result['feed'] }}</div>
                             <div class="mt-1 text-gray-600 dark:text-gray-300">
-                                New: {{ $result['new'] }}, Skipped: {{ $result['skipped'] }}, Errors: {{ $result['errors'] }}
+                                New: {{ $result['new'] }}, Skipped: {{ $result['skip'] }}, Errors: {{ $result['errors'] }}
                             </div>
-                            @if (! empty($result['error_message']))
-                                <div class="mt-2 text-rose-600 dark:text-rose-300">{{ $result['error_message'] }}</div>
+                            @if (! empty($result['error']))
+                                <div class="mt-2 text-rose-600 dark:text-rose-300">{{ $result['error'] }}</div>
                             @endif
                         </div>
                     @endforeach

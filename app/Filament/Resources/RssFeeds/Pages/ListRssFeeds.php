@@ -28,9 +28,9 @@ class ListRssFeeds extends ListRecords
 
                     foreach ($results as $result) {
                         $newCount += (int) ($result['new'] ?? 0);
-                        $skippedCount += (int) ($result['skipped'] ?? 0);
+                        $skippedCount += (int) ($result['skip'] ?? 0);
 
-                        if (! empty($result['error_message'])) {
+                        if (! empty($result['error'])) {
                             $errorCount++;
                         }
                     }

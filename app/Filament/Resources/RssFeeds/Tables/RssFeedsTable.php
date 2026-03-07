@@ -54,10 +54,10 @@ class RssFeedsTable
                     ->action(function (RssFeed $record, RssParserService $parser): void {
                         $result = $parser->parseFeed($record);
 
-                        if (! empty($result['error_message'])) {
+                        if (! empty($result['error'])) {
                             Notification::make()
                                 ->title('Parse Failed')
-                                ->body((string) $result['error_message'])
+                                ->body((string) $result['error'])
                                 ->danger()
                                 ->send();
 
@@ -66,7 +66,7 @@ class RssFeedsTable
 
                         Notification::make()
                             ->title('Parse Complete')
-                            ->body("New: {$result['new']}, Skipped: {$result['skipped']}")
+                            ->body("New: {$result['new']}, Skipped: {$result['skip']}")
                             ->success()
                             ->send();
                     }),

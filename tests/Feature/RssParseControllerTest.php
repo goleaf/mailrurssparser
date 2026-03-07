@@ -44,11 +44,11 @@ it('parses a single feed and returns json', function () {
         ->once()
         ->with(\Mockery::on(fn (RssFeed $model): bool => $model->is($feed)))
         ->andReturn([
-            'feed_title' => $feed->title,
+            'feed' => $feed->title,
             'new' => 3,
-            'skipped' => 1,
+            'skip' => 1,
             'errors' => 0,
-            'error_message' => null,
+            'error' => null,
         ]);
 
     app()->instance(RssParserService::class, $parser);
@@ -71,8 +71,8 @@ it('parses all feeds and redirects back with a summary', function () {
     $parser->shouldReceive('parseAllFeeds')
         ->once()
         ->andReturn([
-            1 => ['feed_title' => 'Feed 1', 'new' => 2, 'skipped' => 1, 'errors' => 0, 'error_message' => null],
-            2 => ['feed_title' => 'Feed 2', 'new' => 1, 'skipped' => 0, 'errors' => 0, 'error_message' => null],
+            1 => ['feed' => 'Feed 1', 'new' => 2, 'skip' => 1, 'errors' => 0, 'error' => null],
+            2 => ['feed' => 'Feed 2', 'new' => 1, 'skip' => 0, 'errors' => 0, 'error' => null],
         ]);
 
     app()->instance(RssParserService::class, $parser);
@@ -94,21 +94,21 @@ it('parses a category and aggregates results', function () {
         ->once()
         ->with(\Mockery::on(fn (RssFeed $model): bool => $model->is($first)))
         ->andReturn([
-            'feed_title' => $first->title,
+            'feed' => $first->title,
             'new' => 1,
-            'skipped' => 0,
+            'skip' => 0,
             'errors' => 0,
-            'error_message' => null,
+            'error' => null,
         ]);
     $parser->shouldReceive('parseFeed')
         ->once()
         ->with(\Mockery::on(fn (RssFeed $model): bool => $model->is($second)))
         ->andReturn([
-            'feed_title' => $second->title,
+            'feed' => $second->title,
             'new' => 0,
-            'skipped' => 2,
+            'skip' => 2,
             'errors' => 0,
-            'error_message' => null,
+            'error' => null,
         ]);
 
     app()->instance(RssParserService::class, $parser);
