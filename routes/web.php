@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\SeoController;
 use App\Http\Controllers\RssParseController;
+use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -27,3 +27,7 @@ Route::prefix('admin/rss')
     });
 
 require __DIR__.'/settings.php';
+
+Route::inertia('/{any}', 'Welcome')
+    ->where('any', '.*')
+    ->name('spa');
