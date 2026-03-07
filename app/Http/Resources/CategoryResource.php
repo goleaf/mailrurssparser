@@ -20,15 +20,12 @@ class CategoryResource extends JsonResource
             'icon' => $this->icon,
             'description' => $this->description,
             'articles_count_cache' => $this->articles_count_cache,
-            'article_count' => $this->whenCounted('articles'),
-            'rss_url' => $this->rss_url,
             'sub_categories' => $this->whenLoaded('subCategories', function () {
                 return $this->subCategories->map(fn ($subCategory): array => [
                     'id' => $subCategory->id,
                     'name' => $subCategory->name,
                     'slug' => $subCategory->slug,
-                    'description' => $subCategory->description,
-                ])->values();
+                ])->values()->all();
             }),
         ];
     }

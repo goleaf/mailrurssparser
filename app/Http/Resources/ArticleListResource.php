@@ -63,7 +63,7 @@ class ArticleListResource extends JsonResource
                     'name' => $tag->name,
                     'slug' => $tag->slug,
                     'color' => $tag->color,
-                ])->values();
+                ])->values()->all();
             }),
         ];
     }

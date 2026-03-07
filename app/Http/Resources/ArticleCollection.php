@@ -28,7 +28,7 @@ class ArticleCollection extends ResourceCollection
         return [
             'meta' => [
                 'categories_summary' => Category::query()
-                    ->active()
+                    ->where('is_active', true)
                     ->withCount(['articles' => fn ($query) => $query->published()])
                     ->orderByDesc('articles_count')
                     ->limit(5)

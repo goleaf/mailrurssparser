@@ -60,7 +60,7 @@ class ArticleController extends Controller
                 ->all(),
         );
 
-        return new ArticleResource($article);
+        return ArticleResource::make($article);
     }
 
     public function featured(): ArticleCollection
@@ -133,6 +133,10 @@ class ArticleController extends Controller
     {
         $article = Article::query()->published()->with('tags')->where('slug', $slug)->firstOrFail();
         $tagIds = $article->tags->pluck('id');
+
+        if ($tagIds->isEmpty()) {
+            return new ArticleCollection(collect());
+        }
 
         $query = Article::query()
             ->published()
