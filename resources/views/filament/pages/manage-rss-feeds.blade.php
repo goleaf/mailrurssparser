@@ -1,8 +1,5 @@
 <x-filament-panels::page>
     @php
-        use App\Filament\Resources\RssFeeds\RssFeedResource;
-        use Illuminate\Support\Carbon;
-
         $groupedFeeds = $this->groupedFeeds;
     @endphp
 
@@ -56,8 +53,8 @@
                         @php
                             $categoryLabel = data_get($feed, 'category.name', 'Без категории');
                             $categoryColor = data_get($feed, 'category.color', '#6B7280');
-                            $lastParsedAt = filled($feed['last_parsed_at'] ?? null) ? Carbon::parse($feed['last_parsed_at']) : null;
-                            $nextParseAt = filled($feed['next_parse_at'] ?? null) ? Carbon::parse($feed['next_parse_at']) : null;
+                            $lastParsedAt = filled($feed['last_parsed_at'] ?? null) ? \Illuminate\Support\Carbon::parse($feed['last_parsed_at']) : null;
+                            $nextParseAt = filled($feed['next_parse_at'] ?? null) ? \Illuminate\Support\Carbon::parse($feed['next_parse_at']) : null;
                             $status = ! ($feed['is_active'] ?? false)
                                 ? ['label' => 'Disabled', 'classes' => 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300']
                                 : (filled($feed['last_error'] ?? null)
@@ -135,7 +132,7 @@
                                 </button>
 
                                 <a
-                                    href="{{ RssFeedResource::getUrl('edit', ['record' => $feed['id']]) }}"
+                                    href="{{ \App\Filament\Resources\RssFeeds\RssFeedResource::getUrl('edit', ['record' => $feed['id']]) }}"
                                     class="inline-flex items-center justify-center rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-primary-600 transition hover:bg-primary-50 hover:text-primary-700 dark:text-primary-300 dark:hover:bg-primary-500/10"
                                 >
                                     Edit
