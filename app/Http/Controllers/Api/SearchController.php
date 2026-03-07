@@ -55,20 +55,38 @@ class SearchController extends Controller
         $suggestions = [];
 
         if ($articles->total() === 0) {
-            $suggestions = [
-                'categories' => Category::query()
-                    ->active()
-                    ->where('name', 'like', '%'.$term.'%')
-                    ->limit(3)
-                    ->get(['id', 'name', 'slug', 'color'])
-                    ->toArray(),
-                'tags' => Tag::query()
-                    ->where('name', 'like', '%'.$term.'%')
-                    ->orderByDesc('usage_count')
-                    ->limit(3)
-                    ->get(['id', 'name', 'slug', 'color'])
-                    ->toArray(),
-            ];
+            $categorySuggestions = Category::query()
+                ->where('is_active', true)
+                ->where('name', 'like', '%'.$term.'%')
+                ->orderBy('name')
+                ->limit(3)
+                ->get(['id', 'name', 'slug', 'color'])
+                ->map(fn (Category $category): array => [
+                    'type' => 'category',
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                    'color' => $category->color,
+                ]);
+
+            $tagSuggestions = Tag::query()
+                ->where('name', 'like', '%'.$term.'%')
+                ->orderByDesc('usage_count')
+                ->limit(3)
+                ->get(['id', 'name', 'slug', 'color'])
+                ->map(fn (Tag $tag): array => [
+                    'type' => 'tag',
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'slug' => $tag->slug,
+                    'color' => $tag->color,
+                ]);
+
+            $suggestions = $categorySuggestions
+                ->concat($tagSuggestions)
+                ->take(3)
+                ->values()
+                ->all();
         }
 
         return (new ArticleCollection($articles))->additional([
@@ -155,10 +173,12 @@ class SearchController extends Controller
                 WHEN title = ? THEN 100
                 WHEN title LIKE ? THEN 75
                 WHEN title LIKE ? THEN 50
-                WHEN short_description LIKE ? THEN 25
+                WHEN short_description LIKE ? THEN 30
+                WHEN full_description LIKE ? THEN 20
+                WHEN author LIKE ? THEN 15
                 ELSE 10
             END DESC',
-            [$term, $term.'%', '%'.$escaped.'%', '%'.$escaped.'%'],
+            [$term, $term.'%', '%'.$escaped.'%', '%'.$escaped.'%', '%'.$escaped.'%', '%'.$escaped.'%'],
         )->orderByDesc('published_at');
     }
 }

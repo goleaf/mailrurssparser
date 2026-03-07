@@ -1,27 +1,22 @@
 <?php
 
-use App\Http\Controllers\Api\SearchController;
 use App\Models\Article;
 use App\Models\Category;
-use Illuminate\Support\Facades\Route;
+use App\Models\Tag;
 
 it('validates the search term', function () {
-    Route::get('/api/search', [SearchController::class, 'index'])->name('api.search');
-
-    $this->getJson('/api/search')
-        ->assertStatus(422);
+    $this->getJson('/api/v1/search')
+        ->assertUnprocessable();
 });
 
-it('returns a search response', function () {
+it('returns search results with query and total meta', function () {
     if (! trait_exists(Laravel\Scout\Searchable::class)) {
         $this->markTestSkipped('Laravel Scout is not installed.');
     }
 
-    Route::get('/api/search', [SearchController::class, 'index'])->name('api.search');
+    $category = Category::factory()->create(['name' => 'Politics', 'slug' => 'politics']);
 
-    $category = Category::factory()->create();
-
-    Article::factory()->create([
+    $article = Article::factory()->create([
         'category_id' => $category->id,
         'title' => 'Hello world',
         'short_description' => 'Hello description',
@@ -29,7 +24,78 @@ it('returns a search response', function () {
         'published_at' => now()->subHour(),
     ]);
 
-    $response = $this->getJson('/api/search?q=Hello');
+    $this->getJson('/api/v1/search?q=Hello&category=politics&sort=relevance')
+        ->assertSuccessful()
+        ->assertJsonPath('data.0.id', $article->id)
+        ->assertJsonPath('meta.query', 'Hello')
+        ->assertJsonPath('meta.total', 1);
+});
 
-    $response->assertOk();
+it('returns fallback suggestions when no search results exist', function () {
+    $category = Category::factory()->create([
+        'name' => 'Спорт',
+        'slug' => 'sport',
+        'color' => '#0891B2',
+    ]);
+    $tag = Tag::factory()->create([
+        'name' => 'Спорт',
+        'slug' => 'sport',
+        'color' => '#6B7280',
+        'usage_count' => 50,
+    ]);
+
+    $response = $this->getJson('/api/v1/search?q=Спорт');
+
+    $response->assertSuccessful()
+        ->assertJsonPath('meta.total', 0)
+        ->assertJsonCount(2, 'meta.suggestions');
+
+    expect($response->json('meta.suggestions'))->toContain([
+        'type' => 'category',
+        'id' => $category->id,
+        'name' => 'Спорт',
+        'slug' => 'sport',
+        'color' => '#0891B2',
+    ])->toContain([
+        'type' => 'tag',
+        'id' => $tag->id,
+        'name' => 'Спорт',
+        'slug' => 'sport',
+        'color' => '#6B7280',
+    ]);
+});
+
+it('returns autocomplete suggestions for articles, categories, and tags', function () {
+    $category = Category::factory()->create(['name' => 'Спорт', 'slug' => 'sport']);
+    $tag = Tag::factory()->create(['name' => 'Спорт', 'slug' => 'sport']);
+
+    Article::factory()->create([
+        'category_id' => $category->id,
+        'title' => 'Спорт сегодня',
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $this->getJson('/api/v1/search/suggest?q=Спорт')
+        ->assertSuccessful()
+        ->assertJsonStructure([
+            'articles',
+            'categories',
+            'tags',
+        ])
+        ->assertJsonPath('categories.0.slug', 'sport')
+        ->assertJsonPath('tags.0.slug', $tag->slug);
+});
+
+it('returns highlighted excerpts for matching article content', function () {
+    $article = Article::factory()->create([
+        'full_description' => 'Первое предложение. Важный матч сегодня решит сезон. Заключение.',
+        'rss_content' => null,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $this->getJson('/api/v1/search/highlights?q=матч&article_id='.$article->id)
+        ->assertSuccessful()
+        ->assertJsonPath('excerpt', 'Важный <mark>матч</mark> сегодня решит сезон.');
 });
