@@ -120,13 +120,13 @@ class RssParserService
 
     private function extractTitle(SimpleXMLElement $item): string
     {
-        $title = (string) $item->title;
+        $title = trim((string) $item->title);
 
         if ($title === '') {
             return '';
         }
 
-        return html_entity_decode(trim($title));
+        return html_entity_decode($title);
     }
 
     private function extractLink(SimpleXMLElement $item): string
@@ -154,10 +154,10 @@ class RssParserService
     private function extractDescription(SimpleXMLElement $item): string
     {
         $description = '';
-        $namespaces = $item->getNamespaces(true);
+        $ns = $item->getNamespaces(true);
 
-        if (isset($namespaces['content'])) {
-            $content = $item->children($namespaces['content']);
+        if (isset($ns['content'])) {
+            $content = $item->children($ns['content']);
             $description = (string) $content->encoded;
         }
 
@@ -180,11 +180,11 @@ class RssParserService
             }
         }
 
-        $namespaces = $item->getNamespaces(true);
+        $ns = $item->getNamespaces(true);
 
-        if (isset($namespaces['media'])) {
-            $media = $item->children($namespaces['media']);
-            $thumbnailUrl = trim((string) ($media->thumbnail->attributes()['url'] ?? ''));
+        if (isset($ns['media'])) {
+            $media = $item->children($ns['media']);
+            $thumbnailUrl = trim((string) ($media->thumbnail['url'] ?? ''));
 
             if ($thumbnailUrl !== '') {
                 return $thumbnailUrl;
@@ -250,10 +250,9 @@ class RssParserService
 
     private function isDuplicate(string $guid, string $url): bool
     {
-        return Article::query()
-            ->where(function ($query) use ($guid, $url): void {
-                $query->where('source_guid', $guid)->orWhere('source_url', $url);
-            })
+        return Article::where(function ($q) use ($guid, $url): void {
+            $q->where('source_guid', $guid)->orWhere('source_url', $url);
+        })
             ->exists();
     }
 
@@ -278,7 +277,7 @@ class RssParserService
         $baseSlug = $slug;
         $suffix = 2;
 
-        while (Article::query()->where('slug', $slug)->exists()) {
+        while (Article::where('slug', $slug)->exists()) {
             $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }

@@ -1,3 +1,10 @@
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+web_search = "live"
+
+[sandbox_workspace_write]
+network_access = true
+
 [mcp_servers.laravel-boost]
 command = "php"
 args = ["artisan", "boost:mcp"]
