@@ -9,17 +9,37 @@ export let appState = $state({
     sidebarOpen: false,
 });
 
-export async function initApp() {
-    const [cats, tags, breaking] = await Promise.all([
-        api.getCategories(),
-        api.getTags({ limit: 30, trending: true }),
-        api.getBreaking(),
-    ]);
+let initPromise = null;
 
-    appState.categories = cats.data.data;
-    appState.trendingTags = tags.data.data;
-    appState.breakingNews = breaking.data.data;
-    appState.initialized = true;
+export async function initApp() {
+    if (appState.initialized) {
+        return;
+    }
+
+    if (initPromise) {
+        await initPromise;
+
+        return;
+    }
+
+    initPromise = (async () => {
+        const [cats, tags, breaking] = await Promise.all([
+            api.getCategories(),
+            api.getTags({ limit: 30, trending: true }),
+            api.getBreaking(),
+        ]);
+
+        appState.categories = cats.data.data;
+        appState.trendingTags = tags.data.data;
+        appState.breakingNews = breaking.data.data;
+        appState.initialized = true;
+    })();
+
+    try {
+        await initPromise;
+    } finally {
+        initPromise = null;
+    }
 }
 
 export function toggleDarkMode() {
@@ -27,6 +47,9 @@ export function toggleDarkMode() {
 
     if (typeof document !== 'undefined') {
         document.documentElement.classList.toggle('dark', appState.darkMode);
+        document.documentElement.style.colorScheme = appState.darkMode
+            ? 'dark'
+            : 'light';
     }
 
     if (typeof localStorage !== 'undefined') {
