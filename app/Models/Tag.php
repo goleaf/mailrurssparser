@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Attla\EncodedAttributes\HasEncodedAttributes;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -22,7 +23,10 @@ class Tag extends Model
         'name',
         'slug',
         'color',
+        'description',
         'usage_count',
+        'is_trending',
+        'is_featured',
     ];
 
     /**
@@ -32,12 +36,34 @@ class Tag extends Model
     {
         return [
             'usage_count' => 'integer',
+            'is_trending' => 'boolean',
+            'is_featured' => 'boolean',
         ];
     }
 
     public function articles(): BelongsToMany
     {
         return $this->belongsToMany(Article::class);
+    }
+
+    public function scopeTrending(Builder $query): Builder
+    {
+        return $query->where('is_trending', true);
+    }
+
+    public function scopeFeatured(Builder $query): Builder
+    {
+        return $query->where('is_featured', true);
+    }
+
+    public function scopePopular(Builder $query): Builder
+    {
+        return $query->orderByDesc('usage_count');
+    }
+
+    public function incrementUsage(): void
+    {
+        $this->increment('usage_count');
     }
 
     protected static function booted(): void

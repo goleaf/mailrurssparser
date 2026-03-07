@@ -25,6 +25,7 @@ class SubCategory extends Model
         'slug',
         'description',
         'is_active',
+        'order',
     ];
 
     /**

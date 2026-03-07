@@ -26,9 +26,13 @@ class Category extends Model
         'rss_key',
         'color',
         'icon',
+        'meta_title',
+        'meta_description',
         'description',
         'order',
         'is_active',
+        'show_in_menu',
+        'articles_count_cache',
     ];
 
     /**
@@ -38,6 +42,7 @@ class Category extends Model
     {
         return [
             'is_active' => 'boolean',
+            'show_in_menu' => 'boolean',
         ];
     }
 
@@ -59,6 +64,11 @@ class Category extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true)->orderBy('order');
+    }
+
+    public function scopeInMenu(Builder $query): Builder
+    {
+        return $query->where('show_in_menu', true);
     }
 
     protected static function booted(): void

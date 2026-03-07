@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ArticleView extends Model
+class Bookmark extends Model
 {
     use HasEncodedAttributes;
 
-    /** @use HasFactory<\Database\Factories\ArticleViewFactory> */
+    /** @use HasFactory<\Database\Factories\BookmarkFactory> */
     use HasFactory;
 
     public const UPDATED_AT = null;
@@ -22,29 +22,10 @@ class ArticleView extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'article_id',
-        'ip_hash',
         'session_hash',
-        'country_code',
-        'device_type',
-        'referrer_type',
-        'referrer_domain',
-        'ip_address',
-        'session_id',
-        'user_agent',
-        'referer',
-        'viewed_at',
+        'article_id',
+        'created_at',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'viewed_at' => 'datetime',
-        ];
-    }
 
     public function article(): BelongsTo
     {

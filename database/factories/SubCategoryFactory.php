@@ -26,6 +26,7 @@ class SubCategoryFactory extends Factory
             'slug' => Str::slug($name),
             'description' => fake()->optional()->paragraph(),
             'is_active' => true,
+            'order' => fake()->numberBetween(0, 20),
         ];
     }
 }

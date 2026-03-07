@@ -26,9 +26,13 @@ class CategoryFactory extends Factory
             'rss_key' => fake()->boolean(40) ? fake()->unique()->word() : null,
             'color' => '#3B82F6',
             'icon' => fake()->boolean(20) ? fake()->randomElement(['newspaper', 'tag', 'rss']) : null,
+            'meta_title' => fake()->boolean(30) ? fake()->sentence(4, true) : null,
+            'meta_description' => fake()->boolean(30) ? fake()->sentence(8, true) : null,
             'description' => fake()->optional()->paragraph(),
             'order' => fake()->numberBetween(0, 20),
             'is_active' => true,
+            'show_in_menu' => true,
+            'articles_count_cache' => 0,
         ];
     }
 }
