@@ -11,18 +11,33 @@ use App\Models\Article;
 use App\Models\ArticleView;
 use App\Models\Category;
 use App\Models\RssFeed;
+use App\Models\RssParseLog;
 use App\Models\Tag;
-use App\Services\ArticleCacheService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
 class StatsController extends Controller
 {
-    public function overview(ArticleCacheService $cacheService): JsonResponse
+    public function overview(): JsonResponse
     {
-        $cached = $cacheService->getStatsOverview();
         $lastParse = RssFeed::query()->active()->orderByDesc('last_parsed_at')->value('last_parsed_at');
+        $topCategories = Category::query()
+            ->where('is_active', true)
+            ->withCount(['articles as article_count' => fn (Builder $query) => $query->published()])
+            ->orderByDesc('article_count')
+            ->limit(8)
+            ->get()
+            ->map(fn (Category $category): array => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'color' => $category->color,
+                'icon' => $category->icon,
+                'article_count' => $category->article_count,
+            ])
+            ->all();
 
         return response()->json([
             'articles' => [
@@ -38,20 +53,14 @@ class StatsController extends Controller
                 'this_week' => ArticleView::query()->where('viewed_at', '>=', now()->subDays(7))->count(),
                 'unique_today' => ArticleView::query()->whereDate('viewed_at', today())->distinct('ip_hash')->count('ip_hash'),
             ],
-            'top_categories' => Category::query()
-                ->active()
-                ->withCount(['articles' => fn (Builder $query) => $query->published()])
-                ->orderByDesc('articles_count')
-                ->limit(8)
-                ->get(),
+            'top_categories' => $topCategories,
             'trending_tags' => TagResource::collection(Tag::query()->orderByDesc('usage_count')->limit(20)->get())->resolve(),
-            'last_parse' => $lastParse,
+            'last_parse' => $lastParse?->toIso8601String(),
             'feeds' => [
                 'total' => RssFeed::query()->count(),
                 'active' => RssFeed::query()->active()->count(),
                 'errors' => RssFeed::query()->whereNotNull('last_error')->where('last_error', '!=', '')->count(),
             ],
-            'cached' => $cached,
         ])->header('Cache-Control', 'public, max-age=300');
     }
 
@@ -92,16 +101,22 @@ class StatsController extends Controller
         $period = $validated['period'] ?? 'week';
         $limit = (int) ($validated['limit'] ?? 10);
 
-        [$start, $previousStart] = match ($period) {
-            'today' => [today(), today()->subDay()],
-            'month' => [now()->subMonth(), now()->subMonths(2)],
-            'all' => [null, null],
-            default => [now()->subWeek(), now()->subWeeks(2)],
+        [$start, $end, $previousStart, $previousEnd] = match ($period) {
+            'today' => [today(), now(), today()->subDay(), today()],
+            'month' => [now()->subMonth(), now(), now()->subMonths(2), now()->subMonth()],
+            'all' => [null, null, null, null],
+            default => [now()->subWeek(), now(), now()->subWeeks(2), now()->subWeek()],
         };
 
         $baseQuery = ArticleView::query()
-            ->selectRaw('article_id, COUNT(*) as view_count')
-            ->when($start !== null, fn ($query) => $query->where('viewed_at', '>=', $start))
+            ->join('articles', 'articles.id', '=', 'article_views.article_id')
+            ->selectRaw('article_views.article_id, COUNT(*) as view_count')
+            ->where('articles.status', 'published')
+            ->whereNotNull('articles.published_at')
+            ->where('articles.published_at', '<=', now())
+            ->when($start !== null && $end !== null, function (Builder|QueryBuilder $query) use ($start, $end): void {
+                $query->whereBetween('article_views.viewed_at', [$start, $end]);
+            })
             ->groupBy('article_id')
             ->orderByDesc('view_count')
             ->limit($limit);
@@ -114,15 +129,15 @@ class StatsController extends Controller
             ->get()
             ->keyBy('id');
 
-        $data = $baseQuery->get()->map(function ($row) use ($articles, $period, $previousStart, $start): array {
+        $data = $baseQuery->get()->map(function ($row) use ($articles, $period, $previousStart, $previousEnd): array {
             $article = $articles->get($row->article_id);
 
             $previousCount = 0;
 
-            if ($period !== 'all' && $previousStart !== null && $start !== null) {
+            if ($period !== 'all' && $previousStart !== null && $previousEnd !== null) {
                 $previousCount = ArticleView::query()
                     ->where('article_id', $row->article_id)
-                    ->whereBetween('viewed_at', [$previousStart, $start])
+                    ->whereBetween('viewed_at', [$previousStart, $previousEnd])
                     ->count();
             }
 
@@ -161,6 +176,24 @@ class StatsController extends Controller
 
     public function feedsPerformance(): JsonResponse
     {
+        $latestStartedAt = RssParseLog::query()
+            ->selectRaw('rss_feed_id, MAX(started_at) as latest_started_at')
+            ->groupBy('rss_feed_id');
+
+        $lastLogs = RssParseLog::query()
+            ->joinSub($latestStartedAt, 'latest_logs', function ($join): void {
+                $join->on('rss_parse_logs.rss_feed_id', '=', 'latest_logs.rss_feed_id')
+                    ->on('rss_parse_logs.started_at', '=', 'latest_logs.latest_started_at');
+            })
+            ->get()
+            ->keyBy('rss_feed_id');
+
+        $averageDurations = RssParseLog::query()
+            ->selectRaw('rss_feed_id, AVG(duration_ms) as avg_duration_ms')
+            ->groupBy('rss_feed_id')
+            ->get()
+            ->keyBy('rss_feed_id');
+
         $feeds = RssFeed::query()
             ->with('category')
             ->withCount([
@@ -168,13 +201,15 @@ class StatsController extends Controller
                 'articles as today_articles_count' => fn (Builder $query) => $query->whereDate('published_at', today()),
             ])
             ->get()
-            ->map(function (RssFeed $feed): array {
-                $lastLog = $feed->parseLogs()->latest('started_at')->first();
-                $avgDuration = (int) $feed->parseLogs()->avg('duration_ms');
+            ->map(function (RssFeed $feed) use ($averageDurations, $lastLogs): array {
+                /** @var RssParseLog|null $lastLog */
+                $lastLog = $lastLogs->get($feed->id);
+                $avgDuration = (int) round((float) ($averageDurations->get($feed->id)->avg_duration_ms ?? 0));
 
                 return [
                     'id' => $feed->id,
                     'title' => $feed->title,
+                    'url' => $feed->url,
                     'category' => $feed->category?->name,
                     'total_articles' => $feed->articles_count,
                     'today_articles_count' => $feed->today_articles_count,
@@ -197,14 +232,15 @@ class StatsController extends Controller
         $total = max(1, Article::query()->published()->count());
 
         $categories = Category::query()
-            ->active()
+            ->where('is_active', true)
             ->withCount([
                 'articles',
                 'articles as published_count' => fn (Builder $query) => $query->published(),
             ])
             ->with([
-                'articles' => fn (Builder $query) => $query->published()->orderByDesc('views_count')->limit(1),
+                'articles' => fn ($query) => $query->published()->orderByDesc('views_count')->limit(1),
             ])
+            ->orderByDesc('published_count')
             ->get()
             ->map(function (Category $category) use ($total): array {
                 $topArticle = $category->articles->first();
@@ -215,6 +251,7 @@ class StatsController extends Controller
                     'slug' => $category->slug,
                     'color' => $category->color,
                     'published_count' => $category->published_count,
+                    'article_count' => $category->published_count,
                     'percentage' => round(($category->published_count / $total) * 100, 2),
                     'top_article' => $topArticle ? [
                         'id' => $topArticle->id,
