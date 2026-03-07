@@ -3,46 +3,44 @@
 namespace App\Observers;
 
 use App\Models\Article;
+use Illuminate\Support\Facades\Cache;
 
 class ArticleObserver
 {
-    /**
-     * Handle the Article "created" event.
-     */
     public function created(Article $article): void
     {
-        //
+        $this->forgetCaches();
     }
 
-    /**
-     * Handle the Article "updated" event.
-     */
     public function updated(Article $article): void
     {
-        //
+        $this->forgetCaches();
     }
 
-    /**
-     * Handle the Article "deleted" event.
-     */
     public function deleted(Article $article): void
     {
-        //
+        $this->forgetCaches();
     }
 
-    /**
-     * Handle the Article "restored" event.
-     */
     public function restored(Article $article): void
     {
-        //
+        $this->forgetCaches();
     }
 
-    /**
-     * Handle the Article "force deleted" event.
-     */
     public function forceDeleted(Article $article): void
     {
-        //
+        $this->forgetCaches();
+    }
+
+    private function forgetCaches(): void
+    {
+        Cache::forget('categories');
+        Cache::forget('breaking_news');
+        Cache::forget('featured_articles');
+        Cache::forget('stats_overview');
+
+        foreach ([10, 20, 30, 50, 100] as $limit) {
+            Cache::forget("trending_tags_{$limit}");
+        }
     }
 }

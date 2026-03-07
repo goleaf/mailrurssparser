@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Article;
+use App\Models\Category;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Console\Scheduling\Schedule;
@@ -7,6 +9,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Support\Facades\DB;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,31 +28,64 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withSchedule(function (Schedule $schedule): void {
-        // Parse all feeds every 15 minutes
-        $schedule->command('rss:parse')
+        // Parse all feeds every 15 minutes, no overlap.
+        $schedule->command('rss:parse --due')
             ->everyFifteenMinutes()
-            ->withoutOverlapping(10)
-            ->runInBackground();
+            ->withoutOverlapping(14)
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/scheduler.log'));
 
-        // Parse breaking/main news more frequently (every 5 minutes, only main category)
+        // Parse main/breaking news every 5 minutes.
         $schedule->command('rss:parse --category=main')
             ->everyFiveMinutes()
-            ->withoutOverlapping(5)
+            ->withoutOverlapping(4)
             ->runInBackground();
 
-        // Clean old soft-deleted articles every Sunday at 3am
+        // Clean old articles every Sunday at 3am.
         $schedule->command('rss:clean --days=90 --force')
-            ->weeklyOn(0, '03:00');
+            ->weeklyOn(0, '03:00')
+            ->runInBackground();
 
-        // Also add a log message for monitoring
-        $schedule->command('rss:parse')
-            ->everyFifteenMinutes()
-            ->onSuccess(function (): void {
-                \Illuminate\Support\Facades\Log::info('RSS parse completed successfully');
-            })
-            ->onFailure(function (): void {
-                \Illuminate\Support\Facades\Log::error('RSS parse failed');
+        // Rebuild search index every night at 2am.
+        $schedule->command('rss:reindex')
+            ->dailyAt('02:00')
+            ->runInBackground();
+
+        // Recalculate engagement scores hourly.
+        $schedule->call(function (): void {
+            Article::query()
+                ->published()
+                ->where('published_at', '>=', now()->subDays(30))
+                ->each(function (Article $article): void {
+                    $article->recalculateEngagementScore();
+                });
+        })->hourly()->name('recalculate-engagement')->withoutOverlapping();
+
+        // Update tag usage counts daily.
+        $schedule->call(function (): void {
+            DB::statement('
+                UPDATE tags SET usage_count = (
+                    SELECT COUNT(*) FROM article_tag WHERE tag_id = tags.id
+                )
+            ');
+        })->daily()->name('update-tag-counts');
+
+        // Update cached category article counts every 30 minutes.
+        $schedule->call(function (): void {
+            Category::query()->get()->each(function (Category $category): void {
+                $category->update([
+                    'articles_count_cache' => $category->articles()->published()->count(),
+                ]);
             });
+        })->everyThirtyMinutes()->name('update-category-counts');
+
+        // Expire breaking news after 24 hours.
+        $schedule->call(function (): void {
+            Article::query()
+                ->where('is_breaking', true)
+                ->where('published_at', '<', now()->subHours(24))
+                ->update(['is_breaking' => false]);
+        })->hourly()->name('expire-breaking-news');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

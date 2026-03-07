@@ -3,60 +3,26 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 
-class ArticleResource extends JsonResource
+class ArticleResource extends ArticleListResource
 {
     /**
-     * Transform the resource into an array.
-     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        return [
-            'id' => $this->id,
-            'id_encoded' => $this->id_encoded,
-            'title' => $this->title,
-            'slug' => $this->slug,
-            'short_description' => $this->short_description,
-            'image_url' => $this->image_url,
-            'source_url' => $this->source_url,
-            'author' => $this->author,
-            'source_name' => $this->source_name,
-            'status' => $this->status,
-            'is_featured' => $this->is_featured,
-            'is_breaking' => $this->is_breaking,
-            'views_count' => $this->views_count,
-            'reading_time' => $this->reading_time,
-            'reading_time_text' => $this->reading_time.' мин чтения',
-            'published_at' => $this->published_at?->toIso8601String(),
-            'published_at_human' => $this->published_at?->diffForHumans(),
-            'category' => [
-                'id' => $this->category->id,
-                'id_encoded' => $this->category->id_encoded,
-                'name' => $this->category->name,
-                'slug' => $this->category->slug,
-                'color' => $this->category->color,
-                'icon' => $this->category->icon,
-            ],
-            'sub_category' => $this->whenLoaded('subCategory', fn () => [
-                'id' => $this->subCategory->id,
-                'id_encoded' => $this->subCategory->id_encoded,
-                'name' => $this->subCategory->name,
-                'slug' => $this->subCategory->slug,
-            ]),
-            'tags' => $this->whenLoaded('tags', fn () => $this->tags->map(fn ($tag) => [
-                'id' => $tag->id,
-                'id_encoded' => $tag->id_encoded,
-                'name' => $tag->name,
-                'slug' => $tag->slug,
-                'color' => $tag->color,
-            ])),
-            'full_description' => $this->when(
-                $request->routeIs('api.articles.show'),
-                $this->full_description ?? $this->rss_content,
+        return array_merge(parent::toArray($request), [
+            'full_content' => $this->when(
+                $request->routeIs('api.v1.articles.show'),
+                fn (): string => (string) ($this->full_description ?? $this->rss_content),
             ),
-        ];
+            'meta_title' => $this->when($request->routeIs('api.v1.articles.show'), $this->meta_title),
+            'meta_description' => $this->when($request->routeIs('api.v1.articles.show'), $this->meta_description),
+            'structured_data' => $this->when($request->routeIs('api.v1.articles.show'), $this->structured_data ?? $this->generateStructuredData()),
+            'related_ids' => $this->when(
+                $request->routeIs('api.v1.articles.show'),
+                fn (): array => $this->related_ids ?? [],
+            ),
+        ]);
     }
 }

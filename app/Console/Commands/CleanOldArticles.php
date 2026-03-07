@@ -5,57 +5,87 @@ namespace App\Console\Commands;
 use App\Models\Article;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\Console\Command\Command as SymfonyCommand;
 
 class CleanOldArticles extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'rss:clean {--days=90 : Delete archived articles older than N days} {--dry-run : Show count without deleting} {--force : Skip confirmation prompt}';
+    protected $signature = 'rss:clean
+        {--days=90}
+        {--status=archived : which status to clean}
+        {--dry-run}
+        {--force}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Remove old archived articles from the database';
+    protected $description = 'Permanently remove old soft-deleted or archived articles';
 
-    /**
-     * Execute the console command.
-     */
     public function handle(): int
     {
-        $days = (int) $this->option('days');
+        $days = max(1, (int) $this->option('days'));
+        $status = (string) $this->option('status');
         $cutoff = now()->subDays($days);
 
-        $query = Article::onlyTrashed()
-            ->where('deleted_at', '<', $cutoff)
-            ->orWhere(function (Builder $query) use ($cutoff): void {
-                $query->whereNull('deleted_at')
-                    ->where('status', 'archived')
-                    ->where('published_at', '<', $cutoff);
+        $query = Article::withTrashed()
+            ->where(function (Builder $query) use ($cutoff, $status): void {
+                $query->where(function (Builder $query) use ($cutoff): void {
+                    $query->whereNotNull('deleted_at')
+                        ->where('deleted_at', '<', $cutoff);
+                })->orWhere(function (Builder $query) use ($cutoff, $status): void {
+                    $query->where('status', $status)
+                        ->where('published_at', '<', $cutoff);
+                });
             });
 
-        $count = $query->count();
+        $count = (clone $query)->count();
 
         $this->info("Found {$count} articles to clean (older than {$days} days)");
 
         if ($this->option('dry-run')) {
+            $preview = (clone $query)
+                ->orderBy('published_at')
+                ->limit(10)
+                ->get(['id', 'title', 'status', 'published_at', 'deleted_at']);
+
+            $this->table(
+                ['ID', 'Title', 'Status', 'Published', 'Deleted'],
+                $preview->map(function (Article $article): array {
+                    return [
+                        $article->id,
+                        $article->title,
+                        $article->status,
+                        $article->published_at?->format('Y-m-d H:i'),
+                        $article->deleted_at?->format('Y-m-d H:i'),
+                    ];
+                })->all(),
+            );
+
             return SymfonyCommand::SUCCESS;
         }
 
-        if (! $this->option('force')) {
-            if (! $this->confirm("Delete {$count} articles permanently?")) {
-                return SymfonyCommand::SUCCESS;
-            }
+        if ($count === 0) {
+            return SymfonyCommand::SUCCESS;
         }
 
-        $query->orderBy('id')->chunkById(100, function ($articles): void {
-            $articles->each->forceDelete();
-        });
+        if (! $this->option('force') && ! $this->confirm("Delete {$count} articles permanently?")) {
+            return SymfonyCommand::SUCCESS;
+        }
+
+        $bar = $this->output->createProgressBar($count);
+        $bar->start();
+
+        (clone $query)
+            ->orderBy('id')
+            ->chunkById(500, function (Collection $articles) use ($bar): void {
+                $articles->each(function (Article $article) use ($bar): void {
+                    $article->forceDelete();
+                    $bar->advance();
+                });
+            });
+
+        $bar->finish();
+        $this->newLine(2);
+
+        Artisan::call('scout:flush', ['model' => Article::class]);
 
         $this->info("✅ Deleted {$count} articles");
 

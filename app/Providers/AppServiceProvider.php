@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Article;
+use App\Observers\ArticleObserver;
 use App\Services\PincrypFactory;
 use Attla\Pincryp\Config as PincrypConfig;
 use Carbon\CarbonImmutable;
@@ -30,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        Article::observe(ArticleObserver::class);
     }
 
     /**

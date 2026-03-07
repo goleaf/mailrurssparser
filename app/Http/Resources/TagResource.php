@@ -8,12 +8,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class TagResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'color' => $this->color,
+            'usage_count' => $this->usage_count,
+            'is_trending' => $this->is_trending,
+            'is_featured' => $this->is_featured,
+        ];
     }
 }
