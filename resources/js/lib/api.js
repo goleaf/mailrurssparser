@@ -140,6 +140,14 @@ export const suggestSearch = (query) =>
         },
     });
 
+export const searchHighlights = (query, articleId) =>
+    request(`${API_PREFIX}/search/highlights`, {
+        params: {
+            q: query,
+            article_id: articleId,
+        },
+    });
+
 export const getStats = () => request(`${API_PREFIX}/stats/overview`);
 
 export const getPopular = (params = {}) =>
