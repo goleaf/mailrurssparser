@@ -60,12 +60,25 @@ it('returns overview analytics with top categories and tags', function () {
 });
 
 it('returns chart data grouped for the requested period', function () {
+    $politics = Category::factory()->create([
+        'name' => 'Politics',
+        'slug' => 'politics',
+        'color' => '#DC2626',
+    ]);
+    $sport = Category::factory()->create([
+        'name' => 'Sport',
+        'slug' => 'sport',
+        'color' => '#0891B2',
+    ]);
+
     Article::factory()->create([
+        'category_id' => $politics->id,
         'status' => 'published',
         'published_at' => Carbon::parse('2026-03-05 10:00:00'),
         'shares_count' => 2,
     ]);
     Article::factory()->create([
+        'category_id' => $sport->id,
         'status' => 'published',
         'published_at' => Carbon::parse('2026-03-06 10:00:00'),
         'shares_count' => 3,
@@ -78,6 +91,9 @@ it('returns chart data grouped for the requested period', function () {
             'labels',
             'data',
             'period',
+            'series' => [
+                '*' => ['id', 'name', 'color', 'data'],
+            ],
         ]);
 });
 
@@ -87,6 +103,8 @@ it('returns popular articles with change percentages', function () {
         'category_id' => $category->id,
         'status' => 'published',
         'published_at' => now()->subDays(2),
+        'shares_count' => 7,
+        'bookmarks_count' => 4,
     ]);
 
     ArticleView::factory()->count(3)->create([
@@ -104,9 +122,11 @@ it('returns popular articles with change percentages', function () {
         ->assertJsonPath('data.0.article_id', $article->id)
         ->assertJsonPath('data.0.category', 'News')
         ->assertJsonPath('data.0.view_count', 5)
+        ->assertJsonPath('data.0.shares_count', 7)
+        ->assertJsonPath('data.0.bookmarks_count', 4)
         ->assertJsonStructure([
             'data' => [
-                '*' => ['article_id', 'title', 'slug', 'category', 'view_count', 'change_percent'],
+                '*' => ['article_id', 'title', 'slug', 'category', 'view_count', 'shares_count', 'bookmarks_count', 'change_percent'],
             ],
         ]);
 });
