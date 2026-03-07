@@ -176,12 +176,9 @@ class Article extends Model
 
     public function incrementViews(string $ip, ?string $sessionId = null): void
     {
-        $threshold = now()->subHour();
-
-        $hasRecentView = ArticleView::query()
-            ->where('article_id', $this->id)
+        $hasRecentView = ArticleView::where('article_id', $this->id)
             ->where('ip_address', $ip)
-            ->where('viewed_at', '>=', $threshold)
+            ->where('viewed_at', '>=', now()->subHour())
             ->exists();
 
         if ($hasRecentView) {
