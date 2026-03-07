@@ -63,6 +63,9 @@ it('builds the article show resource payload', function () {
     $article->forceFill(['reading_time' => 5])->saveQuietly();
     $article->refresh();
     $article->setAttribute('related_ids', [10, 20]);
+    $article->setAttribute('related_articles', [['id' => 10, 'title' => 'Related']]);
+    $article->setAttribute('similar_articles', [['id' => 30, 'title' => 'Similar']]);
+    $article->setAttribute('more_from_category', [['id' => 40, 'title' => 'Category']]);
 
     $route = Route::get('/articles/{article}', fn () => null)->name('api.articles.show');
     $request = Request::create('/articles/'.$article->id, 'GET');
@@ -83,6 +86,9 @@ it('builds the article show resource payload', function () {
         ->and($resource['meta_description'])->not->toBeNull()
         ->and($resource['structured_data'])->toBeArray()
         ->and($resource['related_ids'])->toBe([10, 20])
+        ->and($resource['related_articles'])->toBe([['id' => 10, 'title' => 'Related']])
+        ->and($resource['similar_articles'])->toBe([['id' => 30, 'title' => 'Similar']])
+        ->and($resource['more_from_category'])->toBe([['id' => 40, 'title' => 'Category']])
         ->and($resource['published_at'])->not->toBeNull()
         ->and($resource['published_at_human'])->not->toBeNull()
         ->and($resource['published_at_date'])->not->toBeNull()
@@ -106,7 +112,10 @@ it('builds the article list resource without show-only fields', function () {
         ->not->toHaveKey('meta_title')
         ->not->toHaveKey('meta_description')
         ->not->toHaveKey('structured_data')
-        ->not->toHaveKey('related_ids');
+        ->not->toHaveKey('related_ids')
+        ->not->toHaveKey('related_articles')
+        ->not->toHaveKey('similar_articles')
+        ->not->toHaveKey('more_from_category');
 });
 
 it('builds the category resource payload', function () {

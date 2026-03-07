@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssFeed;
 use App\Services\RssParserService;
 use BackedEnum;
@@ -16,7 +17,7 @@ class ManageRssFeeds extends Page
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rss';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Контент';
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Ingestion;
 
     protected static ?int $navigationSort = 5;
 

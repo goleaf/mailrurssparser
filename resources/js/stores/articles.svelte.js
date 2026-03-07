@@ -52,7 +52,7 @@ function toApiParams(f) {
     return {
         category: f.category,
         sub: f.sub,
-        tags: f.tags.join(','),
+        tags: f.tags,
         content_type: f.content_type,
         date: f.date,
         date_from: f.date_from,

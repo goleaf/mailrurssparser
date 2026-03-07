@@ -9,6 +9,7 @@
     import X from 'lucide-svelte/icons/x';
     import SearchModal from '@/components/SearchModal.svelte';
     import { cn } from '@/lib/utils';
+    import { resetFilters } from '@/stores/articles.svelte.js';
     import { appState, initApp, toggleDarkMode, toggleSidebar } from '@/stores/app.svelte.js';
     import { bookmarkIds, loadBookmarks } from '@/stores/bookmarks.svelte.js';
 
@@ -36,6 +37,12 @@
 
     function isCategoryActive(slug: string): boolean {
         return currentHash.startsWith(`#/category/${slug}`);
+    }
+
+    function goHome(): void {
+        resetFilters();
+        appState.sidebarOpen = false;
+        moreMenuOpen = false;
     }
 
     $effect(() => {
@@ -92,6 +99,7 @@
     <div class="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 lg:px-6">
         <a
             href="/#/"
+            onclick={goHome}
             class="group flex shrink-0 items-center gap-3 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-slate-900 transition hover:border-sky-300 hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-slate-50 dark:hover:border-sky-800 dark:hover:bg-sky-950"
         >
             <span
@@ -110,6 +118,7 @@
         <nav class="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
             <a
                 href="/#/"
+                onclick={goHome}
                 class={cn(
                     'rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white',
                     currentHash === '#/' &&
@@ -330,6 +339,7 @@
                 <div class="space-y-2">
                     <a
                         href="/#/"
+                        onclick={goHome}
                         class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5"
                     >
                         <span class="size-2 rounded-full bg-slate-400"></span>

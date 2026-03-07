@@ -25,6 +25,18 @@ class ArticleResource extends ArticleListResource
                 $isShowRoute,
                 fn (): array => $this->related_ids ?? [],
             ),
+            'related_articles' => $this->when(
+                $isShowRoute,
+                fn (): array => $this->related_articles ?? [],
+            ),
+            'similar_articles' => $this->when(
+                $isShowRoute,
+                fn (): array => $this->similar_articles ?? [],
+            ),
+            'more_from_category' => $this->when(
+                $isShowRoute,
+                fn (): array => $this->more_from_category ?? [],
+            ),
         ]);
     }
 }

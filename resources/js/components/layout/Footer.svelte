@@ -143,35 +143,35 @@
                     href="/#/about"
                     class="flex items-center justify-between rounded-2xl border border-white/6 bg-white/4 px-4 py-3 text-sm transition hover:border-white/12 hover:bg-white/8"
                 >
-                    <span>About</span>
+                    <span>О проекте</span>
                     <ArrowUpRight class="size-4 text-slate-400" />
                 </a>
                 <a
                     href="/#/contact"
                     class="flex items-center justify-between rounded-2xl border border-white/6 bg-white/4 px-4 py-3 text-sm transition hover:border-white/12 hover:bg-white/8"
                 >
-                    <span>Contact</span>
+                    <span>Контакты</span>
                     <ArrowUpRight class="size-4 text-slate-400" />
                 </a>
                 <a
                     href="/#/privacy"
                     class="flex items-center justify-between rounded-2xl border border-white/6 bg-white/4 px-4 py-3 text-sm transition hover:border-white/12 hover:bg-white/8"
                 >
-                    <span>Privacy Policy</span>
+                    <span>Политика данных</span>
                     <ArrowUpRight class="size-4 text-slate-400" />
                 </a>
                 <a
                     href="/rss.xml"
                     class="flex items-center justify-between rounded-2xl border border-white/6 bg-white/4 px-4 py-3 text-sm transition hover:border-white/12 hover:bg-white/8"
                 >
-                    <span>RSS Feed</span>
+                    <span>RSS-лента</span>
                     <ArrowUpRight class="size-4 text-slate-400" />
                 </a>
                 <a
                     href="/sitemap.xml"
                     class="flex items-center justify-between rounded-2xl border border-white/6 bg-white/4 px-4 py-3 text-sm transition hover:border-white/12 hover:bg-white/8"
                 >
-                    <span>Sitemap</span>
+                    <span>Карта сайта</span>
                     <ArrowUpRight class="size-4 text-slate-400" />
                 </a>
             </section>

@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\Articles\ArticleResource;
+use App\Filament\Support\AdminNavigationGroup;
 use App\Filament\Widgets\FeedStatusWidget;
 use App\Filament\Widgets\LatestArticlesWidget;
 use App\Filament\Widgets\ParseLogsWidget;
@@ -35,6 +37,22 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
+            ->resources([
+                ArticleResource::make('moderation')
+                    ->navigationLabel('Очередь модерации')
+                    ->navigationGroup(AdminNavigationGroup::Editorial)
+                    ->navigationSort(2)
+                    ->pluralModelLabel('материалы на модерации')
+                    ->slug('moderation-queue')
+                    ->status('pending'),
+                ArticleResource::make('published')
+                    ->navigationLabel('Опубликованные статьи')
+                    ->navigationGroup(AdminNavigationGroup::Editorial)
+                    ->navigationSort(3)
+                    ->pluralModelLabel('опубликованные статьи')
+                    ->slug('published-articles')
+                    ->status('published'),
+            ])
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,

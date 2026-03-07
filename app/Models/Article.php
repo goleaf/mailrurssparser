@@ -118,6 +118,22 @@ class Article extends Model
         return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 
+    public function relatedArticles(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'article_related_articles', 'article_id', 'related_article_id')
+            ->withPivot([
+                'score',
+                'shared_tags_count',
+                'shared_terms_count',
+                'same_category',
+                'same_sub_category',
+                'same_content_type',
+                'same_author',
+                'same_source',
+            ])
+            ->withTimestamps();
+    }
+
     public function views(): HasMany
     {
         return $this->hasMany(ArticleView::class);

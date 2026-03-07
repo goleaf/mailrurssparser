@@ -4,6 +4,7 @@
     import { appState, initApp } from '@/stores/app.svelte.js';
     import {
         filters,
+        resetFilters,
         setCategory,
         setSubCategory,
     } from '@/stores/articles.svelte.js';
@@ -63,7 +64,7 @@
                     : 'border-transparent text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5',
             )}
             onclick={() => {
-                setCategory(null);
+                resetFilters();
             }}
         >
             <span class="flex items-center gap-3">

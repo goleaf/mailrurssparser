@@ -28,6 +28,7 @@ class ArticleForm
         return $schema
             ->components([
                 Tabs::make('article-tabs')
+                    ->key('article-editor-tabs')
                     ->persistTabInQueryString('article-tab')
                     ->columnSpanFull()
                     ->tabs([
@@ -156,6 +157,9 @@ class ArticleForm
     private static function classificationTab(): Tab
     {
         return Tab::make('Теги и Классификация')
+            ->badge(fn (?Article $record, Get $get): int => self::resolveTagBadgeCount($record, $get('tags')))
+            ->badgeColor(fn (?Article $record, Get $get): string => self::resolveTagBadgeCount($record, $get('tags')) > 0 ? 'success' : 'gray')
+            ->deferBadge(fn (?Article $record): bool => $record !== null)
             ->schema([
                 Select::make('tags')
                     ->relationship('tags', 'name')
@@ -306,5 +310,17 @@ class ArticleForm
             9 => '9',
             10 => '10 — максимум',
         ];
+    }
+
+    /**
+     * @param  mixed  $tagsState
+     */
+    private static function resolveTagBadgeCount(?Article $record, mixed $tagsState): int
+    {
+        if (is_array($tagsState)) {
+            return count(array_filter($tagsState, fn (mixed $tag): bool => filled($tag)));
+        }
+
+        return $record?->tags()->count() ?? 0;
     }
 }

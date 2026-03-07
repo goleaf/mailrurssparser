@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Articles\Tables;
 
 use App\Models\Article;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -12,8 +13,11 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\ColumnManagerLayout;
+use Filament\Tables\Enums\ColumnManagerResetActionPosition;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -30,12 +34,15 @@ class ArticlesTable
             ->columns([
                 TextColumn::make('title')
                     ->searchable()
+                    ->toggleable()
                     ->limit(55),
                 TextColumn::make('category.name')
                     ->badge()
+                    ->toggleable()
                     ->color(fn (Article $record): array|string => filled($record->category?->color) ? Color::generatePalette($record->category->color) : 'gray'),
                 TextColumn::make('content_type')
                     ->badge()
+                    ->toggleable()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'news' => 'Новости',
                         'article' => 'Статья',
@@ -53,6 +60,7 @@ class ArticlesTable
                     }),
                 TextColumn::make('status')
                     ->badge()
+                    ->toggleable()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'draft' => 'Черновик',
                         'pending' => 'На модерации',
@@ -69,15 +77,19 @@ class ArticlesTable
                     }),
                 IconColumn::make('is_featured')
                     ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Реком.'),
                 IconColumn::make('is_breaking')
                     ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Срочн.'),
                 IconColumn::make('is_pinned')
                     ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Закреп.'),
                 TextColumn::make('importance')
                     ->badge()
+                    ->toggleable()
                     ->color(fn (int $state): string => match (true) {
                         $state >= 9 => 'danger',
                         $state >= 7 => 'warning',
@@ -86,9 +98,11 @@ class ArticlesTable
                     }),
                 TextColumn::make('views_count')
                     ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->numeric(),
                 TextColumn::make('published_at')
                     ->dateTime()
+                    ->toggleable()
                     ->sortable(),
             ])
             ->filters([
@@ -164,6 +178,19 @@ class ArticlesTable
                 TrashedFilter::make(),
             ])
             ->defaultSort('published_at', 'desc')
+            ->reorderableColumns()
+            ->columnManagerLayout(ColumnManagerLayout::Modal)
+            ->columnManagerColumns(2)
+            ->columnManagerResetActionPosition(ColumnManagerResetActionPosition::Footer)
+            ->columnManagerTriggerAction(
+                fn (Action $action): Action => $action
+                    ->button()
+                    ->label('Вид таблицы')
+                    ->icon(Heroicon::AdjustmentsHorizontal)
+                    ->modalHeading('Вид таблицы статей')
+                    ->modalDescription('Скрывайте и переставляйте колонки без перезагрузки страницы.')
+                    ->slideOver(),
+            )
             ->recordActions([
                 EditAction::make(),
             ])

@@ -3,32 +3,40 @@
 namespace App\Observers;
 
 use App\Models\Article;
+use App\Services\RelatedArticlesService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Cache;
 
-class ArticleObserver
+class ArticleObserver implements ShouldHandleEventsAfterCommit
 {
     public function created(Article $article): void
     {
-        $this->forgetCaches();
+        $this->resetContentIndexes($article);
     }
 
     public function updated(Article $article): void
     {
-        $this->forgetCaches();
+        $this->resetContentIndexes($article);
     }
 
     public function deleted(Article $article): void
     {
-        $this->forgetCaches();
+        $this->resetContentIndexes($article);
     }
 
     public function restored(Article $article): void
     {
-        $this->forgetCaches();
+        $this->resetContentIndexes($article);
     }
 
     public function forceDeleted(Article $article): void
     {
+        $this->resetContentIndexes($article);
+    }
+
+    private function resetContentIndexes(Article $article): void
+    {
+        app(RelatedArticlesService::class)->forgetForArticle($article);
         $this->forgetCaches();
     }
 

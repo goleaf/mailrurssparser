@@ -10,8 +10,11 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Enums\ColumnManagerLayout;
+use Filament\Tables\Enums\ColumnManagerResetActionPosition;
 use Filament\Tables\Table;
 
 class RssFeedsTable
@@ -21,27 +24,46 @@ class RssFeedsTable
         return $table
             ->columns([
                 TextColumn::make('title')
+                    ->toggleable()
                     ->searchable(),
                 TextColumn::make('category.name')
+                    ->toggleable()
                     ->badge(),
-                ToggleColumn::make('is_active'),
+                ToggleColumn::make('is_active')
+                    ->toggleable(),
                 TextColumn::make('last_parsed_at')
+                    ->toggleable()
                     ->since(),
                 TextColumn::make('last_run_new_count')
                     ->badge()
+                    ->toggleable()
                     ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'success' : 'gray'),
                 TextColumn::make('articles_parsed_total')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->numeric(),
                 TextColumn::make('consecutive_failures')
                     ->badge()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'danger' : 'gray'),
                 TextColumn::make('last_error')
                     ->limit(30)
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->color(fn (?string $state): string => filled($state) ? 'danger' : 'gray'),
             ])
             ->filters([
                 //
             ])
+            ->reorderableColumns()
+            ->columnManagerLayout(ColumnManagerLayout::Modal)
+            ->columnManagerColumns(2)
+            ->columnManagerResetActionPosition(ColumnManagerResetActionPosition::Footer)
+            ->columnManagerTriggerAction(
+                fn (Action $action): Action => $action
+                    ->button()
+                    ->label('Вид таблицы')
+                    ->icon(Heroicon::AdjustmentsHorizontal)
+                    ->modalHeading('Вид таблицы RSS-лент'),
+            )
             ->recordActions([
                 Action::make('parseNow')
                     ->label('Parse Now')

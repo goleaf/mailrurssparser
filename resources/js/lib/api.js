@@ -113,6 +113,8 @@ export const getFeatured = () => request(`${API_PREFIX}/articles/featured`);
 
 export const getBreaking = () => request(`${API_PREFIX}/articles/breaking`);
 
+export const getTrending = () => request(`${API_PREFIX}/articles/trending`);
+
 export const getCategories = (params = {}) =>
     request(`${API_PREFIX}/categories`, { params });
 

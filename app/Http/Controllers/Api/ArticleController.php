@@ -5,15 +5,21 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ArticleIndexRequest;
 use App\Http\Resources\ArticleCollection;
+use App\Http\Resources\ArticleListResource;
 use App\Http\Resources\ArticleResource;
 use App\Models\Article;
 use App\Models\Category;
+use App\Services\RelatedArticlesService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ArticleController extends Controller
 {
+    public function __construct(
+        private readonly RelatedArticlesService $relatedArticles,
+    ) {}
+
     public function index(ArticleIndexRequest $request): ArticleCollection
     {
         $validated = $request->validated();
@@ -51,14 +57,31 @@ class ArticleController extends Controller
             ],
         );
 
+        $related = $this->relatedArticles->getRelated($article, 8);
+        $primaryRelated = $related
+            ->filter(fn (Article $item): bool => (bool) ($item->pivot?->same_category || $item->pivot?->same_sub_category))
+            ->take(4)
+            ->values();
+
+        if ($primaryRelated->isEmpty()) {
+            $primaryRelated = $related->take(4)->values();
+        }
+
+        $similar = $this->relatedArticles->getSimilar($article, 5, $primaryRelated->modelKeys());
+        $excludedIds = array_values(array_unique([
+            $article->getKey(),
+            ...$primaryRelated->modelKeys(),
+            ...$similar->modelKeys(),
+        ]));
+        $moreFromCategory = $this->relatedArticles->getMoreFromCategory($article, 3, $excludedIds);
+
         $article->setAttribute(
             'related_ids',
-            Article::query()
-                ->published()
-                ->relatedTo($article, 6)
-                ->pluck('id')
-                ->all(),
+            $related->modelKeys(),
         );
+        $article->setAttribute('related_articles', ArticleListResource::collection($primaryRelated)->resolve());
+        $article->setAttribute('similar_articles', ArticleListResource::collection($similar)->resolve());
+        $article->setAttribute('more_from_category', ArticleListResource::collection($moreFromCategory)->resolve());
 
         return ArticleResource::make($article);
     }
@@ -108,13 +131,7 @@ class ArticleController extends Controller
     {
         $article = Article::query()->published()->where('slug', $slug)->firstOrFail();
 
-        return new ArticleCollection(
-            Article::query()
-                ->published()
-                ->relatedTo($article, 6)
-                ->with(['category', 'tags'])
-                ->get(),
-        );
+        return new ArticleCollection($this->relatedArticles->getRelated($article, 6));
     }
 
     public function trending(): ArticleCollection
@@ -131,27 +148,9 @@ class ArticleController extends Controller
 
     public function similar(string $slug): ArticleCollection
     {
-        $article = Article::query()->published()->with('tags')->where('slug', $slug)->firstOrFail();
-        $tagIds = $article->tags->pluck('id');
+        $article = Article::query()->published()->where('slug', $slug)->firstOrFail();
 
-        if ($tagIds->isEmpty()) {
-            return new ArticleCollection(collect());
-        }
-
-        $query = Article::query()
-            ->published()
-            ->with(['category', 'tags'])
-            ->whereKeyNot($article->id)
-            ->when($tagIds->isNotEmpty(), function (Builder $query) use ($tagIds): void {
-                $query->whereHas('tags', function (Builder $query) use ($tagIds): void {
-                    $query->whereIn('tags.id', $tagIds);
-                });
-            })
-            ->orderByRaw('CASE WHEN category_id = ? THEN 0 ELSE 1 END', [$article->category_id])
-            ->orderByDesc('published_at')
-            ->limit(5);
-
-        return new ArticleCollection($query->get());
+        return new ArticleCollection($this->relatedArticles->getSimilar($article, 5));
     }
 
     /**

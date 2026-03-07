@@ -56,6 +56,9 @@
         category: Category;
         tags?: Tag[];
         rss_feed?: RssFeed | null;
+        related_articles?: Article[];
+        similar_articles?: Article[];
+        more_from_category?: Article[];
     };
 
     const sharePlatforms = [
@@ -109,13 +112,13 @@
 
     const contentTypeLabel = $derived(
         article?.content_type
-            ? {
+            ? ({
                   news: 'Новость',
                   article: 'Статья',
                   opinion: 'Мнение',
                   analysis: 'Аналитика',
                   interview: 'Интервью',
-              }[article.content_type] ?? ''
+              }[article.content_type] ?? '')
             : '',
     );
 
@@ -198,13 +201,18 @@
 
         try {
             const articleResponse = await api.getArticle(slug);
-            const nextArticle = articleResponse.data?.data as Article | undefined;
+            const nextArticle = articleResponse.data?.data as
+                | Article
+                | undefined;
 
             if (!nextArticle) {
                 throw new Error('Article payload missing');
             }
 
             article = nextArticle;
+            related = nextArticle.related_articles ?? [];
+            similar = nextArticle.similar_articles ?? [];
+            moreFromCategory = nextArticle.more_from_category ?? [];
 
             if (typeof document !== 'undefined') {
                 document.title = nextArticle.title;
@@ -213,31 +221,6 @@
                         nextArticle.short_description ||
                         '',
                 );
-            }
-
-            const [relatedResponse, similarResponse, categoryResponse] =
-                await Promise.allSettled([
-                    api.getRelated(slug),
-                    api.getSimilar(slug),
-                    nextArticle.category?.slug
-                        ? api.getCategoryArticles(nextArticle.category.slug, {
-                              per_page: 4,
-                          })
-                        : Promise.resolve({ data: { data: [] } }),
-                ]);
-
-            if (relatedResponse.status === 'fulfilled') {
-                related = relatedResponse.value.data?.data ?? [];
-            }
-
-            if (similarResponse.status === 'fulfilled') {
-                similar = similarResponse.value.data?.data ?? [];
-            }
-
-            if (categoryResponse.status === 'fulfilled') {
-                moreFromCategory = (categoryResponse.value.data?.data ?? [])
-                    .filter((item: Article) => item.id !== nextArticle.id)
-                    .slice(0, 3);
             }
         } catch (loadError) {
             if (
@@ -257,7 +240,9 @@
         }
     }
 
-    async function share(platform: (typeof sharePlatforms)[number]['key']): Promise<void> {
+    async function share(
+        platform: (typeof sharePlatforms)[number]['key'],
+    ): Promise<void> {
         if (!article) {
             return;
         }
@@ -299,7 +284,9 @@
             return;
         }
 
-        window.addEventListener('scroll', updateReadProgress, { passive: true });
+        window.addEventListener('scroll', updateReadProgress, {
+            passive: true,
+        });
 
         return () => {
             window.removeEventListener('scroll', updateReadProgress);
@@ -337,8 +324,12 @@
     <meta name="description" content={metaDescription} />
 </AppHead>
 
-<div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-neutral-950 dark:text-white">
-    <div class="fixed left-0 right-0 top-0 z-50 h-1 bg-slate-200/60 dark:bg-white/10">
+<div
+    class="min-h-screen bg-slate-50 text-slate-900 dark:bg-neutral-950 dark:text-white"
+>
+    <div
+        class="fixed left-0 right-0 top-0 z-50 h-1 bg-slate-200/60 dark:bg-white/10"
+    >
         <div
             class="h-full bg-linear-to-r from-sky-500 via-cyan-400 to-blue-600 transition-[width] duration-150"
             style={`width: ${readProgress}%`}
@@ -346,7 +337,9 @@
     </div>
 
     {#if toastMessage}
-        <div class="fixed bottom-6 right-6 z-50 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-xl dark:bg-white dark:text-slate-950">
+        <div
+            class="fixed bottom-6 right-6 z-50 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-xl dark:bg-white dark:text-slate-950"
+        >
             {toastMessage}
         </div>
     {/if}
@@ -354,16 +347,26 @@
     {#if loading}
         <div class="mx-auto max-w-6xl px-4 py-20 lg:px-6">
             <div class="space-y-6">
-                <div class="h-5 w-48 animate-pulse rounded-full bg-slate-200 dark:bg-white/10"></div>
-                <div class="h-14 w-3/4 animate-pulse rounded-3xl bg-slate-200 dark:bg-white/10"></div>
-                <div class="h-96 animate-pulse rounded-[2rem] bg-slate-200 dark:bg-white/10"></div>
-                <div class="h-56 animate-pulse rounded-[2rem] bg-slate-200 dark:bg-white/10"></div>
+                <div
+                    class="h-5 w-48 animate-pulse rounded-full bg-slate-200 dark:bg-white/10"
+                ></div>
+                <div
+                    class="h-14 w-3/4 animate-pulse rounded-3xl bg-slate-200 dark:bg-white/10"
+                ></div>
+                <div
+                    class="h-96 animate-pulse rounded-[2rem] bg-slate-200 dark:bg-white/10"
+                ></div>
+                <div
+                    class="h-56 animate-pulse rounded-[2rem] bg-slate-200 dark:bg-white/10"
+                ></div>
             </div>
         </div>
     {:else if error === 'not_found'}
         <div class="mx-auto max-w-3xl px-4 py-24 text-center lg:px-6">
             <div class="text-7xl">📰</div>
-            <h1 class="mt-6 text-3xl font-semibold text-slate-900 dark:text-white">
+            <h1
+                class="mt-6 text-3xl font-semibold text-slate-900 dark:text-white"
+            >
                 Статья не найдена
             </h1>
             <p class="mt-3 text-slate-500 dark:text-slate-400">
@@ -386,8 +389,13 @@
     {:else if article}
         <article class="mx-auto max-w-6xl px-4 py-10 lg:px-6 lg:py-14">
             <header class="mx-auto max-w-4xl">
-                <nav class="mb-5 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                    <a href="/#/" class="transition hover:text-slate-900 dark:hover:text-white">
+                <nav
+                    class="mb-5 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400"
+                >
+                    <a
+                        href="/#/"
+                        class="transition hover:text-slate-900 dark:hover:text-white"
+                    >
                         Главная
                     </a>
                     <span>→</span>
@@ -398,37 +406,50 @@
                         {article.category.name}
                     </a>
                     <span>→</span>
-                    <span class="line-clamp-1 text-slate-700 dark:text-slate-200">
+                    <span
+                        class="line-clamp-1 text-slate-700 dark:text-slate-200"
+                    >
                         {article.title}
                     </span>
                 </nav>
 
                 <div class="mb-5 flex flex-wrap items-center gap-3">
                     {#if contentTypeLabel}
-                        <span class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white dark:bg-white dark:text-slate-950">
+                        <span
+                            class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white dark:bg-white dark:text-slate-950"
+                        >
                             {contentTypeLabel}
                         </span>
                     {/if}
 
                     {#if article.is_breaking}
-                        <span class="rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white">
+                        <span
+                            class="rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white"
+                        >
                             СРОЧНО
                         </span>
                     {/if}
                 </div>
 
-                <h1 class="max-w-4xl text-3xl leading-tight font-bold text-slate-950 sm:text-4xl lg:text-5xl dark:text-white">
+                <h1
+                    class="max-w-4xl text-3xl leading-tight font-bold text-slate-950 text-shadow-2xs text-shadow-slate-200/70 sm:text-4xl lg:text-5xl dark:text-white dark:text-shadow-slate-950/70"
+                >
                     {article.title}
                 </h1>
 
-                <div class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
+                <div
+                    class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500 dark:text-slate-400"
+                >
                     <span>{publishedDate || article.published_at_date}</span>
                     <span>•</span>
                     <span>{article.author || 'Редакция'}</span>
                     <span>•</span>
                     <span>{article.source_name || 'Источник'}</span>
                     <span>•</span>
-                    <span>{article.reading_time_text || `${article.reading_time ?? 1} мин чтения`}</span>
+                    <span
+                        >{article.reading_time_text ||
+                            `${article.reading_time ?? 1} мин чтения`}</span
+                    >
                     <span>•</span>
                     <span>👁 {article.views_count ?? 0}</span>
                 </div>
@@ -450,14 +471,18 @@
 
             <div class="mx-auto mt-10 max-w-5xl">
                 {#if article.image_url}
-                    <figure class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <figure
+                        class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5"
+                    >
                         <img
                             src={article.image_url}
                             alt={article.title}
                             class="max-h-[32rem] w-full object-cover"
                         />
                         {#if article.image_caption}
-                            <figcaption class="border-t border-slate-200 px-5 py-4 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
+                            <figcaption
+                                class="border-t border-slate-200 px-5 py-4 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400"
+                            >
                                 {article.image_caption}
                             </figcaption>
                         {/if}
@@ -468,20 +493,28 @@
                         style={`background: linear-gradient(135deg, ${article.category.color ?? '#2563EB'} 0%, #0f172a 100%)`}
                     >
                         <div class="text-center">
-                            <div class="text-7xl">{article.category.icon || '📰'}</div>
-                            <div class="mt-4 text-lg font-semibold">{article.category.name}</div>
+                            <div class="text-7xl">
+                                {article.category.icon || '📰'}
+                            </div>
+                            <div class="mt-4 text-lg font-semibold">
+                                {article.category.name}
+                            </div>
                         </div>
                     </div>
                 {/if}
             </div>
 
             {#if article.short_description}
-                <div class="mx-auto mt-8 max-w-4xl rounded-[1.75rem] border-l-4 border-sky-500 bg-sky-50 p-6 text-base leading-7 text-slate-700 dark:bg-sky-950/30 dark:text-sky-100">
+                <div
+                    class="mx-auto mt-8 max-w-4xl rounded-[1.75rem] border-l-4 border-sky-500 bg-sky-50 p-6 text-base leading-7 text-slate-700 dark:bg-sky-950/30 dark:text-sky-100"
+                >
                     {article.short_description}
                 </div>
             {/if}
 
-            <div class="mx-auto mt-10 grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            <div
+                class="mx-auto mt-10 grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]"
+            >
                 <div class="min-w-0 space-y-8">
                     <div
                         class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5 lg:p-8"
@@ -504,14 +537,17 @@
                         </div>
 
                         {#if article.source_url}
-                            <div class="mt-8 border-t border-slate-200 pt-6 dark:border-white/10">
+                            <div
+                                class="mt-8 border-t border-slate-200 pt-6 dark:border-white/10"
+                            >
                                 <a
                                     href={article.source_url}
                                     target="_blank"
                                     rel="noreferrer"
                                     class="inline-flex items-center gap-2 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200"
                                 >
-                                    Читать оригинал на {article.source_name || 'источнике'} →
+                                    Читать оригинал на {article.source_name ||
+                                        'источнике'} →
                                 </a>
                             </div>
                         {/if}
@@ -520,12 +556,18 @@
                     <section
                         class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5"
                     >
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div
+                            class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+                        >
                             <div>
-                                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
+                                <div
+                                    class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300"
+                                >
                                     Поделиться
                                 </div>
-                                <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                                <div
+                                    class="mt-2 text-sm text-slate-500 dark:text-slate-400"
+                                >
                                     Поделиться:
                                 </div>
                             </div>
@@ -559,13 +601,17 @@
                                 </button>
                             {/each}
 
-                            <div class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-slate-950">
+                            <div
+                                class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-slate-950"
+                            >
                                 Shares: {article.shares_count ?? 0}
                             </div>
                         </div>
                     </section>
 
-                    <section class="flex flex-wrap items-center gap-4 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <section
+                        class="flex flex-wrap items-center gap-4 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5"
+                    >
                         <button
                             type="button"
                             class={cn(
@@ -586,8 +632,12 @@
                         </button>
                     </section>
 
-                    <footer class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5">
-                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
+                    <footer
+                        class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5"
+                    >
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300"
+                        >
                             Метаданные статьи
                         </div>
 
@@ -604,22 +654,46 @@
                             </div>
                         {/if}
 
-                        <dl class="mt-6 grid gap-4 text-sm text-slate-500 sm:grid-cols-2 dark:text-slate-400">
+                        <dl
+                            class="mt-6 grid gap-4 text-sm text-slate-500 sm:grid-cols-2 dark:text-slate-400"
+                        >
                             <div>
-                                <dt class="font-medium text-slate-900 dark:text-white">Опубликовано</dt>
-                                <dd class="mt-1">{publishedDate || article.published_at_date}</dd>
+                                <dt
+                                    class="font-medium text-slate-900 dark:text-white"
+                                >
+                                    Опубликовано
+                                </dt>
+                                <dd class="mt-1">
+                                    {publishedDate || article.published_at_date}
+                                </dd>
                             </div>
                             <div>
-                                <dt class="font-medium text-slate-900 dark:text-white">RSS парсинг</dt>
+                                <dt
+                                    class="font-medium text-slate-900 dark:text-white"
+                                >
+                                    RSS парсинг
+                                </dt>
                                 <dd class="mt-1">{rssParsedDate}</dd>
                             </div>
                             <div>
-                                <dt class="font-medium text-slate-900 dark:text-white">Источник</dt>
-                                <dd class="mt-1">{article.source_name || 'Нет данных'}</dd>
+                                <dt
+                                    class="font-medium text-slate-900 dark:text-white"
+                                >
+                                    Источник
+                                </dt>
+                                <dd class="mt-1">
+                                    {article.source_name || 'Нет данных'}
+                                </dd>
                             </div>
                             <div>
-                                <dt class="font-medium text-slate-900 dark:text-white">RSS feed</dt>
-                                <dd class="mt-1">{article.rss_feed?.title || 'Нет данных'}</dd>
+                                <dt
+                                    class="font-medium text-slate-900 dark:text-white"
+                                >
+                                    RSS feed
+                                </dt>
+                                <dd class="mt-1">
+                                    {article.rss_feed?.title || 'Нет данных'}
+                                </dd>
                             </div>
                         </dl>
                     </footer>
@@ -627,13 +701,31 @@
 
                 <aside class="space-y-6">
                     {#if related.length > 0}
-                        <section class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-                            <div class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
-                                Читайте также
+                        <section
+                            class="relative overflow-hidden rounded-[2rem] border border-sky-100 bg-linear-to-b from-white via-sky-50/70 to-white p-5 shadow-[0_30px_80px_-50px_rgba(14,165,233,0.55)] dark:border-sky-900/40 dark:from-slate-900 dark:via-sky-950/20 dark:to-slate-900 dark:shadow-[0_30px_80px_-50px_rgba(14,165,233,0.35)]"
+                        >
+                            <div
+                                class="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-sky-400/80 to-transparent"
+                            ></div>
+                            <div
+                                class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 text-shadow-2xs text-shadow-sky-200/60 dark:text-sky-300 dark:text-shadow-sky-950/80"
+                            >
+                                Related content
                             </div>
-                            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                            <div
+                                class="mt-2 text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Самые близкие материалы по теме, тегам и
+                                рубрике.
+                            </div>
+                            <div
+                                class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-1"
+                            >
                                 {#each related.slice(0, 4) as item (item.id)}
-                                    <ArticleCard article={item} showBookmark={false} />
+                                    <ArticleCard
+                                        article={item}
+                                        showBookmark={false}
+                                    />
                                 {/each}
                             </div>
                         </section>
@@ -642,24 +734,45 @@
             </div>
 
             {#if similar.length > 0}
-                <section class="mt-12">
-                    <div class="mb-5 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
-                        Похожие материалы
+                <section
+                    class="mt-12 overflow-hidden rounded-[2rem] border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+                >
+                    <div
+                        class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 text-shadow-2xs text-shadow-sky-200/60 dark:text-sky-300 dark:text-shadow-sky-950/80"
+                    >
+                        Similar stories
                     </div>
-                    <div class="flex gap-4 overflow-x-auto pb-2">
-                        {#each similar as item (item.id)}
-                            <div class="min-w-[18rem] flex-1">
-                                <ArticleCardCompact article={item} />
-                            </div>
-                        {/each}
+                    <div
+                        class="mb-5 text-sm text-slate-500 dark:text-slate-400"
+                    >
+                        Подборка материалов с близким сюжетом и совпадающими
+                        сигналами.
+                    </div>
+                    <div class="mask-r-from-85% motion-reduce:mask-none">
+                        <div class="flex gap-4 overflow-x-auto pb-2 pr-10">
+                            {#each similar as item (item.id)}
+                                <div class="min-w-[18rem] flex-1">
+                                    <ArticleCardCompact article={item} />
+                                </div>
+                            {/each}
+                        </div>
                     </div>
                 </section>
             {/if}
 
             {#if moreFromCategory.length > 0}
-                <section class="mt-12">
-                    <div class="mb-5 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
-                        Ещё из раздела {article.category.name}
+                <section
+                    class="mt-12 rounded-[2rem] border border-slate-200 bg-linear-to-br from-white to-slate-50 p-6 shadow-sm dark:border-white/10 dark:from-white/5 dark:to-white/0"
+                >
+                    <div
+                        class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 text-shadow-2xs text-shadow-sky-200/60 dark:text-sky-300 dark:text-shadow-sky-950/80"
+                    >
+                        More from {article.category.name}
+                    </div>
+                    <div
+                        class="mb-5 text-sm text-slate-500 dark:text-slate-400"
+                    >
+                        Ещё несколько свежих материалов из этой же рубрики.
                     </div>
                     <div class="grid gap-4 md:grid-cols-3">
                         {#each moreFromCategory as item (item.id)}

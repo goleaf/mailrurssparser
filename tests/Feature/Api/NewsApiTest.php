@@ -36,7 +36,15 @@ it('shows a single article and records a hashed view', function () {
     $this->withHeader('User-Agent', 'Pest Browser')
         ->getJson('/api/v1/articles/'.$article->slug)
         ->assertSuccessful()
-        ->assertJsonPath('data.slug', $article->slug);
+        ->assertJsonPath('data.slug', $article->slug)
+        ->assertJsonStructure([
+            'data' => [
+                'related_ids',
+                'related_articles',
+                'similar_articles',
+                'more_from_category',
+            ],
+        ]);
 
     expect($article->views()->count())->toBe(1)
         ->and($article->views()->first()?->ip_hash)->not->toBeNull();

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
 use BackedEnum;
@@ -19,7 +20,7 @@ class ParseHistory extends Page
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clock';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Контент';
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Ingestion;
 
     protected static ?int $navigationSort = 6;
 
