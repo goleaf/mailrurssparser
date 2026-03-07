@@ -103,6 +103,12 @@ export const getArticles = (params = {}) =>
 
 export const getArticle = (slug) => request(`${API_PREFIX}/articles/${slug}`);
 
+export const getRelated = (slug) =>
+    request(`${API_PREFIX}/articles/${slug}/related`);
+
+export const getSimilar = (slug) =>
+    request(`${API_PREFIX}/articles/${slug}/similar`);
+
 export const getFeatured = () => request(`${API_PREFIX}/articles/featured`);
 
 export const getBreaking = () => request(`${API_PREFIX}/articles/breaking`);
@@ -153,6 +159,12 @@ export const checkBookmarks = (ids) =>
     request(`${API_PREFIX}/bookmarks/check`, {
         method: 'POST',
         data: { ids },
+    });
+
+export const shareArticle = (articleId, platform) =>
+    request(`${API_PREFIX}/share/${articleId}`, {
+        method: 'POST',
+        data: { platform },
     });
 
 export const subscribe = (payload) =>
