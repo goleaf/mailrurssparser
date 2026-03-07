@@ -1,13 +1,13 @@
 import * as api from '@/lib/api';
 
-export let listState = $state({
+export const listState = $state({
     articles: [],
     pagination: null,
     loading: false,
     error: null,
 });
 
-export let filters = $state({
+export const filters = $state({
     category: null,
     sub: null,
     tags: [],
@@ -21,16 +21,16 @@ export let filters = $state({
     per_page: 20,
 });
 
-export const activeFiltersCount = $derived(
-    [
+export function activeFiltersCount() {
+    return [
         filters.category,
         filters.sub,
         filters.tags.length > 0,
         filters.content_type,
         filters.date || (filters.date_from && filters.date_to),
         filters.search,
-    ].filter(Boolean).length,
-);
+    ].filter(Boolean).length;
+}
 
 export async function loadArticles() {
     listState.loading = true;

@@ -2,6 +2,7 @@ import { createInertiaApp } from '@inertiajs/svelte';
 import type { ResolvedComponent } from '@inertiajs/svelte';
 import createServer from '@inertiajs/svelte/server';
 import { render } from 'svelte/server';
+import AppRoot from '@/AppRoot.svelte';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -17,7 +18,12 @@ createServer((page) =>
         },
         title: (title) => (title ? `${title} - ${appName}` : appName),
         setup({ App, props }) {
-            return render(App, { props });
+            return render(AppRoot, {
+                props: {
+                    App,
+                    props,
+                },
+            });
         },
     }),
 );

@@ -7,6 +7,7 @@ use Laravel\Fortify\Features;
 
 Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 Route::get('rss.xml', [SeoController::class, 'rss'])->name('rss-feed');
+Route::view('offline.html', 'offline')->name('offline');
 
 Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),

@@ -42,6 +42,13 @@ const applyTheme = (value: Appearance): void => {
 
 const getStoredAppearance = (): Appearance => {
     if (typeof window === 'undefined') return 'system';
+
+    const storedDarkMode = localStorage.getItem('darkMode');
+
+    if (storedDarkMode === 'true' || storedDarkMode === 'false') {
+        return storedDarkMode === 'true' ? 'dark' : 'light';
+    }
+
     const stored = localStorage.getItem('appearance');
     return stored === 'light' || stored === 'dark' || stored === 'system'
         ? stored
@@ -66,12 +73,9 @@ export function initializeTheme(): () => void {
         return () => {};
     }
 
-    if (!localStorage.getItem('appearance')) {
-        localStorage.setItem('appearance', 'system');
-        setCookie('appearance', 'system');
-    }
-
     appearance.value = getStoredAppearance();
+    localStorage.setItem('appearance', appearance.value);
+    setCookie('appearance', appearance.value);
     applyTheme(appearance.value);
 
     detachThemeChangeListener();
@@ -85,6 +89,12 @@ export function updateAppearance(value: Appearance): void {
     appearance.value = value;
     if (typeof window !== 'undefined') {
         localStorage.setItem('appearance', value);
+
+        if (value === 'system') {
+            localStorage.removeItem('darkMode');
+        } else {
+            localStorage.setItem('darkMode', String(value === 'dark'));
+        }
     }
     setCookie('appearance', value);
     applyTheme(value);

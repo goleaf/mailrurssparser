@@ -7,9 +7,51 @@ const STATIC_CACHE = [
     '/icons/icon-512.png',
 ];
 
+async function getBuildAssets() {
+    try {
+        const response = await fetch('/build/manifest.json', {
+            cache: 'no-store',
+        });
+
+        if (!response.ok) {
+            return [];
+        }
+
+        const manifest = await response.json();
+        const assets = new Set(['/build/manifest.json']);
+
+        Object.values(manifest).forEach((entry) => {
+            if (entry.file) {
+                assets.add(`/build/${entry.file}`);
+            }
+
+            if (Array.isArray(entry.css)) {
+                entry.css.forEach((asset) => {
+                    assets.add(`/build/${asset}`);
+                });
+            }
+
+            if (Array.isArray(entry.assets)) {
+                entry.assets.forEach((asset) => {
+                    assets.add(`/build/${asset}`);
+                });
+            }
+        });
+
+        return Array.from(assets);
+    } catch {
+        return [];
+    }
+}
+
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_CACHE)),
+        (async () => {
+            const cache = await caches.open(CACHE_NAME);
+            const buildAssets = await getBuildAssets();
+
+            await cache.addAll([...STATIC_CACHE, ...buildAssets]);
+        })(),
     );
 
     self.skipWaiting();

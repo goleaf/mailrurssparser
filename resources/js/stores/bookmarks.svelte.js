@@ -1,11 +1,11 @@
 import * as api from '@/lib/api';
 
-export let bookmarkIds = $state([]);
+export const bookmarkIds = $state([]);
 
 export async function loadBookmarks() {
     const res = await api.getBookmarks();
 
-    bookmarkIds = res.data.data.map((b) => b.id);
+    bookmarkIds.splice(0, bookmarkIds.length, ...res.data.data.map((b) => b.id));
 }
 
 export async function toggleBookmark(articleId) {
@@ -16,10 +16,16 @@ export async function toggleBookmark(articleId) {
             bookmarkIds.push(articleId);
         }
     } else {
-        bookmarkIds = bookmarkIds.filter((id) => id !== articleId);
+        const bookmarkIndex = bookmarkIds.indexOf(articleId);
+
+        if (bookmarkIndex !== -1) {
+            bookmarkIds.splice(bookmarkIndex, 1);
+        }
     }
 
     return res.data;
 }
 
-export const isBookmarked = (id) => $derived(bookmarkIds.includes(id));
+export function isBookmarked(id) {
+    return bookmarkIds.includes(id);
+}

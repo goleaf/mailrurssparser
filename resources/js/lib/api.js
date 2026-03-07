@@ -157,11 +157,25 @@ export const searchHighlights = (query, articleId) =>
 
 export const getStats = () => request(`${API_PREFIX}/stats/overview`);
 
+export const getStatsChart = (type, period = '30d') =>
+    request(`${API_PREFIX}/stats/chart`, {
+        params: {
+            type,
+            period,
+        },
+    });
+
 export const getPopular = (params = {}) =>
     request(`${API_PREFIX}/stats/popular`, { params });
 
 export const getCalendar = (year, month) =>
     request(`${API_PREFIX}/stats/calendar/${year}/${month}`);
+
+export const getFeedsPerformance = () =>
+    request(`${API_PREFIX}/stats/feeds`);
+
+export const getCategoryBreakdown = () =>
+    request(`${API_PREFIX}/stats/categories`);
 
 export const getBookmarks = () => request(`${API_PREFIX}/bookmarks`);
 
