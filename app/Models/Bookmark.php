@@ -24,7 +24,6 @@ class Bookmark extends Model
     protected $fillable = [
         'session_hash',
         'article_id',
-        'created_at',
     ];
 
     public function article(): BelongsTo
