@@ -2,9 +2,11 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Widgets\FeedStatus;
-use App\Filament\Widgets\LatestArticles;
-use App\Filament\Widgets\StatsOverview;
+use App\Filament\Widgets\FeedStatusWidget;
+use App\Filament\Widgets\LatestArticlesWidget;
+use App\Filament\Widgets\ParseLogsWidget;
+use App\Filament\Widgets\StatsOverviewWidget;
+use App\Filament\Widgets\ViewsChartWidget;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -13,8 +15,6 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -41,11 +41,11 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-                StatsOverview::class,
-                LatestArticles::class,
-                FeedStatus::class,
-                AccountWidget::class,
-                FilamentInfoWidget::class,
+                StatsOverviewWidget::class,
+                ViewsChartWidget::class,
+                LatestArticlesWidget::class,
+                FeedStatusWidget::class,
+                ParseLogsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
