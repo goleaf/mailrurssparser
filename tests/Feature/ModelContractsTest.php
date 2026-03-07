@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Article;
 use App\Models\Bookmark;
 use App\Models\Category;
 use App\Models\NewsletterSubscriber;
@@ -14,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 it('defines the requested category model contract', function () {
-    $category = new Category();
+    $category = new Category;
 
     expect($category->getFillable())->toBe([
         'name',
@@ -41,7 +40,7 @@ it('defines the requested category model contract', function () {
 });
 
 it('defines the requested sub category model contract', function () {
-    $subCategory = new SubCategory();
+    $subCategory = new SubCategory;
 
     expect($subCategory->getFillable())->toBe([
         'category_id',
@@ -59,7 +58,7 @@ it('defines the requested sub category model contract', function () {
 });
 
 it('defines the requested tag model contract', function () {
-    $tag = new Tag();
+    $tag = new Tag;
 
     expect($tag->getFillable())->toBe([
         'name',
@@ -100,7 +99,7 @@ it('supports the requested tag scopes and usage increment helper', function () {
 });
 
 it('defines the requested rss feed model contract', function () {
-    $rssFeed = new RssFeed();
+    $rssFeed = new RssFeed;
 
     expect($rssFeed->getFillable())->toBe([
         'category_id',
@@ -187,7 +186,7 @@ it('supports the requested rss feed scopes and lifecycle helpers', function () {
 });
 
 it('defines the requested rss parse log model contract', function () {
-    $rssParseLog = new RssParseLog();
+    $rssParseLog = new RssParseLog;
 
     expect($rssParseLog->getFillable())->toBe([
         'rss_feed_id',
@@ -213,7 +212,7 @@ it('defines the requested rss parse log model contract', function () {
 });
 
 it('defines the requested bookmark model contract', function () {
-    $bookmark = new Bookmark();
+    $bookmark = new Bookmark;
 
     expect($bookmark->getFillable())->toBe([
         'session_hash',
@@ -225,7 +224,7 @@ it('defines the requested bookmark model contract', function () {
 });
 
 it('defines the requested newsletter subscriber model contract', function () {
-    $subscriber = new NewsletterSubscriber();
+    $subscriber = new NewsletterSubscriber;
 
     expect($subscriber->getFillable())->toBe([
         'email',
@@ -261,6 +260,8 @@ it('supports the requested newsletter subscriber scopes and token generation', f
 
     $subscriberWithoutToken = NewsletterSubscriber::factory()->create([
         'token' => '',
+        'confirmed' => false,
+        'unsubscribed_at' => now(),
     ]);
 
     expect(NewsletterSubscriber::confirmed()->pluck('id')->all())

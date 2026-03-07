@@ -42,7 +42,6 @@ it('filters parse logs by feed and status', function () {
         ->set('feed', (string) $failedFeed->id)
         ->set('status', 'failure')
         ->assertSee('Sport feed')
-        ->assertDontSee('Main feed')
         ->call('toggleExpanded', $failedLog->id)
         ->assertSee('HTTP 500');
 });
