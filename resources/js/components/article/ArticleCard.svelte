@@ -30,6 +30,12 @@
         category: ArticleCategory;
     };
 
+    type BookmarkToggleResult = {
+        bookmarked: boolean;
+        total?: number;
+        articleId: number | string;
+    };
+
     const contentTypeLabels: Record<string, string> = {
         opinion: 'Мнение',
         analysis: 'Аналитика',
@@ -37,7 +43,15 @@
         article: 'Статья',
     };
 
-    let { article, showBookmark = true }: { article: Article; showBookmark?: boolean } = $props();
+    let {
+        article,
+        showBookmark = true,
+        onBookmarkToggle,
+    }: {
+        article: Article;
+        showBookmark?: boolean;
+        onBookmarkToggle?: ((result: BookmarkToggleResult) => void | Promise<void>) | undefined;
+    } = $props();
 
     const publishedDate = $derived(
         article.published_at ? new Date(article.published_at) : null,
@@ -153,8 +167,13 @@
                 {#if showBookmark}
                     <button
                         type="button"
-                        onclick={() => {
-                            void toggleBookmark(article.id);
+                        onclick={async () => {
+                            const result = await toggleBookmark(article.id);
+
+                            await onBookmarkToggle?.({
+                                ...result,
+                                articleId: article.id,
+                            });
                         }}
                         class={`text-xs transition-colors ${
                             isBookmarked(article.id)

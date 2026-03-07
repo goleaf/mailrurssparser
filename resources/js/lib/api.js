@@ -116,11 +116,18 @@ export const getBreaking = () => request(`${API_PREFIX}/articles/breaking`);
 export const getCategories = (params = {}) =>
     request(`${API_PREFIX}/categories`, { params });
 
+export const getCategory = (slug) => request(`${API_PREFIX}/categories/${slug}`);
+
 export const getCategoryArticles = (slug, params = {}) =>
     request(`${API_PREFIX}/categories/${slug}/articles`, { params });
 
+export const getPinnedArticles = (slug) =>
+    request(`${API_PREFIX}/category/${slug}/pinned`);
+
 export const getTags = (params = {}) =>
     request(`${API_PREFIX}/tags`, { params });
+
+export const getTag = (slug) => request(`${API_PREFIX}/tags/${slug}`);
 
 export const getTagArticles = (slug, params = {}) =>
     request(`${API_PREFIX}/tags/${slug}/articles`, { params });
