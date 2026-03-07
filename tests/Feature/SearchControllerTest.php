@@ -83,8 +83,15 @@ it('returns autocomplete suggestions for articles, categories, and tags', functi
             'categories',
             'tags',
         ])
-        ->assertJsonPath('categories.0.slug', 'sport')
-        ->assertJsonPath('tags.0.slug', $tag->slug);
+        ->assertJsonFragment([
+            'name' => $category->name,
+            'slug' => $category->slug,
+            'color' => $category->color,
+        ])
+        ->assertJsonFragment([
+            'name' => $tag->name,
+            'slug' => $tag->slug,
+        ]);
 });
 
 it('returns highlighted excerpts for matching article content', function () {

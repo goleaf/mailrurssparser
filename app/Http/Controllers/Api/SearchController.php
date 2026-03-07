@@ -52,6 +52,8 @@ class SearchController extends Controller
             $articles = $articlesQuery->paginate($perPage);
         }
 
+        $articles->appends($request->except('page'));
+
         $suggestions = [];
 
         if ($articles->total() === 0) {
@@ -129,7 +131,7 @@ class SearchController extends Controller
         $content = strip_tags((string) $article->content);
         $sentences = preg_split('/(?<=[.!?])\s+/u', $content) ?: [$content];
         $match = collect($sentences)
-            ->first(fn (string $sentence): bool => stripos($sentence, $term) !== false) ?? Str::limit($content, 220);
+            ->first(fn (string $sentence): bool => mb_stripos($sentence, $term) !== false) ?? Str::limit($content, 220);
         $excerpt = $this->highlightTerm($match, $term);
 
         return response()->json(['excerpt' => $excerpt]);
