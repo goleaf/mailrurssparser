@@ -86,6 +86,25 @@ export const setCategory = (slug) => {
     filters.page = 1;
 };
 
+export const setSubCategory = (slug) => {
+    filters.sub = slug;
+    filters.page = 1;
+};
+
+export const setDate = (date) => {
+    filters.date = date;
+    filters.date_from = null;
+    filters.date_to = null;
+    filters.page = 1;
+};
+
+export const clearDate = () => {
+    filters.date = null;
+    filters.date_from = null;
+    filters.date_to = null;
+    filters.page = 1;
+};
+
 export const setSort = (s) => {
     filters.sort = s;
     filters.page = 1;
