@@ -18,7 +18,7 @@ class SearchController extends Controller
     public function index(ArticleSearchRequest $request): ArticleCollection
     {
         $validated = $request->validated();
-        $term = (string) $validated['q'];
+        $term = $this->normalizeUtf8((string) $validated['q']);
         $perPage = (int) ($validated['per_page'] ?? 20);
 
         try {
@@ -57,32 +57,11 @@ class SearchController extends Controller
         $suggestions = [];
 
         if ($articles->total() === 0) {
-            $categorySuggestions = Category::query()
-                ->where('is_active', true)
-                ->where('name', 'like', '%'.$term.'%')
-                ->orderBy('name')
-                ->limit(3)
-                ->get(['id', 'name', 'slug', 'color'])
-                ->map(fn (Category $category): array => [
-                    'type' => 'category',
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                    'color' => $category->color,
-                ]);
+            $categorySuggestions = collect($this->categorySuggestions($term, 3))
+                ->map(fn (array $category): array => ['type' => 'category', ...$category]);
 
-            $tagSuggestions = Tag::query()
-                ->where('name', 'like', '%'.$term.'%')
-                ->orderByDesc('usage_count')
-                ->limit(3)
-                ->get(['id', 'name', 'slug', 'color'])
-                ->map(fn (Tag $tag): array => [
-                    'type' => 'tag',
-                    'id' => $tag->id,
-                    'name' => $tag->name,
-                    'slug' => $tag->slug,
-                    'color' => $tag->color,
-                ]);
+            $tagSuggestions = collect($this->tagSuggestions($term, 3))
+                ->map(fn (array $tag): array => ['type' => 'tag', ...$tag]);
 
             $suggestions = $categorySuggestions
                 ->concat($tagSuggestions)
@@ -99,39 +78,29 @@ class SearchController extends Controller
 
     public function suggest(SearchSuggestRequest $request): \Illuminate\Http\JsonResponse
     {
-        $term = $request->validated('q');
+        $term = $this->normalizeUtf8((string) $request->validated('q'));
 
         return response()->json([
-            'articles' => Article::query()
-                ->published()
-                ->where('title', 'like', '%'.$term.'%')
-                ->select('id', 'title', 'slug', 'published_at')
-                ->limit(5)
-                ->get(),
-            'categories' => Category::query()
-                ->active()
-                ->where('name', 'like', '%'.$term.'%')
-                ->select('id', 'name', 'slug', 'color')
-                ->limit(3)
-                ->get(),
-            'tags' => Tag::query()
-                ->where('name', 'like', '%'.$term.'%')
-                ->select('id', 'name', 'slug')
-                ->orderByDesc('usage_count')
-                ->limit(5)
-                ->get(),
+            'articles' => $this->articleSuggestions($term),
+            'categories' => $this->categorySuggestions($term, 3),
+            'tags' => $this->tagSuggestions($term, 5),
         ]);
     }
 
     public function highlights(SearchHighlightsRequest $request): \Illuminate\Http\JsonResponse
     {
         $validated = $request->validated();
-        $term = (string) $validated['q'];
+        $term = $this->normalizeUtf8((string) $validated['q']);
         $article = Article::query()->findOrFail($validated['article_id']);
-        $content = strip_tags((string) $article->content);
+        $content = $this->normalizeUtf8(strip_tags((string) $article->content));
         $sentences = preg_split('/(?<=[.!?])\s+/u', $content) ?: [$content];
         $match = collect($sentences)
-            ->first(fn (string $sentence): bool => mb_stripos($sentence, $term) !== false) ?? Str::limit($content, 220);
+            ->first(fn (string $sentence): bool => $this->containsTerm($sentence, $term));
+
+        if ($match === null) {
+            $match = $this->containsTerm($content, $term) ? $content : Str::limit($content, 220);
+        }
+
         $excerpt = $this->highlightTerm($match, $term);
 
         return response()->json(['excerpt' => $excerpt]);
@@ -181,16 +150,105 @@ class SearchController extends Controller
 
     private function highlightTerm(string $text, string $term): string
     {
-        $position = mb_stripos($text, $term);
+        $text = $this->normalizeUtf8($text);
+        $term = $this->normalizeUtf8($term);
+        $position = mb_stripos($text, $term, 0, 'UTF-8');
 
         if ($position === false) {
             return $text;
         }
 
         $before = mb_substr($text, 0, $position);
-        $match = mb_substr($text, $position, mb_strlen($term));
-        $after = mb_substr($text, $position + mb_strlen($term));
+        $match = mb_substr($text, $position, mb_strlen($term, 'UTF-8'), 'UTF-8');
+        $after = mb_substr($text, $position + mb_strlen($term, 'UTF-8'), null, 'UTF-8');
 
         return $before.'<mark>'.$match.'</mark>'.$after;
+    }
+
+    /**
+     * @return list<array{id: int, title: string, slug: string, published_at: string|null}>
+     */
+    private function articleSuggestions(string $term): array
+    {
+        $articles = Article::query()
+            ->published()
+            ->select('id', 'title', 'slug', 'published_at')
+            ->latest('published_at')
+            ->get()
+            ->filter(fn (Article $article): bool => $this->containsTerm($article->title, $term))
+            ->take(5);
+
+        return $articles
+            ->map(fn (Article $article): array => [
+                'id' => $article->id,
+                'title' => $this->normalizeUtf8((string) $article->title),
+                'slug' => (string) $article->slug,
+                'published_at' => $article->published_at?->toIso8601String(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{id: int, name: string, slug: string, color: string}>
+     */
+    private function categorySuggestions(string $term, int $limit): array
+    {
+        return Category::query()
+            ->active()
+            ->get(['id', 'name', 'slug', 'color'])
+            ->filter(fn (Category $category): bool => $this->containsTerm($category->name, $term))
+            ->take($limit)
+            ->map(fn (Category $category): array => [
+                'id' => $category->id,
+                'name' => $this->normalizeUtf8((string) $category->name),
+                'slug' => (string) $category->slug,
+                'color' => (string) $category->color,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{id: int, name: string, slug: string, color: string}>
+     */
+    private function tagSuggestions(string $term, int $limit): array
+    {
+        return Tag::query()
+            ->orderByDesc('usage_count')
+            ->get(['id', 'name', 'slug', 'color'])
+            ->filter(fn (Tag $tag): bool => $this->containsTerm($tag->name, $term))
+            ->take($limit)
+            ->map(fn (Tag $tag): array => [
+                'id' => $tag->id,
+                'name' => $this->normalizeUtf8((string) $tag->name),
+                'slug' => (string) $tag->slug,
+                'color' => (string) $tag->color,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function containsTerm(?string $value, string $term): bool
+    {
+        $value = $this->normalizeUtf8($value);
+        $term = $this->normalizeUtf8($term);
+
+        if ($value === '' || $term === '') {
+            return false;
+        }
+
+        return mb_stripos($value, $term, 0, 'UTF-8') !== false;
+    }
+
+    private function normalizeUtf8(?string $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        $normalized = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+
+        return $normalized === false ? $value : $normalized;
     }
 }

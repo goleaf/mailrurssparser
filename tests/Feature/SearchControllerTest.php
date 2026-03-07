@@ -24,7 +24,11 @@ it('returns search results with query and total meta', function () {
         'published_at' => now()->subHour(),
     ]);
 
-    $this->getJson('/api/v1/search?q=Hello&category=politics&sort=relevance')
+    $this->getJson('/api/v1/search?'.http_build_query([
+        'q' => 'Hello',
+        'category' => 'politics',
+        'sort' => 'relevance',
+    ]))
         ->assertSuccessful()
         ->assertJsonPath('data.0.id', $article->id)
         ->assertJsonPath('meta.query', 'Hello')
@@ -44,7 +48,7 @@ it('returns fallback suggestions when no search results exist', function () {
         'usage_count' => 50,
     ]);
 
-    $response = $this->getJson('/api/v1/search?q=Спорт');
+    $response = $this->getJson('/api/v1/search?'.http_build_query(['q' => 'Спорт']));
 
     $response->assertSuccessful()
         ->assertJsonPath('meta.total', 0)
@@ -76,7 +80,7 @@ it('returns autocomplete suggestions for articles, categories, and tags', functi
         'published_at' => now()->subHour(),
     ]);
 
-    $this->getJson('/api/v1/search/suggest?q=Спорт')
+    $this->getJson('/api/v1/search/suggest?'.http_build_query(['q' => 'Спорт']))
         ->assertSuccessful()
         ->assertJsonStructure([
             'articles',
@@ -102,7 +106,10 @@ it('returns highlighted excerpts for matching article content', function () {
         'published_at' => now()->subHour(),
     ]);
 
-    $this->getJson('/api/v1/search/highlights?q=матч&article_id='.$article->id)
+    $this->getJson('/api/v1/search/highlights?'.http_build_query([
+        'q' => 'матч',
+        'article_id' => $article->id,
+    ]))
         ->assertSuccessful()
         ->assertJsonPath('excerpt', 'Важный <mark>матч</mark> сегодня решит сезон.');
 });
