@@ -119,6 +119,7 @@
         "skipLibCheck": true /* Skip type checking all .d.ts files. */
     },
     "include": [
+        "resources/js/**/*.js",
         "resources/js/**/*.ts",
         "resources/js/**/*.d.ts",
         "resources/js/**/*.svelte"

@@ -9,17 +9,22 @@ export default ts.config(
     ...ts.configs.recommended,
     ...svelte.configs['flat/recommended'],
     {
-        files: ['**/*.svelte'],
+        files: ['**/*.svelte', '**/*.svelte.js', '**/*.svelte.ts'],
         languageOptions: {
             parserOptions: {
                 parser: ts.parser,
+                extraFileExtensions: ['.svelte'],
+                projectService: true,
             },
         },
     },
     {
-        files: ['**/*.svelte.ts'],
+        files: ['**/*.{js,ts}'],
         languageOptions: {
             parser: ts.parser,
+            parserOptions: {
+                projectService: true,
+            },
         },
     },
     {
@@ -74,6 +79,7 @@ export default ts.config(
             'node_modules',
             'public',
             'bootstrap/ssr',
+            'eslint.config.js',
             'tailwind.config.js',
             'vite.config.ts',
             'resources/js/actions/**',
