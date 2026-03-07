@@ -15,7 +15,7 @@ class BookmarkController extends Controller
     {
         $bookmarks = Bookmark::query()
             ->where('session_hash', $this->sessionHash($request))
-            ->with(['article.category', 'article.tags'])
+            ->with(['article.category'])
             ->latest('created_at')
             ->get();
 
