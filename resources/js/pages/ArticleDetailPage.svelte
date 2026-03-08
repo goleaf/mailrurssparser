@@ -54,6 +54,7 @@
         published_at_date?: string | null;
         rss_parsed_at?: string | null;
         full_content?: string | null;
+        meta_title?: string | null;
         meta_description?: string | null;
         structured_data?: Record<string, unknown> | null;
         category: Category;
@@ -284,7 +285,7 @@
     });
 
     $effect(() => {
-        const nextArticle = viewsPolling.data;
+        const nextArticle = viewsPolling.data as Article | null;
 
         if (!article || !nextArticle?.id || nextArticle.id !== article.id) {
             return;

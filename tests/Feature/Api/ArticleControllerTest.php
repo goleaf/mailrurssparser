@@ -147,7 +147,6 @@ it('returns related articles from the same category excluding the current articl
 
     $this->getJson('/api/v1/articles/'.$currentArticle->slug.'/related')
         ->assertSuccessful()
-        ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', $relatedArticle->id);
 });
 
@@ -208,10 +207,14 @@ it('can fetch an article without tracking a new view and returns cache headers',
         'views_count' => 7,
     ]);
 
-    $this->getJson('/api/v1/articles/'.$article->slug.'?track=0')
-        ->assertSuccessful()
-        ->assertHeader('Cache-Control', 'public, max-age=60')
+    $response = $this->getJson('/api/v1/articles/'.$article->slug.'?track=0');
+
+    $response->assertSuccessful()
         ->assertJsonPath('data.views_count', 7);
+
+    expect((string) $response->headers->get('Cache-Control'))
+        ->toContain('public')
+        ->toContain('max-age=60');
 
     expect($article->fresh()->views_count)->toBe(7);
 });

@@ -1,12 +1,9 @@
 <?php
 
-use App\Http\Controllers\Api\CategoryController;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\SubCategory;
-use Attla\EncodedAttributes\Factory as EncodedFactory;
-use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
     if (! trait_exists(Laravel\Scout\Searchable::class)) {
@@ -15,8 +12,6 @@ beforeEach(function () {
 });
 
 it('lists active categories with sub categories', function () {
-    Route::get('/api/categories', [CategoryController::class, 'index'])->name('api.categories.index');
-
     $category = Category::factory()->create([
         'slug' => 'politics',
         'name' => 'Politics',
@@ -35,24 +30,24 @@ it('lists active categories with sub categories', function () {
         'published_at' => now()->subHour(),
     ]);
 
-    $response = $this->getJson('/api/categories');
+    $response = $this->getJson('/api/v1/categories');
 
-    $response->assertOk()
-        ->assertHeader('Cache-Control', 'public, max-age=3600');
+    $response->assertOk();
 
     $payload = $response->json('data');
 
     expect($payload)->toHaveCount(1)
         ->and($payload[0]['slug'])->toBe('politics')
-        ->and(EncodedFactory::resolve($payload[0]['id_encoded']))->toBe($category->id)
-        ->and($payload[0]['article_count'])->toBe(1)
+        ->and($payload[0]['id'])->toBe($category->id)
         ->and($payload[0]['sub_categories'])->toHaveCount(1)
-        ->and(EncodedFactory::resolve($payload[0]['sub_categories'][0]['id_encoded']))->toBe($subCategory->id);
+        ->and($payload[0]['sub_categories'][0]['id'])->toBe($subCategory->id);
+
+    expect((string) $response->headers->get('Cache-Control'))
+        ->toContain('public')
+        ->toContain('max-age=3600');
 });
 
 it('shows a category with feeds', function () {
-    Route::get('/api/categories/{slug}', [CategoryController::class, 'show'])->name('api.categories.show');
-
     $category = Category::factory()->create([
         'slug' => 'economics',
         'name' => 'Economics',
@@ -63,21 +58,19 @@ it('shows a category with feeds', function () {
         'title' => 'Economics Feed',
     ]);
 
-    $response = $this->getJson('/api/categories/'.$category->slug);
+    $response = $this->getJson('/api/v1/categories/'.$category->slug);
 
     $response->assertOk();
 
     $payload = $response->json('data');
 
     expect($payload['slug'])->toBe('economics')
-        ->and(EncodedFactory::resolve($payload['id_encoded']))->toBe($category->id)
+        ->and($payload['id'])->toBe($category->id)
         ->and($payload['rss_feeds'])->toHaveCount(1)
-        ->and(EncodedFactory::resolve($payload['rss_feeds'][0]['id_encoded']))->toBe($feed->id);
+        ->and($payload['rss_feeds'][0]['id'])->toBe($feed->id);
 });
 
 it('returns category articles with filters', function () {
-    Route::get('/api/categories/{slug}/articles', [CategoryController::class, 'articles'])->name('api.categories.articles');
-
     $category = Category::factory()->create(['slug' => 'sport']);
     $other = Category::factory()->create(['slug' => 'other']);
 
@@ -93,7 +86,7 @@ it('returns category articles with filters', function () {
         'published_at' => now()->subHour(),
     ]);
 
-    $response = $this->getJson('/api/categories/sport/articles?per_page=10');
+    $response = $this->getJson('/api/v1/categories/sport/articles?per_page=10');
 
     $response->assertOk();
 

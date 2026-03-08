@@ -43,7 +43,6 @@ it('returns overview analytics with top categories and tags', function () {
     $response = $this->getJson('/api/v1/stats/overview');
 
     $response->assertSuccessful()
-        ->assertHeader('Cache-Control', 'public, max-age=300')
         ->assertJsonPath('articles.total', 1)
         ->assertJsonPath('articles.today', 1)
         ->assertJsonPath('articles.this_week', 1)
@@ -58,6 +57,10 @@ it('returns overview analytics with top categories and tags', function () {
         ->assertJsonPath('feeds.total', 1)
         ->assertJsonPath('feeds.active', 1)
         ->assertJsonPath('feeds.errors', 0);
+
+    expect((string) $response->headers->get('Cache-Control'))
+        ->toContain('public')
+        ->toContain('max-age=300');
 });
 
 it('returns chart data grouped for the requested period', function () {

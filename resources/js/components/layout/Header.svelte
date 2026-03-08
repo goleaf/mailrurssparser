@@ -38,7 +38,10 @@
         return response.data ?? null;
     }, 300000);
     const newArticleDelta = $derived.by(() => {
-        const currentTotal = Number(statsPolling.data?.articles?.total ?? 0);
+        const stats = statsPolling.data as
+            | { articles?: { total?: number | null } }
+            | null;
+        const currentTotal = Number(stats?.articles?.total ?? 0);
 
         if (initialArticleCount === null) {
             return 0;
@@ -107,7 +110,10 @@
     });
 
     $effect(() => {
-        const totalArticles = Number(statsPolling.data?.articles?.total ?? 0);
+        const stats = statsPolling.data as
+            | { articles?: { total?: number | null } }
+            | null;
+        const totalArticles = Number(stats?.articles?.total ?? 0);
 
         if (!Number.isFinite(totalArticles) || totalArticles <= 0) {
             return;

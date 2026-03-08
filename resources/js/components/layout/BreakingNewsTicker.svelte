@@ -51,7 +51,7 @@
     });
 
     $effect(() => {
-        const nextItems = breakingPolling.data;
+        const nextItems = breakingPolling.data as BreakingArticle[] | null;
 
         if (!Array.isArray(nextItems)) {
             return;

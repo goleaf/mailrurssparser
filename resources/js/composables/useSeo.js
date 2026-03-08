@@ -1,12 +1,24 @@
+/**
+ * @param {{
+ *   title?: string,
+ *   description?: string,
+ *   image?: string,
+ *   url?: string,
+ *   type?: string,
+ *   publishedAt?: string,
+ *   author?: string,
+ *   tags?: string[],
+ * }} options
+ */
 export function setSeoMeta({
     title,
     description,
-    image,
-    url,
+    image = undefined,
+    url = undefined,
     type = 'article',
-    publishedAt,
-    author,
-    tags,
+    publishedAt = undefined,
+    author = undefined,
+    tags = undefined,
 }) {
     if (typeof document === 'undefined') {
         return;
@@ -61,6 +73,9 @@ export function setSeoMeta({
     canonical.setAttribute('href', url || window.location.href);
 }
 
+/**
+ * @param {Record<string, unknown>} data
+ */
 export function injectJsonLd(data) {
     if (typeof document === 'undefined') {
         return;
