@@ -13,6 +13,7 @@ use App\Services\RelatedArticlesService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Uri;
 
 class ArticleController extends Controller
 {
@@ -49,7 +50,7 @@ class ArticleController extends Controller
             [
                 'device_type' => $this->detectDeviceType($request),
                 'referrer_type' => $this->detectReferrerType($request),
-                'referrer_domain' => parse_url((string) $request->headers->get('referer'), PHP_URL_HOST),
+                'referrer_domain' => $this->extractUriHost($request->headers->get('referer')),
                 'ip_address' => $request->ip(),
                 'session_id' => $request->hasSession() ? $request->session()->getId() : null,
                 'user_agent' => (string) $request->userAgent(),
@@ -234,6 +235,8 @@ class ArticleController extends Controller
     private function detectReferrerType(Request $request): string
     {
         $referer = Str::lower((string) $request->headers->get('referer'));
+        $refererAuthority = Str::lower($this->extractUriAuthority($request->headers->get('referer')) ?? '');
+        $appAuthority = Str::lower($this->extractUriAuthority((string) config('app.url')) ?? '');
 
         if ($referer === '') {
             return 'direct';
@@ -247,10 +250,36 @@ class ArticleController extends Controller
             return 'social';
         }
 
-        if (Str::contains($referer, parse_url((string) config('app.url'), PHP_URL_HOST) ?: '')) {
+        if ($refererAuthority !== '' && $appAuthority !== '' && $refererAuthority === $appAuthority) {
             return 'internal';
         }
 
         return 'other';
+    }
+
+    private function extractUriAuthority(?string $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return Uri::of($value)->authority();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function extractUriHost(?string $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return Uri::of($value)->host();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

@@ -117,3 +117,7 @@ export function toggleDarkMode() {
 export function toggleSidebar() {
     appState.sidebarOpen = !appState.sidebarOpen;
 }
+
+export function setBreakingNews(items) {
+    appState.breakingNews = Array.isArray(items) ? items : [];
+}

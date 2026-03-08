@@ -1,13 +1,25 @@
 <?php
 
 use App\Models\User;
+use App\Services\SessionKey;
 use Illuminate\Support\Facades\RateLimiter;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
 
     $response->assertOk();
+});
+
+test('login screen exposes status from the enum-backed session key', function () {
+    $this->withSession([SessionKey::Status->value => 'password-reset-sent'])
+        ->get(route('login'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('auth/Login')
+            ->where('status', 'password-reset-sent'),
+        );
 });
 
 test('users can authenticate using the login screen', function () {
@@ -46,7 +58,7 @@ test('users with two factor enabled are redirected to two factor challenge', fun
     ]);
 
     $response->assertRedirect(route('two-factor.login'));
-    $response->assertSessionHas('login.id', $user->id);
+    $response->assertSessionHas(SessionKey::LoginId->value, $user->id);
     $this->assertGuest();
 });
 

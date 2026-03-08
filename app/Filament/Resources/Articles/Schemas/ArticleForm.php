@@ -20,6 +20,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
+use Illuminate\Support\Uri;
 
 class ArticleForm
 {
@@ -280,7 +281,12 @@ class ArticleForm
                         $title = e((string) ($get('meta_title') ?: $get('title') ?: 'Заголовок статьи'));
                         $slug = e((string) ($get('slug') ?: 'article-slug'));
                         $description = e(Str::limit((string) ($get('meta_description') ?: $get('short_description') ?: 'Описание статьи для поисковой выдачи.'), 160));
-                        $host = e((string) (parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'portal.test'));
+                        $authority = rescue(
+                            fn (): string => Uri::of((string) config('app.url'))->authority(),
+                            'portal.test',
+                            false,
+                        );
+                        $host = e($authority);
 
                         return new HtmlString(
                             '<div class="space-y-1 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">'
@@ -312,9 +318,6 @@ class ArticleForm
         ];
     }
 
-    /**
-     * @param  mixed  $tagsState
-     */
     private static function resolveTagBadgeCount(?Article $record, mixed $tagsState): int
     {
         if (is_array($tagsState)) {

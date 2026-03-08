@@ -101,7 +101,8 @@ async function request(path, options = {}) {
 export const getArticles = (params = {}) =>
     request(`${API_PREFIX}/articles`, { params });
 
-export const getArticle = (slug) => request(`${API_PREFIX}/articles/${slug}`);
+export const getArticle = (slug, params = {}) =>
+    request(`${API_PREFIX}/articles/${slug}`, { params });
 
 export const getRelated = (slug) =>
     request(`${API_PREFIX}/articles/${slug}/related`);

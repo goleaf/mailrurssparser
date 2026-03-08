@@ -1,5 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import Toast from '@/components/ui/Toast.svelte';
+    import { initApp } from '@/stores/app.svelte.js';
 
     type AppRootProps = {
         App: any;
@@ -24,6 +26,8 @@
         if (typeof window === 'undefined') {
             return;
         }
+
+        void initApp();
 
         const handleUpdate = (event: Event): void => {
             const detail = (event as CustomEvent<UpdateDetail>).detail;
@@ -62,4 +66,5 @@
     </div>
 {/if}
 
+<Toast />
 <App {...props} />

@@ -1,4 +1,5 @@
 import { createInertiaApp } from '@inertiajs/svelte';
+import type { ResolvedComponent } from '@inertiajs/svelte';
 import { hydrate, mount } from 'svelte';
 import '../css/app.css';
 import AppRoot from '@/AppRoot.svelte';
@@ -6,6 +7,19 @@ import { initializeTheme } from '@/lib/theme.svelte';
 import { initializeDarkMode } from '@/stores/app.svelte.js';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const pages = import.meta.glob<ResolvedComponent>('./pages/**/*.svelte');
+
+function resolvePage(name: string): Promise<ResolvedComponent> {
+    const page = pages[`./pages/${name}.svelte`];
+
+    if (!page) {
+        return Promise.reject(
+            new Error(`Unknown Inertia page: ${name}`),
+        );
+    }
+
+    return page();
+}
 
 function dispatchServiceWorkerUpdate(
     registration: ServiceWorkerRegistration,
@@ -75,12 +89,7 @@ function registerServiceWorker(): void {
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: (name) => {
-        const pages = import.meta.glob('./pages/**/*.svelte', {
-            eager: true,
-        });
-        return pages[`./pages/${name}.svelte`] as never;
-    },
+    resolve: resolvePage,
     setup({ el, App, props }) {
         if (!el) return;
 

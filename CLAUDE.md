@@ -39,6 +39,7 @@ This project has domain-specific skills available. You MUST activate the relevan
 - `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, browser testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
 - `inertia-svelte-development` — Develops Inertia.js v2 Svelte client-side applications. Activates when creating Svelte pages, forms, or navigation; using Link, Form, or router; working with deferred props, prefetching, or polling; or when user mentions Svelte with Inertia, Svelte pages, Svelte forms, or Svelte navigation.
 - `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
+- `news-portal-frontend` — Works on this repository&#039;s public news portal frontend, including the hash-routed Welcome shell, homepage design, article/category/tag/search pages, and the shared public stores.
 
 ## Conventions
 
@@ -287,6 +288,17 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 # Inertia + Svelte
 
 - IMPORTANT: Activate `inertia-svelte-development` when working with Inertia Svelte client-side patterns.
+- This app uses a hybrid public frontend: Laravel routes `/` and `/{any}` both render the Inertia `Welcome` page, and public navigation after first load is handled by the hash router in `resources/js/pages/Welcome.svelte`.
+- Do not add Laravel routes for public hash pages like `/#/category/...`, `/#/tag/...`, `/#/articles/...`, `/#/search`, or `/#/stats` unless the backend route is truly required. Extend the route parser in `resources/js/pages/Welcome.svelte` and the matching page component instead.
+- Prefer the existing public stores and helpers before creating new state layers:
+  - `resources/js/stores/articles.svelte.js`
+  - `resources/js/stores/app.svelte.js`
+  - `resources/js/stores/bookmarks.svelte.js`
+  - `resources/js/lib/api.js`
+- Keep article filter payloads aligned with the backend request validation. In particular, `tags` must be sent as an array to the article index API.
+- When changing Inertia bootstrapping, update both `resources/js/app.ts` and `resources/js/ssr.ts`.
+- Preserve the current public-shell pattern: `Welcome.svelte` is the router shell, while `HomePage.svelte`, `CategoryPage.svelte`, `TagPage.svelte`, `ArticleDetailPage.svelte`, `SearchPage.svelte`, `BookmarksPage.svelte`, `StatsPage.svelte`, and the public info pages render the actual content.
+- Verify public frontend changes with `npm run types:check`, `npm run lint:check`, and `npm run build:ssr`. When routing or Laravel page responses change, also run a focused Pest test.
 
 === tailwindcss/core rules ===
 

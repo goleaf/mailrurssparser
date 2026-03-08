@@ -50,6 +50,26 @@ it('shows a single article and records a hashed view', function () {
         ->and($article->views()->first()?->ip_hash)->not->toBeNull();
 });
 
+it('classifies internal referrers using URI authority parsing', function () {
+    config()->set('app.url', 'https://news.test:8443');
+
+    $article = Article::factory()->create([
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $this->withHeaders([
+        'User-Agent' => 'Pest Browser',
+        'Referer' => 'https://news.test:8443/#/articles/source-story',
+    ])->getJson('/api/v1/articles/'.$article->slug)
+        ->assertSuccessful();
+
+    $view = $article->fresh()->views()->latest('id')->first();
+
+    expect($view?->referrer_type)->toBe('internal')
+        ->and($view?->referrer_domain)->toBe('news.test');
+});
+
 it('supports bookmark toggling for the current session fingerprint', function () {
     $article = Article::factory()->create();
 

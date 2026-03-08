@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Events\ArticleContentChanged;
+use App\Listeners\RebuildRelatedArticlesIndex;
 use App\Models\Article;
 use App\Observers\ArticleObserver;
 use App\Services\PincrypFactory;
@@ -9,6 +11,7 @@ use Attla\Pincryp\Config as PincrypConfig;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -34,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         Article::observe(ArticleObserver::class);
+        Event::listen(ArticleContentChanged::class, RebuildRelatedArticlesIndex::class);
     }
 
     /**

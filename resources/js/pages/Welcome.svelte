@@ -3,6 +3,7 @@
     import BreakingNewsTicker from '@/components/layout/BreakingNewsTicker.svelte';
     import Footer from '@/components/layout/Footer.svelte';
     import Header from '@/components/layout/Header.svelte';
+    import { toUrl } from '@/lib/utils';
     import ArticleDetailPage from '@/pages/ArticleDetailPage.svelte';
     import BookmarksPage from '@/pages/BookmarksPage.svelte';
     import CategoryPage from '@/pages/CategoryPage.svelte';
@@ -12,7 +13,6 @@
     import SearchPage from '@/pages/SearchPage.svelte';
     import StatsPage from '@/pages/StatsPage.svelte';
     import TagPage from '@/pages/TagPage.svelte';
-    import { toUrl } from '@/lib/utils';
     import { dashboard, login, register } from '@/routes';
 
     type PublicRoute =

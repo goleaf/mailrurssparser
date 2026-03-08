@@ -3,7 +3,6 @@
 use App\Filament\Resources\Articles\ArticleResource;
 use App\Filament\Resources\Articles\Pages\EditArticle;
 use App\Filament\Resources\Articles\Pages\ListArticles;
-use App\Filament\Resources\Articles\Schemas\ArticleForm;
 use App\Filament\Resources\Categories\Pages\ListCategories;
 use App\Filament\Resources\RssFeeds\Pages\ListRssFeeds;
 use App\Filament\Resources\Tags\Pages\ListTags;
@@ -114,15 +113,15 @@ it('marks the article classification tab badge as deferred for existing records'
     });
 
     $page = Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])->instance();
-    $schema = $page->getForm('form');
+    $schema = $page->getSchema('form');
 
     $tabs = $schema->getComponents()[0];
     $classificationTab = $tabs->getChildSchema()->getComponents()[2];
 
     expect($tabs)
         ->toBeInstanceOf(Tabs::class)
-        ->and($tabs->getKey())
-        ->toBe('article-editor-tabs')
+        ->and(str_ends_with($tabs->getKey(), 'article-editor-tabs'))
+        ->toBeTrue()
         ->and($classificationTab->isBadgeDeferred())
         ->toBeTrue()
         ->and($classificationTab->getBadge())

@@ -13,7 +13,7 @@ class ArticleCacheService
 {
     public function getCategories()
     {
-        return Cache::remember('categories', 3600, function () {
+        return Cache::remember(ArticleCacheKey::Categories, 3600, function () {
             return Category::query()
                 ->active()
                 ->withCount(['articles' => fn ($query) => $query->published()])
@@ -23,7 +23,7 @@ class ArticleCacheService
 
     public function getTrendingTags(int $limit = 30)
     {
-        return Cache::remember("trending_tags_{$limit}", 1800, function () use ($limit) {
+        return Cache::remember(ArticleCacheKey::trendingTags($limit), 1800, function () use ($limit) {
             return Tag::query()
                 ->orderByDesc('usage_count')
                 ->limit($limit)
@@ -33,7 +33,7 @@ class ArticleCacheService
 
     public function getBreakingNews()
     {
-        return Cache::remember('breaking_news', 300, function () {
+        return Cache::remember(ArticleCacheKey::BreakingNews, 300, function () {
             return Article::query()
                 ->published()
                 ->breaking()
@@ -46,7 +46,7 @@ class ArticleCacheService
 
     public function getFeaturedArticles()
     {
-        return Cache::remember('featured_articles', 900, function () {
+        return Cache::remember(ArticleCacheKey::FeaturedArticles, 900, function () {
             return Article::query()
                 ->published()
                 ->featured()
@@ -62,7 +62,7 @@ class ArticleCacheService
      */
     public function getStatsOverview(): array
     {
-        return Cache::remember('stats_overview', 600, function (): array {
+        return Cache::remember(ArticleCacheKey::StatsOverview, 600, function (): array {
             return [
                 'articles' => [
                     'total' => Article::query()->published()->count(),

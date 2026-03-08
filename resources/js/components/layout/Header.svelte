@@ -9,8 +9,8 @@
     import X from 'lucide-svelte/icons/x';
     import SearchModal from '@/components/SearchModal.svelte';
     import { cn } from '@/lib/utils';
-    import { resetFilters } from '@/stores/articles.svelte.js';
     import { appState, initApp, toggleDarkMode, toggleSidebar } from '@/stores/app.svelte.js';
+    import { resetFilters } from '@/stores/articles.svelte.js';
     import { bookmarkIds, loadBookmarks } from '@/stores/bookmarks.svelte.js';
 
     type Category = {

@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Services\SessionKey;
+use Inertia\Testing\AssertableInertia as Assert;
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();
@@ -10,6 +12,19 @@ test('profile page is displayed', function () {
         ->get(route('profile.edit'));
 
     $response->assertOk();
+});
+
+test('profile page exposes status from the enum-backed session key', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->withSession([SessionKey::Status->value => 'verification-link-sent'])
+        ->get(route('profile.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('settings/Profile')
+            ->where('status', 'verification-link-sent'),
+        );
 });
 
 test('profile information can be updated', function () {

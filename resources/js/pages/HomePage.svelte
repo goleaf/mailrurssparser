@@ -16,6 +16,7 @@
     import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
     import * as api from '@/lib/api';
     import { cn } from '@/lib/utils';
+    import { appState, initApp } from '@/stores/app.svelte.js';
     import {
         activeFiltersCount,
         filters,
@@ -23,7 +24,6 @@
         loadArticles,
         resetFilters,
     } from '@/stores/articles.svelte.js';
-    import { appState, initApp } from '@/stores/app.svelte.js';
 
     type Category = {
         id: number | string;
@@ -181,14 +181,16 @@
     });
 
     const highlightArticleIds = $derived.by(() => {
-        const ids = new Set<number | string>();
+        const ids: Array<number | string> = [];
 
         if (leadStory?.id !== undefined) {
-            ids.add(leadStory.id);
+            ids.push(leadStory.id);
         }
 
         for (const article of secondaryHighlights) {
-            ids.add(article.id);
+            if (!ids.includes(article.id)) {
+                ids.push(article.id);
+            }
         }
 
         return ids;
@@ -196,7 +198,7 @@
 
     const streamArticles = $derived.by(() =>
         (listState.articles as Article[]).filter(
-            (article) => !highlightArticleIds.has(article.id),
+            (article) => !highlightArticleIds.includes(article.id),
         ),
     );
 
