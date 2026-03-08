@@ -3,6 +3,8 @@
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\Tag;
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 
 beforeEach(function () {
     if (! trait_exists(Laravel\Scout\Searchable::class)) {
@@ -190,12 +192,18 @@ it('embeds related content collections directly in the show payload', function (
     $response->assertSuccessful()
         ->assertJsonStructure([
             'data' => [
+                'status_label',
+                'content_type_label',
                 'related_ids',
                 'related_articles',
                 'similar_articles',
                 'more_from_category',
             ],
         ])
+        ->assertJsonPath('data.status', ArticleStatus::Published->value)
+        ->assertJsonPath('data.status_label', 'Опубликовано')
+        ->assertJsonPath('data.content_type', ArticleContentType::Analysis->value)
+        ->assertJsonPath('data.content_type_label', 'Аналитика')
         ->assertJsonPath('data.related_articles.0.id', $relatedArticle->id)
         ->assertJsonPath('data.similar_articles.0.id', $similarArticle->id);
 });

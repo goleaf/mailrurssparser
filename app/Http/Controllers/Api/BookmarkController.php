@@ -7,6 +7,8 @@ use App\Http\Requests\Api\BookmarkCheckRequest;
 use App\Http\Resources\ArticleCollection;
 use App\Models\Article;
 use App\Models\Bookmark;
+use App\Services\MetricTracker;
+use App\Services\TrackedMetric;
 use Illuminate\Http\Request;
 
 class BookmarkController extends Controller
@@ -35,6 +37,7 @@ class BookmarkController extends Controller
         if ($existing !== null) {
             $existing->delete();
             $article->decrement('bookmarks_count');
+            app(MetricTracker::class)->record(TrackedMetric::BookmarkRemoved, measurable: $article);
 
             return response()->json(['bookmarked' => false, 'total' => max(0, $article->fresh()->bookmarks_count)]);
         }
@@ -45,6 +48,7 @@ class BookmarkController extends Controller
         ]);
 
         $article->increment('bookmarks_count');
+        app(MetricTracker::class)->record(TrackedMetric::BookmarkAdded, measurable: $article);
 
         return response()->json(['bookmarked' => true, 'total' => $article->fresh()->bookmarks_count]);
     }

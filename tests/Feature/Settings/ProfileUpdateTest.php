@@ -23,7 +23,7 @@ test('profile page exposes status from the enum-backed session key', function ()
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/Profile')
-            ->where('status', 'verification-link-sent'),
+            ->hasFlash('status', 'verification-link-sent'),
         );
 });
 
@@ -39,7 +39,9 @@ test('profile information can be updated', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertRedirect(route('profile.edit'))
+        ->assertInertiaFlash('toast.type', 'success')
+        ->assertInertiaFlash('toast.message', 'Profile updated.');
 
     $user->refresh();
 

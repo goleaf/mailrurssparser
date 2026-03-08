@@ -242,8 +242,8 @@ class RelatedArticlesService
                 $hasSignal = true;
             }
 
-            if ($article->content_type !== null && $article->content_type !== '') {
-                $query->orWhere('articles.content_type', $article->content_type);
+            if ($article->content_type instanceof ArticleContentType) {
+                $query->orWhere('articles.content_type', $article->content_type->value);
                 $hasSignal = true;
             }
 
@@ -298,8 +298,7 @@ class RelatedArticlesService
         $sharedTermsCount = count(array_intersect($sourceTerms, $candidateTerms));
         $sameCategory = $article->category_id !== null && $candidate->category_id === $article->category_id;
         $sameSubCategory = $article->sub_category_id !== null && $candidate->sub_category_id === $article->sub_category_id;
-        $sameContentType = $article->content_type !== null
-            && $article->content_type !== ''
+        $sameContentType = $article->content_type instanceof ArticleContentType
             && $candidate->content_type === $article->content_type;
         $sameAuthor = $article->author !== null
             && $article->author !== ''
@@ -344,19 +343,19 @@ class RelatedArticlesService
             return 0;
         }
 
-        if ($candidate->published_at->greaterThanOrEqualTo(now()->subDay())) {
+        if ($candidate->published_at->greaterThanOrEqualTo(now()->minus(days: 1))) {
             return 10;
         }
 
-        if ($candidate->published_at->greaterThanOrEqualTo(now()->subDays(3))) {
+        if ($candidate->published_at->greaterThanOrEqualTo(now()->minus(days: 3))) {
             return 8;
         }
 
-        if ($candidate->published_at->greaterThanOrEqualTo(now()->subDays(7))) {
+        if ($candidate->published_at->greaterThanOrEqualTo(now()->minus(days: 7))) {
             return 6;
         }
 
-        if ($candidate->published_at->greaterThanOrEqualTo(now()->subDays(30))) {
+        if ($candidate->published_at->greaterThanOrEqualTo(now()->minus(days: 30))) {
             return 4;
         }
 
@@ -425,7 +424,7 @@ class RelatedArticlesService
 
     private function isEligible(Article $article): bool
     {
-        return $article->status === 'published'
+        return $article->status === ArticleStatus::Published
             && $article->published_at !== null
             && $article->published_at->isPast();
     }

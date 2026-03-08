@@ -26,6 +26,7 @@ it('registers api routes', function () {
         ->and(Route::has('api.v1.search.suggest'))->toBeTrue()
         ->and(Route::has('api.v1.search.highlights'))->toBeTrue()
         ->and(Route::has('api.v1.stats.overview'))->toBeTrue()
+        ->and(Route::has('api.v1.stats.metrics'))->toBeTrue()
         ->and(Route::has('api.v1.stats.chart'))->toBeTrue()
         ->and(Route::has('api.v1.stats.popular'))->toBeTrue()
         ->and(Route::has('api.v1.stats.calendar'))->toBeTrue()

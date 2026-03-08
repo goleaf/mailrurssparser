@@ -20,10 +20,17 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
-        return Inertia::render('settings/Profile', [
+        $response = Inertia::render('settings/Profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => $request->session()->get(SessionKey::Status),
         ]);
+
+        $status = $request->session()->get(SessionKey::Status);
+
+        if (is_string($status) && $status !== '') {
+            $response->flash('status', $status);
+        }
+
+        return $response;
     }
 
     /**
@@ -38,6 +45,11 @@ class ProfileController extends Controller
         }
 
         $request->user()->save();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Profile updated.',
+        ]);
 
         return to_route('profile.edit');
     }

@@ -20,7 +20,7 @@ class CategoryController extends Controller
 
         return CategoryResource::collection($categories)
             ->response()
-            ->header('Cache-Control', 'public, max-age=3600');
+            ->header('Cache-Control', 'public, max-age=900, stale-while-revalidate=2700');
     }
 
     public function show(string $slug): JsonResponse

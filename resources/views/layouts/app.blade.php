@@ -45,7 +45,14 @@
         </script>
 
         @vite(['resources/js/app.ts'])
-        @yield('head')
+
+        @hasSection('head')
+            @yield('head')
+        @endif
+
+        @hasstack('head')
+            @stack('head')
+        @endif
 
         <script type="application/ld+json">
             {
@@ -71,5 +78,9 @@
                 <p>Включите JavaScript в настройках браузера.</p>
             </div>
         </noscript>
+
+        @hasstack('scripts')
+            @stack('scripts')
+        @endif
     </body>
 </html>

@@ -7,6 +7,7 @@ use App\Models\RssFeed;
 use App\Models\Tag;
 use App\Services\ArticleCacheKey;
 use App\Services\ArticleCacheService;
+use Illuminate\Support\Defer\DeferredCallbackCollection;
 use Illuminate\Support\Facades\Cache;
 
 test('article cache service stores categories using enum-backed cache keys', function () {
@@ -27,6 +28,7 @@ test('article cache service stores categories using enum-backed cache keys', fun
     expect($categories)->toHaveCount(1)
         ->and($categories->hasSole(fn (Category $item): bool => $item->id === $category->id))->toBeTrue()
         ->and(Cache::has(ArticleCacheKey::Categories))->toBeTrue()
+        ->and(Cache::has(ArticleCacheKey::flexibleCreated(ArticleCacheKey::Categories)))->toBeTrue()
         ->and(Cache::get(ArticleCacheKey::Categories))->toHaveCount(1);
 });
 
@@ -39,6 +41,7 @@ test('article cache service stores trending tags using centralized cache key gen
 
     expect($tags)->toHaveCount(10)
         ->and(Cache::has(ArticleCacheKey::trendingTags(10)))->toBeTrue()
+        ->and(Cache::has(ArticleCacheKey::flexibleCreated(ArticleCacheKey::trendingTags(10))))->toBeTrue()
         ->and(Cache::get(ArticleCacheKey::trendingTags(10)))->toHaveCount(10);
 });
 
@@ -77,5 +80,100 @@ test('article cache service stores overview analytics using the shared cache key
         ->and($overview['feeds']['active'])->toBe(1)
         ->and($overview['top_categories'])->toHaveCount(1)
         ->and($overview['trending_tags'])->toHaveCount(1)
-        ->and(Cache::has(ArticleCacheKey::StatsOverview))->toBeTrue();
+        ->and(Cache::has(ArticleCacheKey::StatsOverview))->toBeTrue()
+        ->and(Cache::has(ArticleCacheKey::flexibleCreated(ArticleCacheKey::StatsOverview)))->toBeTrue();
+});
+
+test('article cache service memoizes repeated category cache reads within the same request', function () {
+    Cache::forget(ArticleCacheKey::Categories);
+
+    $category = Category::factory()->create([
+        'slug' => 'memoized-politics',
+    ]);
+
+    Article::factory()->create([
+        'category_id' => $category->id,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $service = app(ArticleCacheService::class);
+
+    $service->getCategories();
+
+    $memoizedStore = Cache::memo()->getStore();
+    $memoizedEntries = (fn (): array => $this->cache)->call($memoizedStore);
+
+    expect($memoizedEntries)->toBeEmpty();
+
+    $service->getCategories();
+
+    $memoizedEntries = (fn (): array => $this->cache)->call($memoizedStore);
+
+    expect($memoizedEntries)->toHaveKey(Cache::memo()->getPrefix().ArticleCacheKey::Categories->value);
+});
+
+test('article cache service serves stale stats while refreshing the cache in the background', function () {
+    $category = Category::factory()->create(['slug' => 'fresh-news']);
+    $feed = RssFeed::factory()->create([
+        'category_id' => $category->id,
+        'is_active' => true,
+        'last_parsed_at' => now()->subMinute(),
+    ]);
+    $tag = Tag::factory()->create(['name' => 'Fresh', 'usage_count' => 3]);
+    $article = Article::factory()->create([
+        'category_id' => $category->id,
+        'rss_feed_id' => $feed->id,
+        'status' => 'published',
+        'published_at' => now()->subMinute(),
+        'views_count' => 7,
+    ]);
+    $article->tags()->attach($tag);
+
+    Cache::forget(ArticleCacheKey::StatsOverview);
+    Cache::forget(ArticleCacheKey::flexibleCreated(ArticleCacheKey::StatsOverview));
+
+    Cache::put(ArticleCacheKey::StatsOverview, [
+        'articles' => [
+            'total' => 0,
+            'today' => 0,
+            'this_week' => 0,
+            'breaking' => 0,
+            'featured' => 0,
+        ],
+        'views' => [
+            'total' => 0,
+            'today' => 0,
+            'this_week' => 0,
+            'unique_today' => 0,
+        ],
+        'top_categories' => [],
+        'trending_tags' => [],
+        'last_parse' => null,
+        'feeds' => [
+            'total' => 0,
+            'active' => 0,
+            'errors' => 0,
+        ],
+    ], 600);
+    Cache::put(
+        ArticleCacheKey::flexibleCreated(ArticleCacheKey::StatsOverview),
+        now()->minus(minutes: 5)->getTimestamp(),
+        600,
+    );
+
+    $overview = app(ArticleCacheService::class)->getStatsOverview();
+
+    $deferredCallbacks = app(DeferredCallbackCollection::class);
+
+    expect($overview['articles']['total'])->toBe(0)
+        ->and($deferredCallbacks)->toHaveCount(1);
+
+    $deferredCallbacks->invoke();
+
+    $refreshedOverview = Cache::get(ArticleCacheKey::StatsOverview);
+
+    expect($refreshedOverview['articles']['total'])->toBe(1)
+        ->and($refreshedOverview['views']['total'])->toBe(7)
+        ->and($refreshedOverview['feeds']['active'])->toBe(1);
 });

@@ -34,7 +34,8 @@ it('lists active categories with sub categories', function () {
 
     $response->assertOk()
         ->assertHeaderContains('Cache-Control', 'public')
-        ->assertHeaderContains('Cache-Control', 'max-age=3600');
+        ->assertHeaderContains('Cache-Control', 'max-age=900')
+        ->assertHeaderContains('Cache-Control', 'stale-while-revalidate=2700');
 
     $payload = $response->json('data');
 

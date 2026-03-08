@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
+use App\Services\MetricTracker;
+use App\Services\TrackedMetric;
 use Attla\EncodedAttributes\HasEncodedAttributes;
 use Filament\Forms\Components\RichEditor\MentionProvider;
 use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
@@ -21,11 +25,11 @@ use Laravel\Scout\Searchable;
 class Article extends Model implements HasRichContent
 {
     use HasEncodedAttributes;
+
     /** @use HasFactory<\Database\Factories\ArticleFactory> */
     use HasFactory;
 
     use InteractsWithRichContent;
-
     use Searchable;
     use SoftDeletes;
 
@@ -89,6 +93,8 @@ class Article extends Model implements HasRichContent
     protected function casts(): array
     {
         return [
+            'status' => ArticleStatus::class,
+            'content_type' => ArticleContentType::class,
             'published_at' => 'datetime',
             'rss_parsed_at' => 'datetime',
             'last_edited_at' => 'datetime',
@@ -161,12 +167,14 @@ class Article extends Model implements HasRichContent
 
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', 'published')->where('published_at', '<=', now());
+        return $query
+            ->where('status', ArticleStatus::Published->value)
+            ->where('published_at', '<=', now());
     }
 
     public function scopeDraft(Builder $query): Builder
     {
-        return $query->where('status', 'draft');
+        return $query->where('status', ArticleStatus::Draft->value);
     }
 
     public function scopeFeatured(Builder $query): Builder
@@ -176,12 +184,12 @@ class Article extends Model implements HasRichContent
 
     public function scopeBreaking(Builder $query): Builder
     {
-        return $query->where('is_breaking', true)->where('published_at', '>=', now()->subHours(24));
+        return $query->where('is_breaking', true)->where('published_at', '>=', now()->minus(hours: 24));
     }
 
     public function scopePending(Builder $query): Builder
     {
-        return $query->where('status', 'pending');
+        return $query->where('status', ArticleStatus::Pending->value);
     }
 
     public function scopePinned(Builder $query): Builder
@@ -227,9 +235,11 @@ class Article extends Model implements HasRichContent
         return $query->whereDate('published_at', $date);
     }
 
-    public function scopeByContentType(Builder $query, string $type): Builder
+    public function scopeByContentType(Builder $query, string|ArticleContentType $type): Builder
     {
-        return $query->where('content_type', $type);
+        $contentType = ArticleContentType::fromValue($type);
+
+        return $query->where('content_type', $contentType?->value ?? (string) $type);
     }
 
     public function scopeSearch(Builder $query, string $term): Builder
@@ -261,7 +271,7 @@ class Article extends Model implements HasRichContent
     public function scopeTrending(Builder $query, int $hours = 24): Builder
     {
         return $query
-            ->where('published_at', '>=', now()->subHours($hours))
+            ->where('published_at', '>=', now()->minus(hours: $hours))
             ->orderByDesc('views_count');
     }
 
@@ -309,7 +319,7 @@ class Article extends Model implements HasRichContent
 
     public function getIsRecentAttribute(): bool
     {
-        return $this->published_at !== null && $this->published_at->gte(now()->subHours(6));
+        return $this->published_at !== null && $this->published_at->gte(now()->minus(hours: 6));
     }
 
     protected static function categoryMentionProvider(): MentionProvider
@@ -377,6 +387,7 @@ class Article extends Model implements HasRichContent
      */
     public function incrementViews(string $ipHash, string $sessionHash, array $meta = []): void
     {
+        $viewedAt = now();
         $hasRecentView = ArticleView::query()
             ->where('article_id', $this->id)
             ->where(function (Builder $query) use ($ipHash, $sessionHash): void {
@@ -386,7 +397,7 @@ class Article extends Model implements HasRichContent
                     $query->orWhere('session_hash', $sessionHash);
                 }
             })
-            ->where('viewed_at', '>=', now()->subHour())
+            ->where('viewed_at', '>=', $viewedAt->minus(hours: 1))
             ->exists();
 
         if ($hasRecentView) {
@@ -417,8 +428,22 @@ class Article extends Model implements HasRichContent
             'session_id' => $meta['session_id'] ?? ($sessionHash !== '' ? $sessionHash : null),
             'user_agent' => $meta['user_agent'] ?? null,
             'referer' => $meta['referer'] ?? null,
-            'viewed_at' => now(),
+            'viewed_at' => $viewedAt,
         ]);
+
+        app(MetricTracker::class)->record(
+            TrackedMetric::ArticleView,
+            measurable: $this,
+            recordedAt: $viewedAt,
+        );
+
+        if ($isUniqueView) {
+            app(MetricTracker::class)->record(
+                TrackedMetric::ArticleUniqueView,
+                measurable: $this,
+                recordedAt: $viewedAt,
+            );
+        }
 
         $this->refresh();
     }

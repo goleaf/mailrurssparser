@@ -21,7 +21,7 @@ class NewsletterSubscribeRequest extends FormRequest
             'email' => ['required', 'email', 'max:255'],
             'name' => ['nullable', 'string', 'max:255'],
             'category_ids' => ['nullable', 'array'],
-            'category_ids.*' => ['integer', 'exists:categories,id'],
+            'category_ids.*' => ['integer:strict', 'exists:categories,id'],
         ];
     }
 }

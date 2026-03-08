@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Form } from '@inertiajs/svelte';
+    import { Form, page } from '@inertiajs/svelte';
     import AppHead from '@/components/AppHead.svelte';
     import InputError from '@/components/InputError.svelte';
     import TextLink from '@/components/TextLink.svelte';
@@ -14,14 +14,14 @@
     import { request } from '@/routes/password';
 
     let {
-        status = '',
         canResetPassword,
         canRegister,
     }: {
-        status?: string;
         canResetPassword: boolean;
         canRegister: boolean;
     } = $props();
+
+    const flashStatus = $derived($page.flash.status ?? '');
 </script>
 
 <AppHead title="Log in" />
@@ -30,9 +30,9 @@
     title="Log in to your account"
     description="Enter your email and password below to log in"
 >
-    {#if status}
+    {#if flashStatus}
         <div class="mb-4 text-center text-sm font-medium text-green-600">
-            {status}
+            {flashStatus}
         </div>
     {/if}
 

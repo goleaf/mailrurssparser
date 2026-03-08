@@ -8,6 +8,7 @@
     import Pagination from '@/components/Pagination.svelte';
     import SkeletonCard from '@/components/SkeletonCard.svelte';
     import { setSeoMeta } from '@/composables/useSeo.js';
+    import { searchArticleContentTypeOptions } from '@/lib/articleEnums';
     import * as api from '@/lib/api';
     import { cn } from '@/lib/utils';
     import { appState, initApp } from '@/stores/app.svelte.js';
@@ -103,14 +104,7 @@
         { key: 'popular', label: 'Популярные' },
     ] as const;
 
-    const contentTypeOptions = [
-        { value: '', label: 'Все форматы' },
-        { value: 'news', label: 'Новости' },
-        { value: 'article', label: 'Статьи' },
-        { value: 'opinion', label: 'Мнения' },
-        { value: 'analysis', label: 'Аналитика' },
-        { value: 'interview', label: 'Интервью' },
-    ] as const;
+    const contentTypeOptions = searchArticleContentTypeOptions;
 
     let query = $state('');
     let activeQuery = $state('');

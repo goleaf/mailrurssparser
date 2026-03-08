@@ -3,6 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\Category;
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -36,8 +38,8 @@ class ArticleFactory extends Factory
             'author' => fake()->optional()->name(),
             'author_url' => fake()->boolean(30) ? fake()->url() : null,
             'source_name' => fake()->optional()->company(),
-            'status' => fake()->randomElement(['draft', 'pending', 'published', 'archived']),
-            'content_type' => fake()->randomElement(['news', 'article', 'opinion', 'analysis', 'interview']),
+            'status' => fake()->randomElement(ArticleStatus::values()),
+            'content_type' => fake()->randomElement(ArticleContentType::values()),
             'is_featured' => fake()->boolean(10),
             'is_breaking' => fake()->boolean(5),
             'is_pinned' => fake()->boolean(5),

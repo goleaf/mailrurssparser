@@ -4,6 +4,7 @@
     import SlidersHorizontal from 'lucide-svelte/icons/sliders-horizontal';
     import X from 'lucide-svelte/icons/x';
     import { slide } from 'svelte/transition';
+    import { filterBarArticleContentTypeOptions } from '@/lib/articleEnums';
     import { cn, debounce } from '@/lib/utils';
     import { appState } from '@/stores/app.svelte.js';
     import {
@@ -39,14 +40,7 @@
         { key: 'importance', label: 'Важность' },
     ] as const;
 
-    const contentTypes = [
-        { value: null, label: 'Все' },
-        { value: 'news', label: '📰 Новости' },
-        { value: 'article', label: '📝 Статьи' },
-        { value: 'opinion', label: '💬 Мнения' },
-        { value: 'analysis', label: '📊 Аналитика' },
-        { value: 'interview', label: '🎤 Интервью' },
-    ] as const;
+    const contentTypes = filterBarArticleContentTypeOptions;
 
     let { pagination = null }: { pagination?: PaginationMeta } = $props();
 

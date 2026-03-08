@@ -21,7 +21,12 @@ return new class extends Migration
             $table->unsignedSmallInteger('last_run_error_count')->default(0)->after('last_run_skip_count');
             $table->unsignedSmallInteger('consecutive_failures')->default(0)->after('last_run_error_count');
             $table->json('extra_settings')->nullable()->after('last_error');
-            $table->index(['is_active', 'next_parse_at']);
+        });
+
+        Schema::whenTableDoesntHaveIndex('rss_feeds', ['is_active', 'next_parse_at'], function (): void {
+            Schema::table('rss_feeds', function (Blueprint $table) {
+                $table->index(['is_active', 'next_parse_at']);
+            });
         });
     }
 
@@ -30,8 +35,13 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::whenTableHasIndex('rss_feeds', ['is_active', 'next_parse_at'], function (): void {
+            Schema::table('rss_feeds', function (Blueprint $table) {
+                $table->dropIndex(['is_active', 'next_parse_at']);
+            });
+        });
+
         Schema::table('rss_feeds', function (Blueprint $table) {
-            $table->dropIndex(['is_active', 'next_parse_at']);
             $table->dropColumn([
                 'source_name',
                 'language',

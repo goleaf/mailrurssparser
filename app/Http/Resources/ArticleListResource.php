@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +14,9 @@ class ArticleListResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $status = ArticleStatus::fromValue($this->status);
+        $contentType = ArticleContentType::fromValue($this->content_type);
+
         return [
             'id' => $this->id,
             'title' => $this->title,
@@ -22,8 +27,10 @@ class ArticleListResource extends JsonResource
             'source_url' => $this->source_url,
             'author' => $this->author,
             'source_name' => $this->source_name,
-            'status' => $this->status,
-            'content_type' => $this->content_type,
+            'status' => $status?->value ?? $this->status,
+            'status_label' => $status?->label('ru'),
+            'content_type' => $contentType?->value ?? $this->content_type,
+            'content_type_label' => $contentType?->label('ru'),
             'is_featured' => $this->is_featured,
             'is_breaking' => $this->is_breaking,
             'is_pinned' => $this->is_pinned,

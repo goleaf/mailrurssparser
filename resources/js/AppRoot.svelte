@@ -1,6 +1,7 @@
 <script lang="ts">
+    import { page } from '@inertiajs/svelte';
     import { onMount } from 'svelte';
-    import Toast from '@/components/ui/Toast.svelte';
+    import Toast, { showToast, type ToastType } from '@/components/ui/Toast.svelte';
     import { initApp } from '@/stores/app.svelte.js';
 
     type AppRootProps = {
@@ -12,14 +13,46 @@
         registration: ServiceWorkerRegistration;
     };
 
+    type FlashToast = {
+        message: string;
+        type?: ToastType;
+    };
+
+    type InertiaPage = {
+        flash?: {
+            toast?: FlashToast | null;
+        } | null;
+    };
+
     let { App, props }: AppRootProps = $props();
 
     let updateRegistration = $state<ServiceWorkerRegistration | null>(null);
+    let lastFlashToastSignature = $state('');
 
     function applyUpdate(): void {
         updateRegistration?.waiting?.postMessage({
             type: 'SKIP_WAITING',
         });
+    }
+
+    function syncFlashToast(currentPage?: InertiaPage): void {
+        const toast = currentPage?.flash?.toast;
+
+        if (!toast || toast.message === '') {
+            lastFlashToastSignature = '';
+
+            return;
+        }
+
+        const signature = JSON.stringify(toast);
+
+        if (signature === lastFlashToastSignature) {
+            return;
+        }
+
+        lastFlashToastSignature = signature;
+
+        showToast(toast.message, toast.type ?? 'info');
     }
 
     onMount(() => {
@@ -28,6 +61,10 @@
         }
 
         void initApp();
+
+        const unsubscribePage = page.subscribe((currentPage) => {
+            syncFlashToast(currentPage as InertiaPage | undefined);
+        });
 
         const handleUpdate = (event: Event): void => {
             const detail = (event as CustomEvent<UpdateDetail>).detail;
@@ -38,6 +75,7 @@
         window.addEventListener('sw:update-ready', handleUpdate);
 
         return () => {
+            unsubscribePage();
             window.removeEventListener('sw:update-ready', handleUpdate);
         };
     });

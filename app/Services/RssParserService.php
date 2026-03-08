@@ -9,6 +9,8 @@ use App\Models\RssParseLog;
 use App\Models\Tag;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Request as HttpClientRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -95,6 +97,41 @@ class RssParserService
     }
 
     /**
+     * @return array<string, int|string>
+     */
+    private function feedRequestAttributes(string $requestUrl, string $originalUrl, int $attempt, int $maxRetries): array
+    {
+        return [
+            'request_type' => 'rss_feed',
+            'request_url' => $requestUrl,
+            'original_url' => $originalUrl,
+            'attempt' => $attempt,
+            'max_retries' => $maxRetries,
+        ];
+    }
+
+    private function newFeedRequest(string $requestUrl, string $originalUrl, int $attempt, int $maxRetries): PendingRequest
+    {
+        return Http::timeout((int) config('rss.parser.timeout', 30))
+            ->connectTimeout((int) config('rss.parser.connect_timeout', 10))
+            ->withoutVerifying()
+            ->withoutRedirecting()
+            ->withHeaders([
+                'User-Agent' => (string) config('rss.parser.user_agent'),
+                'Accept' => 'application/rss+xml, application/xml, text/xml, */*',
+                'Accept-Encoding' => 'gzip, deflate',
+                'Cache-Control' => 'no-cache',
+            ])
+            ->withAttributes($this->feedRequestAttributes($requestUrl, $originalUrl, $attempt, $maxRetries))
+            ->beforeSending(function (HttpClientRequest $request): void {
+                $context = $request->attributes();
+                $context['url'] = $request->url();
+
+                $this->logger()->debug('RSS request sending.', $context);
+            });
+    }
+
+    /**
      * @throws \RuntimeException
      */
     private function fetchWithRetry(string $url, int $maxRetries = 3): string
@@ -102,32 +139,23 @@ class RssParserService
         $currentUrl = $url;
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            $requestUrl = $currentUrl;
+
             try {
-                $response = Http::timeout((int) config('rss.parser.timeout', 30))
-                    ->connectTimeout((int) config('rss.parser.connect_timeout', 10))
-                    ->withoutVerifying()
-                    ->afterResponse(function (Response $response) use ($attempt, &$currentUrl): void {
-                        $context = [
-                            'url' => $currentUrl,
-                            'attempt' => $attempt,
-                            'status' => $response->status(),
-                        ];
+                $response = $this->newFeedRequest($requestUrl, $url, $attempt, $maxRetries)
+                    ->get($requestUrl)
+                    ->tap(function (Response $response) use ($attempt, $requestUrl, $url, $maxRetries): void {
+                        $context = $this->feedRequestAttributes($requestUrl, $url, $attempt, $maxRetries);
+                        $context['status'] = $response->status();
 
-                        $location = trim((string) $response->header('Location'));
+                        $location = $response->redirectLocation();
 
-                        if ($location !== '') {
+                        if ($location !== null) {
                             $context['location'] = $location;
                         }
 
                         $this->logger()->debug('RSS response received.', $context);
-                    })
-                    ->withHeaders([
-                        'User-Agent' => (string) config('rss.parser.user_agent'),
-                        'Accept' => 'application/rss+xml, application/xml, text/xml, */*',
-                        'Accept-Encoding' => 'gzip, deflate',
-                        'Cache-Control' => 'no-cache',
-                    ])
-                    ->get($currentUrl);
+                    });
 
                 $status = $response->status();
 
@@ -135,10 +163,10 @@ class RssParserService
                     return $response->body();
                 }
 
-                if (in_array($status, [301, 302], true)) {
-                    $location = trim((string) $response->header('Location'));
+                if ($response->isRedirectStatus()) {
+                    $location = $response->redirectLocation();
 
-                    if ($location !== '') {
+                    if ($location !== null) {
                         $currentUrl = $location;
 
                         continue;
@@ -568,12 +596,14 @@ class RssParserService
         $content = $fullHtml !== '' ? $fullHtml : $description;
         $isFeatured = $feed->auto_featured && ! Article::query()->where('rss_feed_id', $rssFeedId)->exists();
         $shortDescriptionLength = (int) ($extraSettings['short_description_length'] ?? config('rss.article.short_description_length', 300));
-        $status = is_string($extraSettings['status'] ?? null)
-            ? (string) $extraSettings['status']
-            : ($feed->auto_publish ? 'published' : 'draft');
-        $contentType = is_string($extraSettings['content_type'] ?? null)
-            ? (string) $extraSettings['content_type']
-            : 'news';
+        $status = ArticleStatus::fromValue(
+            $extraSettings['status'] ?? null,
+            $feed->auto_publish ? ArticleStatus::Published : ArticleStatus::Draft,
+        );
+        $contentType = ArticleContentType::fromValue(
+            $extraSettings['content_type'] ?? null,
+            ArticleContentType::News,
+        );
         $sourceName = is_string($extraSettings['source_name'] ?? null) && $extraSettings['source_name'] !== ''
             ? (string) $extraSettings['source_name']
             : $feed->source_name;
@@ -598,8 +628,8 @@ class RssParserService
             'rss_content' => $content,
             'author' => $author,
             'source_name' => $sourceName,
-            'status' => $status,
-            'content_type' => $contentType,
+            'status' => $status->value,
+            'content_type' => $contentType->value,
             'is_featured' => $isFeatured,
             'importance' => $this->guessImportance($title, $description),
             'reading_time' => $this->calculateReadingTime($content),
@@ -779,6 +809,26 @@ class RssParserService
                 'error_message' => $error,
                 'item_errors' => $itemErrors,
             ]);
+
+            app(MetricTracker::class)->recordMany(array_filter([
+                [
+                    'metric' => TrackedMetric::RssParseRun,
+                    'measurable' => $feed,
+                    'recorded_at' => $log->finished_at ?? now(),
+                ],
+                $new > 0 ? [
+                    'metric' => TrackedMetric::RssArticleImported,
+                    'value' => $new,
+                    'measurable' => $feed,
+                    'recorded_at' => $log->finished_at ?? now(),
+                ] : null,
+                ($error !== null || $errors > 0) ? [
+                    'metric' => TrackedMetric::RssParseFailure,
+                    'value' => max(1, $errors),
+                    'measurable' => $feed,
+                    'recorded_at' => $log->finished_at ?? now(),
+                ] : null,
+            ]));
         }
 
         $this->logger()->info("Feed parsed: {$new} new, {$skip} skipped, {$errors} errors");

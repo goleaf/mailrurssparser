@@ -1,10 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\ArticleController;
 use App\Models\Article;
 use App\Models\ArticleView;
 use App\Models\Category;
-use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
     if (! trait_exists(Laravel\Scout\Searchable::class)) {
@@ -13,8 +11,6 @@ beforeEach(function () {
 });
 
 it('filters articles by category', function () {
-    Route::get('/api/articles', [ArticleController::class, 'index'])->name('api.articles.index');
-
     $politics = Category::factory()->create(['slug' => 'politics']);
     $sports = Category::factory()->create(['slug' => 'sports']);
 
@@ -30,7 +26,10 @@ it('filters articles by category', function () {
         'published_at' => now()->subHour(),
     ]);
 
-    $response = $this->getJson('/api/articles?category=politics&per_page=10');
+    $response = $this->getJson(route('api.v1.articles.index', [
+        'category' => 'politics',
+        'per_page' => 10,
+    ]));
 
     $response->assertOk();
 
@@ -42,8 +41,6 @@ it('filters articles by category', function () {
 });
 
 it('increments views when showing an article', function () {
-    Route::get('/api/articles/{slug}', [ArticleController::class, 'show'])->name('api.articles.show');
-
     $category = Category::factory()->create();
 
     $article = Article::factory()->create([
@@ -54,7 +51,7 @@ it('increments views when showing an article', function () {
     ]);
 
     $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
-        ->getJson('/api/articles/'.$article->slug)
+        ->getJson(route('api.v1.articles.show', ['slug' => $article->slug]))
         ->assertOk();
 
     expect($article->refresh()->views_count)->toBe(1)

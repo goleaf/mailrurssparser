@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Services\ArticleContentType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ArticleIndexRequest extends FormRequest
 {
@@ -23,7 +25,7 @@ class ArticleIndexRequest extends FormRequest
             'tag' => ['nullable', 'string', 'max:100'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:100'],
-            'content_type' => ['nullable', 'in:news,article,opinion,analysis,interview'],
+            'content_type' => ['nullable', Rule::enum(ArticleContentType::class)],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date'],
             'date' => ['nullable', 'date'],

@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Articles\Schemas;
 
 use App\Filament\Support\SlugGeneratorAction;
 use App\Models\Article;
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
@@ -230,14 +232,8 @@ class ArticleForm
                     ->schema([
                         Select::make('content_type')
                             ->required()
-                            ->default('news')
-                            ->options([
-                                'news' => 'Новости',
-                                'article' => 'Статья',
-                                'opinion' => 'Мнение',
-                                'analysis' => 'Аналитика',
-                                'interview' => 'Интервью',
-                            ]),
+                            ->default(ArticleContentType::News->value)
+                            ->options(ArticleContentType::class),
                         Select::make('importance')
                             ->required()
                             ->default(5)
@@ -266,13 +262,8 @@ class ArticleForm
             ->schema([
                 Select::make('status')
                     ->required()
-                    ->default('draft')
-                    ->options([
-                        'draft' => 'Черновик',
-                        'pending' => 'На модерации',
-                        'published' => 'Опубликовано',
-                        'archived' => 'Архив',
-                    ]),
+                    ->default(ArticleStatus::Draft->value)
+                    ->options(ArticleStatus::class),
                 DateTimePicker::make('published_at')
                     ->seconds(false)
                     ->displayFormat('d.m.Y H:i'),

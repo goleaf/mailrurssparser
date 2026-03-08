@@ -1,3 +1,4 @@
+import type { VisitOptions } from '@inertiajs/core';
 import { createInertiaApp } from '@inertiajs/svelte';
 import type { ResolvedComponent } from '@inertiajs/svelte';
 import { hydrate, mount } from 'svelte';
@@ -9,13 +10,24 @@ import { initializeDarkMode } from '@/stores/app.svelte.js';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 const pages = import.meta.glob<ResolvedComponent>('./pages/**/*.svelte');
 
+function defaultVisitOptions(
+    _href: string,
+    options: VisitOptions,
+): VisitOptions {
+    if (options.viewTransition !== undefined) {
+        return {};
+    }
+
+    const method = (options.method ?? 'get').toLowerCase();
+
+    return method === 'get' ? { viewTransition: true } : {};
+}
+
 function resolvePage(name: string): Promise<ResolvedComponent> {
     const page = pages[`./pages/${name}.svelte`];
 
     if (!page) {
-        return Promise.reject(
-            new Error(`Unknown Inertia page: ${name}`),
-        );
+        return Promise.reject(new Error(`Unknown Inertia page: ${name}`));
     }
 
     return page();
@@ -36,10 +48,7 @@ function dispatchServiceWorkerUpdate(
 }
 
 function registerServiceWorker(): void {
-    if (
-        typeof window === 'undefined' ||
-        !('serviceWorker' in navigator)
-    ) {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
         return;
     }
 
@@ -90,6 +99,9 @@ function registerServiceWorker(): void {
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: resolvePage,
+    defaults: {
+        visitOptions: defaultVisitOptions,
+    },
     setup({ el, App, props }) {
         if (!el) return;
 

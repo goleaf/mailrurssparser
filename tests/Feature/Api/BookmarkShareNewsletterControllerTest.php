@@ -3,7 +3,10 @@
 use App\Mail\ConfirmSubscriptionMail;
 use App\Models\Article;
 use App\Models\Bookmark;
+use App\Models\Category;
 use App\Models\NewsletterSubscriber;
+use App\Services\SendNewsletterConfirmationMail;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Mail;
 
 it('returns bookmarked articles for the current anonymous session', function () {
@@ -62,6 +65,15 @@ it('toggles bookmarks and reports bookmarked ids for the current session', funct
         ->and($article->fresh()->bookmarks_count)->toBe(0);
 });
 
+it('rejects string bookmark ids when strict validation is enabled', function () {
+    $article = Article::factory()->create();
+
+    $this->postJson('/api/v1/bookmarks/check', [
+        'ids' => [(string) $article->id],
+    ])->assertUnprocessable()
+        ->assertInvalid(['ids.0']);
+});
+
 it('tracks shares and returns a share url', function () {
     $article = Article::factory()->create([
         'title' => 'Portal Story',
@@ -115,6 +127,38 @@ it('subscribes and resends confirmation emails based on subscriber state', funct
         ->assertJson([
             'already_subscribed' => true,
         ]);
+});
+
+it('dispatches newsletter confirmation mail jobs for new and unconfirmed subscribers', function () {
+    Bus::fake();
+
+    $this->postJson('/api/v1/newsletter/subscribe', [
+        'email' => 'reader@example.com',
+        'name' => 'Reader',
+    ])->assertSuccessful();
+
+    $subscriber = NewsletterSubscriber::query()->where('email', 'reader@example.com')->firstOrFail();
+
+    Bus::assertDispatched(SendNewsletterConfirmationMail::class, function (SendNewsletterConfirmationMail $job) use ($subscriber): bool {
+        return $job->subscriber->is($subscriber)
+            && $job->connection === 'deferred';
+    });
+
+    $this->postJson('/api/v1/newsletter/subscribe', [
+        'email' => 'reader@example.com',
+    ])->assertSuccessful();
+
+    Bus::assertDispatchedTimes(SendNewsletterConfirmationMail::class, 2);
+});
+
+it('rejects string newsletter category ids when strict validation is enabled', function () {
+    $category = Category::factory()->create();
+
+    $this->postJson('/api/v1/newsletter/subscribe', [
+        'email' => 'reader@example.com',
+        'category_ids' => [(string) $category->id],
+    ])->assertUnprocessable()
+        ->assertInvalid(['category_ids.0']);
 });
 
 it('confirms and unsubscribes newsletter subscribers', function () {

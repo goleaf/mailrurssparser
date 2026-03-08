@@ -6,6 +6,8 @@ use App\Models\Article;
 use App\Models\ArticleView;
 use App\Models\RssFeed;
 use App\Models\Tag;
+use App\Services\MetricReportService;
+use App\Services\TrackedMetric;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\StatsOverviewWidget as BaseStatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -16,7 +18,14 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
 
     protected function getStats(): array
     {
-        $startDate = today()->subDays(6);
+        $metricTotals = app(MetricReportService::class)->totals([
+            TrackedMetric::BookmarkAdded,
+            TrackedMetric::RssArticleImported,
+        ], 24);
+        $newsletterTotals = app(MetricReportService::class)->totals([
+            TrackedMetric::NewsletterSubscription,
+        ], 168);
+        $startDate = today()->minus(days: 6);
         $articleCounts = Article::query()
             ->published()
             ->whereDate('published_at', '>=', $startDate)
@@ -26,7 +35,7 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
             ->pluck('aggregate', 'date');
 
         $chart = collect(range(6, 0))
-            ->map(fn (int $days): int => (int) ($articleCounts[today()->subDays($days)->toDateString()] ?? 0))
+            ->map(fn (int $days): int => (int) ($articleCounts[today()->minus(days: $days)->toDateString()] ?? 0))
             ->all();
 
         return [
@@ -43,6 +52,12 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
                 ->color('primary'),
             Stat::make('Trending Tags', Tag::query()->where('is_trending', true)->count())
                 ->color(Color::Purple),
+            Stat::make('Bookmarks 24h', $metricTotals[TrackedMetric::BookmarkAdded->value] ?? 0)
+                ->color('info'),
+            Stat::make('Subscriptions 7d', $newsletterTotals[TrackedMetric::NewsletterSubscription->value] ?? 0)
+                ->color('success'),
+            Stat::make('RSS Imports 24h', $metricTotals[TrackedMetric::RssArticleImported->value] ?? 0)
+                ->color('warning'),
         ];
     }
 }

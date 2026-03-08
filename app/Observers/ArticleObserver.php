@@ -6,6 +6,7 @@ use App\Events\ArticleContentChanged;
 use App\Models\Article;
 use App\Services\ArticleCacheKey;
 use App\Services\RelatedArticlesService;
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Cache;
 
@@ -48,13 +49,21 @@ class ArticleObserver implements ShouldHandleEventsAfterCommit
 
     private function forgetCaches(): void
     {
-        Cache::forget(ArticleCacheKey::Categories);
-        Cache::forget(ArticleCacheKey::BreakingNews);
-        Cache::forget(ArticleCacheKey::FeaturedArticles);
-        Cache::forget(ArticleCacheKey::StatsOverview);
+        $cache = Cache::memo();
+
+        $this->forgetFlexibleCache($cache, ArticleCacheKey::Categories);
+        $this->forgetFlexibleCache($cache, ArticleCacheKey::BreakingNews);
+        $this->forgetFlexibleCache($cache, ArticleCacheKey::FeaturedArticles);
+        $this->forgetFlexibleCache($cache, ArticleCacheKey::StatsOverview);
 
         foreach ([10, 20, 30, 50, 100] as $limit) {
-            Cache::forget(ArticleCacheKey::trendingTags($limit));
+            $this->forgetFlexibleCache($cache, ArticleCacheKey::trendingTags($limit));
         }
+    }
+
+    private function forgetFlexibleCache(Repository $cache, ArticleCacheKey|string $key): void
+    {
+        $cache->forget($key);
+        $cache->forget(ArticleCacheKey::flexibleCreated($key));
     }
 }

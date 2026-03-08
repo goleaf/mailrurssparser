@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Services\ArticleContentType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ArticleSearchRequest extends FormRequest
 {
@@ -21,7 +23,7 @@ class ArticleSearchRequest extends FormRequest
             'q' => ['required', 'string', 'min:2', 'max:200'],
             'category' => ['nullable', 'string', 'max:100'],
             'tag' => ['nullable', 'string', 'max:100'],
-            'content_type' => ['nullable', 'in:news,article,opinion,analysis,interview'],
+            'content_type' => ['nullable', Rule::enum(ArticleContentType::class)],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date'],
             'sort' => ['nullable', 'in:relevance,latest,popular'],

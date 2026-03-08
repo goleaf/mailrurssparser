@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Attla\EncodedAttributes\HasEncodedAttributes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -86,11 +87,28 @@ class RssFeed extends Model
             });
     }
 
+    protected function categoryName(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->category?->name);
+    }
+
+    protected function statusLabel(): Attribute
+    {
+        return Attribute::get(function (): string {
+            return match (true) {
+                ! $this->is_active => 'Disabled',
+                $this->last_error !== null && $this->last_error !== '' => 'Error',
+                $this->next_parse_at !== null && $this->next_parse_at->lte(now()) => 'Due',
+                default => 'OK',
+            };
+        });
+    }
+
     public function markParsed(int $new, int $skip, int $errors): void
     {
         $this->forceFill([
             'last_parsed_at' => now(),
-            'next_parse_at' => now()->addMinutes($this->fetch_interval ?: 15),
+            'next_parse_at' => now()->plus(minutes: $this->fetch_interval ?: 15),
             'articles_parsed_total' => $this->articles_parsed_total + $new,
             'last_run_new_count' => $new,
             'last_run_skip_count' => $skip,
@@ -108,7 +126,7 @@ class RssFeed extends Model
             'consecutive_failures' => $failures,
             'last_error' => $error,
             'last_run_error_count' => max(1, $this->last_run_error_count),
-            'next_parse_at' => now()->addMinutes($this->fetch_interval ?: 15),
+            'next_parse_at' => now()->plus(minutes: $this->fetch_interval ?: 15),
             'is_active' => $failures < 10,
         ])->save();
     }

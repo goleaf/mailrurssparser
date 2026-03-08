@@ -18,6 +18,7 @@
     import SkeletonCard from '@/components/SkeletonCard.svelte';
     import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
     import { setSeoMeta } from '@/composables/useSeo.js';
+    import { getArticleContentTypeFilterLabel } from '@/lib/articleEnums';
     import * as api from '@/lib/api';
     import { appState, initApp } from '@/stores/app.svelte.js';
     import {
@@ -80,14 +81,6 @@
         per_page: number;
     };
 
-    const contentTypeLabels: Record<string, string> = {
-        news: 'Новости',
-        article: 'Статьи',
-        analysis: 'Аналитика',
-        opinion: 'Мнения',
-        interview: 'Интервью',
-    };
-
     let featuredArticles = $state<Article[]>([]);
     let trendingArticles = $state<Article[]>([]);
     let highlightsLoading = $state(true);
@@ -129,7 +122,7 @@
         }
 
         if (pageFilters.content_type) {
-            chips.push(contentTypeLabels[pageFilters.content_type] ?? pageFilters.content_type);
+            chips.push(getArticleContentTypeFilterLabel(pageFilters.content_type));
         }
 
         if (pageFilters.importance_min) {

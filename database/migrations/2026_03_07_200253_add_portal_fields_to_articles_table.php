@@ -30,9 +30,24 @@ return new class extends Migration
             $table->decimal('engagement_score', 8, 2)->default(0)->after('reading_time');
             $table->timestamp('last_edited_at')->nullable()->after('rss_parsed_at');
 
-            $table->index(['is_pinned', 'category_id']);
-            $table->index('importance');
-            $table->index('engagement_score');
+        });
+
+        Schema::whenTableDoesntHaveIndex('articles', ['is_pinned', 'category_id'], function (): void {
+            Schema::table('articles', function (Blueprint $table) {
+                $table->index(['is_pinned', 'category_id']);
+            });
+        });
+
+        Schema::whenTableDoesntHaveIndex('articles', ['importance'], function (): void {
+            Schema::table('articles', function (Blueprint $table) {
+                $table->index('importance');
+            });
+        });
+
+        Schema::whenTableDoesntHaveIndex('articles', ['engagement_score'], function (): void {
+            Schema::table('articles', function (Blueprint $table) {
+                $table->index('engagement_score');
+            });
         });
     }
 
@@ -41,10 +56,25 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::whenTableHasIndex('articles', ['is_pinned', 'category_id'], function (): void {
+            Schema::table('articles', function (Blueprint $table) {
+                $table->dropIndex(['is_pinned', 'category_id']);
+            });
+        });
+
+        Schema::whenTableHasIndex('articles', ['importance'], function (): void {
+            Schema::table('articles', function (Blueprint $table) {
+                $table->dropIndex(['importance']);
+            });
+        });
+
+        Schema::whenTableHasIndex('articles', ['engagement_score'], function (): void {
+            Schema::table('articles', function (Blueprint $table) {
+                $table->dropIndex(['engagement_score']);
+            });
+        });
+
         Schema::table('articles', function (Blueprint $table) {
-            $table->dropIndex(['is_pinned', 'category_id']);
-            $table->dropIndex(['importance']);
-            $table->dropIndex(['engagement_score']);
             $table->dropConstrainedForeignId('editor_id');
             $table->dropColumn([
                 'image_caption',

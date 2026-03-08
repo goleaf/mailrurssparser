@@ -9,8 +9,9 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\Tag;
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
     if (! trait_exists(Laravel\Scout\Searchable::class)) {
@@ -50,6 +51,8 @@ it('builds the article show resource payload', function () {
         'views_count' => 120,
         'shares_count' => 8,
         'bookmarks_count' => 3,
+        'status' => ArticleStatus::Published->value,
+        'content_type' => ArticleContentType::News->value,
         'published_at' => now(),
     ]);
 
@@ -67,15 +70,21 @@ it('builds the article show resource payload', function () {
     $article->setAttribute('similar_articles', [['id' => 30, 'title' => 'Similar']]);
     $article->setAttribute('more_from_category', [['id' => 40, 'title' => 'Category']]);
 
-    $route = Route::get('/articles/{article}', fn () => null)->name('api.articles.show');
-    $request = Request::create('/articles/'.$article->id, 'GET');
-    $request->setRouteResolver(fn () => $route);
+    $request = Request::create(
+        route('api.v1.articles.show', ['slug' => $article->slug]),
+        'GET',
+    );
+    $request->setRouteResolver(fn () => app('router')->getRoutes()->match($request));
 
     $resource = (new ArticleResource($article->load(['category', 'subCategory', 'tags'])))
         ->toArray($request);
 
     expect($resource['id'])->toBe($article->id)
         ->and($resource['title'])->toBe('Test Article')
+        ->and($resource['status'])->toBe(ArticleStatus::Published->value)
+        ->and($resource['status_label'])->toBe('Опубликовано')
+        ->and($resource['content_type'])->toBe(ArticleContentType::News->value)
+        ->and($resource['content_type_label'])->toBe('Новость')
         ->and($resource['reading_time_text'])->toBe('5 мин чтения')
         ->and($resource['category']['slug'])->toBe('politics')
         ->and($resource['sub_category']['slug'])->toBe('local')
@@ -108,6 +117,8 @@ it('builds the article list resource without show-only fields', function () {
 
     expect($resource)
         ->toHaveKey('reading_time_text')
+        ->toHaveKey('status_label')
+        ->toHaveKey('content_type_label')
         ->not->toHaveKey('full_content')
         ->not->toHaveKey('meta_title')
         ->not->toHaveKey('meta_description')

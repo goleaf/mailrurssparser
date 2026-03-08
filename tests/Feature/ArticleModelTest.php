@@ -3,6 +3,8 @@
 use App\Models\Article;
 use App\Models\ArticleView;
 use App\Models\Tag;
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
@@ -49,6 +51,47 @@ it('scopes published articles', function () {
     ]);
 
     expect(Article::published()->pluck('id')->all())->toBe([$published->id]);
+});
+
+it('applies rolling breaking and recent windows', function () {
+    $freshBreaking = Article::factory()->create([
+        'status' => 'published',
+        'is_breaking' => true,
+        'published_at' => now()->minus(hours: 23),
+    ]);
+
+    $staleBreaking = Article::factory()->create([
+        'status' => 'published',
+        'is_breaking' => true,
+        'published_at' => now()->minus(hours: 25),
+    ]);
+
+    $recentArticle = Article::factory()->create([
+        'status' => 'published',
+        'published_at' => now()->minus(hours: 5),
+    ]);
+
+    $staleArticle = Article::factory()->create([
+        'status' => 'published',
+        'published_at' => now()->minus(hours: 7),
+    ]);
+
+    expect(Article::query()->breaking()->pluck('id')->all())->toBe([$freshBreaking->id])
+        ->and($recentArticle->is_recent)->toBeTrue()
+        ->and($staleArticle->is_recent)->toBeFalse()
+        ->and($staleBreaking->fresh()->is_recent)->toBeFalse();
+});
+
+it('casts status and content type to translated enums', function () {
+    $article = Article::factory()->create([
+        'status' => ArticleStatus::Published->value,
+        'content_type' => ArticleContentType::Analysis->value,
+    ]);
+
+    expect($article->fresh()->status)->toBe(ArticleStatus::Published)
+        ->and($article->fresh()->status?->label('ru'))->toBe('Опубликовано')
+        ->and($article->fresh()->content_type)->toBe(ArticleContentType::Analysis)
+        ->and($article->fresh()->content_type?->label('ru'))->toBe('Аналитика');
 });
 
 it('syncs tags and updates usage counts', function () {

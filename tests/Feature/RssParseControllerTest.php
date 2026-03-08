@@ -123,3 +123,23 @@ it('parses a category and aggregates results', function () {
             'errors' => 0,
         ]);
 });
+
+it('returns failed dependency when a category has no active feeds', function () {
+    $user = User::factory()->create();
+    $category = Category::factory()->create(['slug' => 'inactive']);
+    RssFeed::factory()->create([
+        'category_id' => $category->id,
+        'is_active' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('rss.parse-category', $category->slug))
+        ->assertFailedDependency()
+        ->assertJson([
+            'success' => false,
+            'message' => 'No active feeds found for this category.',
+            'new' => 0,
+            'skipped' => 0,
+            'errors' => 0,
+        ]);
+});

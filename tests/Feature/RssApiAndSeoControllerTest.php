@@ -50,6 +50,7 @@ it('returns rss feed status labels', function () {
         ->assertJsonFragment([
             'id' => $disabled->id,
             'title' => 'Disabled Feed',
+            'category_name' => 'Politics',
             'status_label' => 'Disabled',
         ])
         ->assertJsonFragment([
@@ -67,6 +68,8 @@ it('returns rss feed status labels', function () {
             'title' => 'Ok Feed',
             'status_label' => 'OK',
         ]);
+
+    expect($response->json('data.0'))->not->toHaveKeys(['category', 'extra_settings']);
 });
 
 it('parses a single rss feed through the api endpoint', function () {
@@ -155,6 +158,26 @@ it('parses an rss category through the api endpoint', function () {
         ->assertJsonPath('totals.new', 1)
         ->assertJsonPath('totals.skip', 2)
         ->assertJsonPath('totals.errors', 0);
+});
+
+it('returns failed dependency when an rss category has no active feeds through the api endpoint', function () {
+    $category = Category::factory()->create(['slug' => 'empty-category']);
+    RssFeed::factory()->create([
+        'category_id' => $category->id,
+        'is_active' => false,
+    ]);
+
+    $this->postJson(route('api.v1.rss.parse-category', $category->slug))
+        ->assertFailedDependency()
+        ->assertJson([
+            'success' => false,
+            'message' => 'No active feeds found for this category.',
+            'totals' => [
+                'new' => 0,
+                'skip' => 0,
+                'errors' => 0,
+            ],
+        ]);
 });
 
 it('returns a sitemap xml response', function () {

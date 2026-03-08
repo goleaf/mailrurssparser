@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Inertia\Response;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
@@ -48,10 +49,9 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
+        Fortify::loginView(fn (Request $request) => $this->renderWithStatusFlash($request, 'auth/Login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canRegister' => Features::enabled(Features::registration()),
-            'status' => $request->session()->get(SessionKey::Status),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
@@ -59,19 +59,30 @@ class FortifyServiceProvider extends ServiceProvider
             'token' => $request->route('token'),
         ]));
 
-        Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/ForgotPassword', [
-            'status' => $request->session()->get(SessionKey::Status),
-        ]));
+        Fortify::requestPasswordResetLinkView(fn (Request $request) => $this->renderWithStatusFlash($request, 'auth/ForgotPassword'));
 
-        Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/VerifyEmail', [
-            'status' => $request->session()->get(SessionKey::Status),
-        ]));
+        Fortify::verifyEmailView(fn (Request $request) => $this->renderWithStatusFlash($request, 'auth/VerifyEmail'));
 
         Fortify::registerView(fn () => Inertia::render('auth/Register'));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/ConfirmPassword'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $props
+     */
+    private function renderWithStatusFlash(Request $request, string $component, array $props = []): Response
+    {
+        $response = Inertia::render($component, $props);
+        $status = $request->session()->get(SessionKey::Status);
+
+        if (is_string($status) && $status !== '') {
+            $response->flash('status', $status);
+        }
+
+        return $response;
     }
 
     /**

@@ -18,6 +18,13 @@ declare module 'vite/client' {
 
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
+        flashDataType: {
+            status?: string;
+            toast?: {
+                message: string;
+                type?: 'success' | 'error' | 'info' | 'warning';
+            };
+        };
         sharedPageProps: {
             name: string;
             auth: Auth;

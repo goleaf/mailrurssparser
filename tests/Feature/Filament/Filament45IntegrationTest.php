@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Tag;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
+use App\Services\StorageDisk;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
 use Filament\Facades\Filament;
@@ -130,7 +131,7 @@ it('configures the article editor with rich content and image workflow enhanceme
 });
 
 it('stores uploaded article images on the public disk and maps them to image_url', function () {
-    Storage::fake('public');
+    Storage::fake(StorageDisk::Public);
 
     $category = Category::factory()->create();
 
@@ -159,7 +160,7 @@ it('stores uploaded article images on the public disk and maps them to image_url
 
     $storedPath = ltrim((string) str($article?->image_url ?? '')->after('/storage/'), '/');
 
-    Storage::disk('public')->assertExists($storedPath);
+    Storage::disk(StorageDisk::Public)->assertExists($storedPath);
 });
 
 it('uses saved(false) for read only filament helper fields', function () {

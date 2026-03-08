@@ -1,15 +1,18 @@
 <?php
 
-use App\Models\Article;
-use App\Models\Category;
+use App\Http\Middleware\ApplyApiRequestContext;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Models\Article;
+use App\Models\Category;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        $middleware->alias([
+            'api.context' => ApplyApiRequestContext::class,
+        ]);
 
         $middleware->web(append: [
             HandleAppearance::class,
@@ -88,5 +94,14 @@ return Application::configure(basePath: dirname(__DIR__))
         })->hourly()->name('expire-breaking-news');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->throttle(function (\Throwable $exception) {
+            if (
+                $exception instanceof \RuntimeException
+                && Str::startsWith($exception->getMessage(), ['Feed unreachable', 'Feed gone', 'Invalid RSS'])
+            ) {
+                return Limit::perMinute(1)->by('rss-parser:'.$exception->getMessage());
+            }
+
+            return Limit::none();
+        });
     })->create();

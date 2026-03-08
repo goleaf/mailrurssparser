@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Form } from '@inertiajs/svelte';
+    import { Form, page } from '@inertiajs/svelte';
     import AppHead from '@/components/AppHead.svelte';
     import TextLink from '@/components/TextLink.svelte';
     import { Button } from '@/components/ui/button';
@@ -8,11 +8,7 @@
     import { logout } from '@/routes';
     import { send } from '@/routes/verification';
 
-    let {
-        status = '',
-    }: {
-        status?: string;
-    } = $props();
+    const flashStatus = $derived($page.flash.status ?? '');
 </script>
 
 <AppHead title="Email verification" />
@@ -21,7 +17,7 @@
     title="Verify email"
     description="Please verify your email address by clicking on the link we just emailed to you."
 >
-    {#if status === 'verification-link-sent'}
+    {#if flashStatus === 'verification-link-sent'}
         <div class="mb-4 text-center text-sm font-medium text-green-600">
             A new verification link has been sent to the email address you
             provided during registration.

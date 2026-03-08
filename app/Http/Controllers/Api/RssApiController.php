@@ -13,27 +13,22 @@ class RssApiController extends Controller
 {
     public function status(): JsonResponse
     {
-        $feeds = RssFeed::query()->with('category')->get()->map(function (RssFeed $feed): array {
-            $statusLabel = match (true) {
-                ! $feed->is_active => 'Disabled',
-                $feed->last_error !== null && $feed->last_error !== '' => 'Error',
-                $feed->next_parse_at !== null && $feed->next_parse_at->lte(now()) => 'Due',
-                default => 'OK',
-            };
-
-            return [
-                'id' => $feed->id,
-                'title' => $feed->title,
-                'category_name' => $feed->category?->name,
-                'is_active' => $feed->is_active,
-                'last_parsed_at' => $feed->last_parsed_at?->toIso8601String(),
-                'next_parse_at' => $feed->next_parse_at?->toIso8601String(),
-                'last_run_new_count' => $feed->last_run_new_count,
-                'consecutive_failures' => $feed->consecutive_failures,
-                'last_error' => $feed->last_error,
-                'status_label' => $statusLabel,
-            ];
-        });
+        $feeds = RssFeed::query()
+            ->with('category')
+            ->get()
+            ->withoutAppends()
+            ->setAppends(['category_name', 'status_label'])
+            ->setVisible([
+                'id',
+                'title',
+                'is_active',
+                'last_parsed_at',
+                'next_parse_at',
+                'last_run_new_count',
+                'consecutive_failures',
+                'last_error',
+            ])
+            ->mergeVisible(['category_name', 'status_label']);
 
         return response()->json(['data' => $feeds]);
     }
@@ -72,11 +67,25 @@ class RssApiController extends Controller
     {
         $category = Category::query()->where('slug', $slug)->firstOrFail();
         $parser = app(RssParserService::class);
-        $results = RssFeed::query()
+        $feeds = RssFeed::query()
             ->active()
             ->where('category_id', $category->id)
-            ->get()
-            ->map(fn (RssFeed $feed): array => $parser->parseFeed($feed, 'api'))
+            ->get();
+
+        if ($feeds->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active feeds found for this category.',
+                'results' => [],
+                'totals' => [
+                    'new' => 0,
+                    'skip' => 0,
+                    'errors' => 0,
+                ],
+            ], 424);
+        }
+
+        $results = $feeds->map(fn (RssFeed $feed): array => $parser->parseFeed($feed, 'api'))
             ->values();
 
         return response()->json([

@@ -22,3 +22,8 @@ it('creates rss feeds table with expected columns', function () {
         'updated_at',
     );
 });
+
+it('creates rss feed indexes for scheduling lookups', function () {
+    expect(Schema::hasIndex('rss_feeds', ['url'], 'unique'))->toBeTrue()
+        ->and(Schema::hasIndex('rss_feeds', ['is_active', 'next_parse_at']))->toBeTrue();
+});

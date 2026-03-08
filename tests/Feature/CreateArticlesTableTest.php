@@ -34,3 +34,12 @@ it('creates articles table with expected columns', function () {
         'deleted_at',
     );
 });
+
+it('creates article indexes needed for publishing and ranking queries', function () {
+    expect(Schema::hasIndex('articles', ['slug'], 'unique'))->toBeTrue()
+        ->and(Schema::hasIndex('articles', ['status', 'published_at']))->toBeTrue()
+        ->and(Schema::hasIndex('articles', ['category_id', 'status']))->toBeTrue()
+        ->and(Schema::hasIndex('articles', ['is_pinned', 'category_id']))->toBeTrue()
+        ->and(Schema::hasIndex('articles', ['importance']))->toBeTrue()
+        ->and(Schema::hasIndex('articles', ['engagement_score']))->toBeTrue();
+});

@@ -17,10 +17,8 @@
 
     let {
         mustVerifyEmail,
-        status = '',
     }: {
         mustVerifyEmail: boolean;
-        status?: string;
     } = $props();
 
     const breadcrumbItems: BreadcrumbItem[] = [
@@ -31,6 +29,7 @@
     ];
 
     const user = $derived($page.props.auth.user);
+    const flashStatus = $derived($page.flash.status ?? '');
 </script>
 
 <AppHead title="Profile settings" />
@@ -51,7 +50,7 @@
                 class="space-y-6"
                 options={{ preserveScroll: true }}
             >
-                {#snippet children({ errors, processing, recentlySuccessful })}
+                {#snippet children({ errors, processing })}
                     <div class="grid gap-2">
                         <Label for="name">Name</Label>
                         <Input
@@ -90,7 +89,7 @@
                                 </TextLink>
                             </p>
 
-                            {#if status === 'verification-link-sent'}
+                            {#if flashStatus === 'verification-link-sent'}
                                 <div
                                     class="mt-2 text-sm font-medium text-green-600"
                                 >
@@ -107,10 +106,6 @@
                             disabled={processing}
                             data-test="update-profile-button">Save</Button
                         >
-
-                        {#if recentlySuccessful}
-                            <p class="text-sm text-neutral-600">Saved.</p>
-                        {/if}
                     </div>
                 {/snippet}
             </Form>

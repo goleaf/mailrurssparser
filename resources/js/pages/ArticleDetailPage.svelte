@@ -4,6 +4,7 @@
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import ArticleCardCompact from '@/components/article/ArticleCardCompact.svelte';
     import { showToast } from '@/components/ui/Toast.svelte';
+    import { getArticleContentTypeLabel } from '@/lib/articleEnums';
     import { usePolling } from '@/composables/usePolling.js';
     import { injectJsonLd, setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
@@ -45,6 +46,7 @@
         author?: string | null;
         source_name?: string | null;
         content_type?: string | null;
+        content_type_label?: string | null;
         is_breaking?: boolean;
         reading_time?: number | null;
         reading_time_text?: string | null;
@@ -119,15 +121,8 @@
     );
 
     const contentTypeLabel = $derived(
-        article?.content_type
-            ? ({
-                  news: 'Новость',
-                  article: 'Статья',
-                  opinion: 'Мнение',
-                  analysis: 'Аналитика',
-                  interview: 'Интервью',
-              }[article.content_type] ?? '')
-            : '',
+        article?.content_type_label ??
+            getArticleContentTypeLabel(article?.content_type),
     );
 
     function sanitizeHtml(value: string): string {

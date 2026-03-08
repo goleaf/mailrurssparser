@@ -19,7 +19,7 @@ class BookmarkCheckRequest extends FormRequest
     {
         return [
             'ids' => ['required', 'array', 'max:50'],
-            'ids.*' => ['integer'],
+            'ids.*' => ['integer:strict'],
         ];
     }
 }

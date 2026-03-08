@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\User;
+use App\Services\SessionKey;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia as Assert;
 
 test('reset password link screen can be rendered', function () {
     $response = $this->get(route('password.request'));
@@ -15,7 +17,16 @@ test('reset password link can be requested', function () {
 
     $user = User::factory()->create();
 
-    $this->post(route('password.email'), ['email' => $user->email]);
+    $this->from(route('password.request'))
+        ->post(route('password.email'), ['email' => $user->email])
+        ->assertRedirect(route('password.request'));
+
+    $this->get(route('password.request'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('auth/ForgotPassword')
+            ->hasFlash('status'),
+        );
 
     Notification::assertSentTo($user, ResetPassword::class);
 });
@@ -55,8 +66,25 @@ test('password can be reset with valid token', function () {
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('login'));
 
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('auth/Login')
+                ->hasFlash('status'),
+            );
+
         return true;
     });
+});
+
+test('forgot password screen exposes flashed status', function () {
+    $this->withSession([SessionKey::Status->value => 'Reset link sent'])
+        ->get(route('password.request'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('auth/ForgotPassword')
+            ->hasFlash('status', 'Reset link sent'),
+        );
 });
 
 test('password cannot be reset with invalid token', function () {

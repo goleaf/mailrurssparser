@@ -17,3 +17,10 @@ it('creates article views table with expected columns', function () {
         'viewed_at',
     );
 });
+
+it('creates article view indexes for analytics filters', function () {
+    expect(Schema::hasIndex('article_views', ['article_id', 'viewed_at']))->toBeTrue()
+        ->and(Schema::hasIndex('article_views', ['viewed_at']))->toBeTrue()
+        ->and(Schema::hasIndex('article_views', ['device_type']))->toBeTrue()
+        ->and(Schema::hasIndex('article_views', ['session_hash']))->toBeTrue();
+});

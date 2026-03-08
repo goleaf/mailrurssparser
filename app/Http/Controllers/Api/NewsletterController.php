@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\NewsletterSubscribeRequest;
-use App\Mail\ConfirmSubscriptionMail;
 use App\Models\NewsletterSubscriber;
+use App\Services\MetricTracker;
+use App\Services\SendNewsletterConfirmationMail;
+use App\Services\TrackedMetric;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Mail;
 
 class NewsletterController extends Controller
 {
@@ -22,7 +23,7 @@ class NewsletterController extends Controller
         }
 
         if ($existing !== null && ! $existing->confirmed) {
-            Mail::to($existing->email)->send(new ConfirmSubscriptionMail($existing));
+            SendNewsletterConfirmationMail::dispatch($existing);
 
             return response()->json(['resent' => true]);
         }
@@ -39,7 +40,8 @@ class NewsletterController extends Controller
             ],
         );
 
-        Mail::to($subscriber->email)->send(new ConfirmSubscriptionMail($subscriber));
+        SendNewsletterConfirmationMail::dispatch($subscriber);
+        app(MetricTracker::class)->record(TrackedMetric::NewsletterSubscription);
 
         return response()->json([
             'success' => true,
@@ -61,6 +63,8 @@ class NewsletterController extends Controller
             'unsubscribed_at' => null,
         ]);
 
+        app(MetricTracker::class)->record(TrackedMetric::NewsletterConfirmation);
+
         return response()->json([
             'success' => true,
             'message' => 'Подписка подтверждена',
@@ -70,8 +74,13 @@ class NewsletterController extends Controller
     public function unsubscribe(string $token): JsonResponse
     {
         $subscriber = NewsletterSubscriber::query()->where('token', $token)->firstOrFail();
+        $shouldRecordMetric = $subscriber->unsubscribed_at === null;
 
         $subscriber->update(['unsubscribed_at' => now()]);
+
+        if ($shouldRecordMetric) {
+            app(MetricTracker::class)->record(TrackedMetric::NewsletterUnsubscription);
+        }
 
         return response()->json(['success' => true]);
     }

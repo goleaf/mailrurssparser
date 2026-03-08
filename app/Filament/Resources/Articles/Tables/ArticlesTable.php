@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Articles\Tables;
 
 use App\Models\Article;
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -43,38 +45,13 @@ class ArticlesTable
                 TextColumn::make('content_type')
                     ->badge()
                     ->toggleable()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'news' => 'Новости',
-                        'article' => 'Статья',
-                        'opinion' => 'Мнение',
-                        'analysis' => 'Аналитика',
-                        'interview' => 'Интервью',
-                        default => $state,
-                    })
-                    ->color(fn (string $state): string => match ($state) {
-                        'analysis' => 'info',
-                        'opinion' => 'warning',
-                        'interview' => 'success',
-                        'article' => 'primary',
-                        default => 'gray',
-                    }),
+                    ->formatStateUsing(fn (ArticleContentType|string|null $state): string => ArticleContentType::fromValue($state)?->getLabel() ?? (string) $state)
+                    ->color(fn (ArticleContentType|string|null $state): string|array|null => ArticleContentType::fromValue($state)?->getColor() ?? 'gray'),
                 TextColumn::make('status')
                     ->badge()
                     ->toggleable()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'draft' => 'Черновик',
-                        'pending' => 'На модерации',
-                        'published' => 'Опубликовано',
-                        'archived' => 'Архив',
-                        default => $state,
-                    })
-                    ->color(fn (string $state): string => match ($state) {
-                        'draft' => 'gray',
-                        'pending' => 'warning',
-                        'published' => 'success',
-                        'archived' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->formatStateUsing(fn (ArticleStatus|string|null $state): string => ArticleStatus::fromValue($state)?->getLabel() ?? (string) $state)
+                    ->color(fn (ArticleStatus|string|null $state): string|array|null => ArticleStatus::fromValue($state)?->getColor() ?? 'gray'),
                 IconColumn::make('is_featured')
                     ->boolean()
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -111,20 +88,9 @@ class ArticlesTable
                     ->searchable()
                     ->preload(),
                 SelectFilter::make('status')
-                    ->options([
-                        'draft' => 'Черновик',
-                        'pending' => 'На модерации',
-                        'published' => 'Опубликовано',
-                        'archived' => 'Архив',
-                    ]),
+                    ->options(ArticleStatus::class),
                 SelectFilter::make('content_type')
-                    ->options([
-                        'news' => 'Новости',
-                        'article' => 'Статья',
-                        'opinion' => 'Мнение',
-                        'analysis' => 'Аналитика',
-                        'interview' => 'Интервью',
-                    ]),
+                    ->options(ArticleContentType::class),
                 TernaryFilter::make('is_featured')
                     ->label('Рекомендуемая'),
                 TernaryFilter::make('is_breaking')
@@ -200,7 +166,7 @@ class ArticlesTable
                         ->label('Опубликовать')
                         ->action(function (Collection $records): void {
                             $records->each(function (Article $record): void {
-                                $record->update(['status' => 'published']);
+                                $record->update(['status' => ArticleStatus::Published->value]);
                             });
                         }),
                     BulkAction::make('draftSelected')
@@ -208,7 +174,7 @@ class ArticlesTable
                         ->color('gray')
                         ->action(function (Collection $records): void {
                             $records->each(function (Article $record): void {
-                                $record->update(['status' => 'draft']);
+                                $record->update(['status' => ArticleStatus::Draft->value]);
                             });
                         }),
                     BulkAction::make('featureSelected')

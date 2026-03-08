@@ -19,8 +19,18 @@ return new class extends Migration
             $table->string('referrer_type', 30)->nullable()->after('device_type');
             $table->string('referrer_domain')->nullable()->after('referrer_type');
 
-            $table->index('device_type');
-            $table->index('session_hash');
+        });
+
+        Schema::whenTableDoesntHaveIndex('article_views', ['device_type'], function (): void {
+            Schema::table('article_views', function (Blueprint $table) {
+                $table->index('device_type');
+            });
+        });
+
+        Schema::whenTableDoesntHaveIndex('article_views', ['session_hash'], function (): void {
+            Schema::table('article_views', function (Blueprint $table) {
+                $table->index('session_hash');
+            });
         });
     }
 
@@ -29,9 +39,19 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::whenTableHasIndex('article_views', ['device_type'], function (): void {
+            Schema::table('article_views', function (Blueprint $table) {
+                $table->dropIndex(['device_type']);
+            });
+        });
+
+        Schema::whenTableHasIndex('article_views', ['session_hash'], function (): void {
+            Schema::table('article_views', function (Blueprint $table) {
+                $table->dropIndex(['session_hash']);
+            });
+        });
+
         Schema::table('article_views', function (Blueprint $table) {
-            $table->dropIndex(['device_type']);
-            $table->dropIndex(['session_hash']);
             $table->dropColumn([
                 'ip_hash',
                 'session_hash',

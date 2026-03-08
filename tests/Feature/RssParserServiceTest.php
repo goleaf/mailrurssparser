@@ -4,8 +4,12 @@ use App\Models\Article;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
 use App\Models\Tag;
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 use App\Services\RssParserService;
 use Carbon\Carbon;
+use Illuminate\Http\Client\Request as HttpClientRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Monolog\Formatter\LineFormatter;
@@ -51,7 +55,24 @@ XML, 200),
     Http::assertSentCount(2);
 });
 
-it('logs feed responses through the after response callback', function () {
+it('registers tappable http client response macros for redirects', function () {
+    Http::fake([
+        '*' => Http::response('', 302, [
+            'Location' => ' https://example.test/redirected ',
+        ]),
+    ]);
+
+    $redirectLocation = null;
+    $response = Http::withoutRedirecting()->get('https://example.test/rss')
+        ->tap(function (Response $response) use (&$redirectLocation): void {
+            $redirectLocation = $response->redirectLocation();
+        });
+
+    expect($response->isRedirectStatus())->toBeTrue()
+        ->and($redirectLocation)->toBe('https://example.test/redirected');
+});
+
+it('logs feed responses through the response tap callback', function () {
     $logPath = storage_path('framework/testing/rss-after-response.log');
 
     File::ensureDirectoryExists(dirname($logPath));
@@ -85,11 +106,38 @@ XML, 200),
 
     expect((string) $xml->channel->item->title)->toBe('Observed item')
         ->and(File::exists($logPath))->toBeTrue()
+        ->and(File::get($logPath))->toContain('RSS request sending.')
         ->and(File::get($logPath))->toContain('RSS response received.')
+        ->and(File::get($logPath))->toContain('"request_type":"rss_feed"')
+        ->and(File::get($logPath))->toContain('"original_url":"https://example.test/rss"')
         ->and(File::get($logPath))->toContain('"url":"https://example.test/rss"')
         ->and(File::get($logPath))->toContain('"status":200');
 
     File::delete($logPath);
+});
+
+it('attaches request attributes to outbound feed requests', function () {
+    Http::fake([
+        '*' => Http::response(<<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<rss>
+  <channel>
+    <item><title>Observed item</title></item>
+  </channel>
+</rss>
+XML, 200),
+    ]);
+
+    (new RssParserService)->fetchFeedXml('https://example.test/rss');
+
+    Http::assertSent(function (HttpClientRequest $request): bool {
+        return $request->url() === 'https://example.test/rss'
+            && $request->attributes()['request_type'] === 'rss_feed'
+            && $request->attributes()['request_url'] === 'https://example.test/rss'
+            && $request->attributes()['original_url'] === 'https://example.test/rss'
+            && $request->attributes()['attempt'] === 1
+            && $request->attributes()['max_retries'] === 3;
+    });
 });
 
 it('detects and converts windows-1251 feeds before parsing', function () {
@@ -274,6 +322,30 @@ XML, 'SimpleXMLElement', LIBXML_NOCDATA);
         ->and($data['short_description'])->toBe('Body text...');
 });
 
+it('falls back to known enum values when feed overrides are invalid', function () {
+    $item = simplexml_load_string(<<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<item>
+  <title>Enum fallback test</title>
+  <link>https://example.test/fallback</link>
+  <description><![CDATA[<p>Body text for enum fallback</p>]]></description>
+</item>
+XML, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+    $feed = RssFeed::factory()->make([
+        'auto_publish' => true,
+        'extra_settings' => [
+            'status' => 'scheduled',
+            'content_type' => 'video',
+        ],
+    ]);
+
+    $data = invokeRssMethod(new RssParserService, 'buildArticleData', $item, 1, 1, $feed);
+
+    expect($data['status'])->toBe(ArticleStatus::Published->value)
+        ->and($data['content_type'])->toBe(ArticleContentType::News->value);
+});
+
 it('inspects a feed without saving articles', function () {
     Http::fake([
         '*' => Http::response(<<<'XML'
@@ -443,7 +515,7 @@ XML, 200),
     });
 
     expect($article)->toBeInstanceOf(Article::class)
-        ->and($article->status)->toBe('draft')
+        ->and($article->status)->toBe(ArticleStatus::Draft)
         ->and($article->rss_feed_id)->toBe($feed->id)
         ->and($article->title)->toBe('Imported article')
         ->and($article->source_url)->toBe('https://example.test/imported-article')

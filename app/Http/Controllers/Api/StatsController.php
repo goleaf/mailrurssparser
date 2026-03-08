@@ -12,6 +12,8 @@ use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
 use App\Services\ArticleCacheService;
+use App\Services\MetricReportService;
+use App\Services\TrackedMetric;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +25,79 @@ class StatsController extends Controller
     {
         return response()
             ->json($cacheService->getStatsOverview())
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=120, stale-while-revalidate=480');
+    }
+
+    public function metrics(MetricReportService $metrics): JsonResponse
+    {
+        $timeline = $metrics->timeline([
+            TrackedMetric::ArticleView,
+            TrackedMetric::BookmarkAdded,
+            TrackedMetric::NewsletterSubscription,
+            TrackedMetric::RssArticleImported,
+        ], 24);
+        $summary24Hours = $metrics->totals([
+            TrackedMetric::ArticleView,
+            TrackedMetric::ArticleUniqueView,
+            TrackedMetric::BookmarkAdded,
+            TrackedMetric::RssArticleImported,
+            TrackedMetric::RssParseFailure,
+        ], 24);
+        $summary7Days = $metrics->totals([
+            TrackedMetric::NewsletterSubscription,
+            TrackedMetric::NewsletterConfirmation,
+            TrackedMetric::NewsletterUnsubscription,
+        ], 168);
+
+        return response()
+            ->json([
+                'summary' => [
+                    'article_views_24h' => $summary24Hours[TrackedMetric::ArticleView->value] ?? 0,
+                    'unique_article_views_24h' => $summary24Hours[TrackedMetric::ArticleUniqueView->value] ?? 0,
+                    'bookmarks_added_24h' => $summary24Hours[TrackedMetric::BookmarkAdded->value] ?? 0,
+                    'rss_imports_24h' => $summary24Hours[TrackedMetric::RssArticleImported->value] ?? 0,
+                    'rss_failures_24h' => $summary24Hours[TrackedMetric::RssParseFailure->value] ?? 0,
+                    'newsletter_subscriptions_7d' => $summary7Days[TrackedMetric::NewsletterSubscription->value] ?? 0,
+                    'newsletter_confirmations_7d' => $summary7Days[TrackedMetric::NewsletterConfirmation->value] ?? 0,
+                    'newsletter_unsubscriptions_7d' => $summary7Days[TrackedMetric::NewsletterUnsubscription->value] ?? 0,
+                ],
+                'timeline' => $timeline,
+                'top_articles' => [
+                    'views' => collect($metrics->topMeasurables(TrackedMetric::ArticleView, Article::class))
+                        ->map(fn (array $entry): array => [
+                            'id' => $entry['model']->id,
+                            'title' => $entry['model']->title,
+                            'slug' => $entry['model']->slug,
+                            'views_7d' => $entry['total'],
+                        ])
+                        ->all(),
+                    'bookmarks' => collect($metrics->topMeasurables(TrackedMetric::BookmarkAdded, Article::class))
+                        ->map(fn (array $entry): array => [
+                            'id' => $entry['model']->id,
+                            'title' => $entry['model']->title,
+                            'slug' => $entry['model']->slug,
+                            'bookmarks_7d' => $entry['total'],
+                        ])
+                        ->all(),
+                ],
+                'top_feeds' => [
+                    'imports' => collect($metrics->topMeasurables(TrackedMetric::RssArticleImported, RssFeed::class))
+                        ->map(fn (array $entry): array => [
+                            'id' => $entry['model']->id,
+                            'title' => $entry['model']->title,
+                            'imports_7d' => $entry['total'],
+                        ])
+                        ->all(),
+                    'failures' => collect($metrics->topMeasurables(TrackedMetric::RssParseFailure, RssFeed::class))
+                        ->map(fn (array $entry): array => [
+                            'id' => $entry['model']->id,
+                            'title' => $entry['model']->title,
+                            'failures_7d' => $entry['total'],
+                        ])
+                        ->all(),
+                ],
+            ])
+            ->header('Cache-Control', 'public, max-age=60');
     }
 
     public function chart(StatsChartRequest $request): JsonResponse
@@ -38,9 +112,9 @@ class StatsController extends Controller
         };
 
         [$format, $start] = match ($period) {
-            '7d' => ['%Y-%m-%d %H:00', now()->subDays(7)],
-            '90d' => ['%Y-%W', now()->subDays(90)],
-            default => ['%Y-%m-%d', now()->subDays(30)],
+            '7d' => ['%Y-%m-%d %H:00', now()->minus(days: 7)],
+            '90d' => ['%Y-%W', now()->minus(days: 90)],
+            default => ['%Y-%m-%d', now()->minus(days: 30)],
         };
 
         $rows = DB::table($column['table'])
@@ -103,10 +177,10 @@ class StatsController extends Controller
         $limit = (int) ($validated['limit'] ?? 10);
 
         [$start, $end, $previousStart, $previousEnd] = match ($period) {
-            'today' => [today(), now(), today()->subDay(), today()],
-            'month' => [now()->subMonth(), now(), now()->subMonths(2), now()->subMonth()],
+            'today' => [today(), now(), today()->minus(days: 1), today()],
+            'month' => [now()->minus(months: 1), now(), now()->minus(months: 2), now()->minus(months: 1)],
             'all' => [null, null, null, null],
-            default => [now()->subWeek(), now(), now()->subWeeks(2), now()->subWeek()],
+            default => [now()->minus(weeks: 1), now(), now()->minus(weeks: 2), now()->minus(weeks: 1)],
         };
 
         $baseQuery = ArticleView::query()

@@ -96,7 +96,7 @@ class RssParseController extends Controller
                 'new' => 0,
                 'skipped' => 0,
                 'errors' => 0,
-            ], 404);
+            ], 424);
         }
 
         $results = $feeds->map(fn (RssFeed $feed): array => $parser->parseFeed($feed));

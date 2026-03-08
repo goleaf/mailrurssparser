@@ -18,7 +18,7 @@ test('login screen exposes status from the enum-backed session key', function ()
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('auth/Login')
-            ->where('status', 'password-reset-sent'),
+            ->hasFlash('status', 'password-reset-sent'),
         );
 });
 

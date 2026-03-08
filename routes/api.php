@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\TagController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('throttle:120,1')
+Route::middleware(['api.context', 'throttle:api'])
     ->prefix('v1')
     ->name('api.v1.')
     ->group(function (): void {
@@ -39,11 +39,12 @@ Route::middleware('throttle:120,1')
         Route::get('tags/{slug}', [TagController::class, 'show'])->name('tags.show');
         Route::get('tags/{slug}/articles', [TagController::class, 'articles'])->name('tags.articles');
 
-        Route::get('search', [SearchController::class, 'index'])->middleware('throttle:30,1')->name('search.index');
-        Route::get('search/suggest', [SearchController::class, 'suggest'])->middleware('throttle:60,1')->name('search.suggest');
+        Route::get('search', [SearchController::class, 'index'])->middleware('throttle:api-search')->name('search.index');
+        Route::get('search/suggest', [SearchController::class, 'suggest'])->middleware('throttle:api-search-suggest')->name('search.suggest');
         Route::get('search/highlights', [SearchController::class, 'highlights'])->name('search.highlights');
 
         Route::get('stats/overview', [StatsController::class, 'overview'])->name('stats.overview');
+        Route::get('stats/metrics', [StatsController::class, 'metrics'])->name('stats.metrics');
         Route::get('stats/chart', [StatsController::class, 'chart'])->name('stats.chart');
         Route::get('stats/popular', [StatsController::class, 'popular'])->name('stats.popular');
         Route::get('stats/calendar/{year}/{month}', [StatsController::class, 'calendar'])->name('stats.calendar');
@@ -51,7 +52,7 @@ Route::middleware('throttle:120,1')
         Route::get('stats/categories', [StatsController::class, 'categoryBreakdown'])->name('stats.categories');
 
         Route::prefix('rss')
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:api-rss')
             ->group(function (): void {
                 Route::get('status', [RssApiController::class, 'status'])->name('rss.status');
                 Route::post('parse', [RssApiController::class, 'parseAll'])->name('rss.parse-all');

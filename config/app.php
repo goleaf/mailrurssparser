@@ -41,6 +41,13 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'editor' => env('APP_EDITOR_BASE_PATH')
+        ? [
+            'name' => env('APP_EDITOR', env('IGNITION_EDITOR')),
+            'base_path' => env('APP_EDITOR_BASE_PATH'),
+        ]
+        : env('APP_EDITOR', env('IGNITION_EDITOR')),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

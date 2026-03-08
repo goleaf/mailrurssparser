@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Form } from '@inertiajs/svelte';
+    import { Form, page } from '@inertiajs/svelte';
     import AppHead from '@/components/AppHead.svelte';
     import InputError from '@/components/InputError.svelte';
     import TextLink from '@/components/TextLink.svelte';
@@ -11,11 +11,7 @@
     import { login } from '@/routes';
     import { email } from '@/routes/password';
 
-    let {
-        status = '',
-    }: {
-        status?: string;
-    } = $props();
+    const flashStatus = $derived($page.flash.status ?? '');
 </script>
 
 <AppHead title="Forgot password" />
@@ -24,9 +20,9 @@
     title="Forgot password"
     description="Enter your email to receive a password reset link"
 >
-    {#if status}
+    {#if flashStatus}
         <div class="mb-4 text-center text-sm font-medium text-green-600">
-            {status}
+            {flashStatus}
         </div>
     {/if}
 

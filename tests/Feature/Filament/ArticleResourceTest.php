@@ -9,6 +9,8 @@ use App\Models\RssFeed;
 use App\Models\SubCategory;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 use App\Services\RssParserService;
 use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
@@ -33,7 +35,7 @@ it('publishes selected articles from the bulk action', function () {
     });
 
     $articles->each(function (Article $article): void {
-        expect($article->refresh()->status)->toBe('published');
+        expect($article->refresh()->status)->toBe(ArticleStatus::Published);
     });
 });
 
@@ -130,7 +132,7 @@ it('creates an article through the cms form tabs', function () {
         ->not()->toBeNull()
         ->and($article?->category_id)->toBe($category->id)
         ->and($article?->sub_category_id)->toBe($subCategory->id)
-        ->and($article?->content_type)->toBe('analysis')
+        ->and($article?->content_type)->toBe(ArticleContentType::Analysis)
         ->and($article?->importance)->toBe(8)
         ->and($article?->tags()->pluck('tags.id')->all())->toBe([$tag->id]);
 });

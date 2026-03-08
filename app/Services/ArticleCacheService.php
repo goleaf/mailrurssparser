@@ -8,14 +8,19 @@ use App\Models\ArticleView;
 use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\Tag;
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Cache;
+
+use function Illuminate\Support\hours;
+use function Illuminate\Support\minutes;
 
 class ArticleCacheService
 {
-    public function getCategories()
+    public function getCategories(): EloquentCollection
     {
-        return Cache::remember(ArticleCacheKey::Categories, 3600, function () {
+        return $this->memoizedCache()->flexible(ArticleCacheKey::Categories, [minutes(15), hours(1)], function () {
             return Category::query()
                 ->active()
                 ->withCount(['articles' => fn ($query) => $query->published()])
@@ -23,9 +28,9 @@ class ArticleCacheService
         });
     }
 
-    public function getTrendingTags(int $limit = 30)
+    public function getTrendingTags(int $limit = 30): EloquentCollection
     {
-        return Cache::remember(ArticleCacheKey::trendingTags($limit), 1800, function () use ($limit) {
+        return $this->memoizedCache()->flexible(ArticleCacheKey::trendingTags($limit), [minutes(10), minutes(30)], function () use ($limit) {
             return Tag::query()
                 ->orderByDesc('usage_count')
                 ->limit($limit)
@@ -33,9 +38,9 @@ class ArticleCacheService
         });
     }
 
-    public function getBreakingNews()
+    public function getBreakingNews(): EloquentCollection
     {
-        return Cache::remember(ArticleCacheKey::BreakingNews, 300, function () {
+        return $this->memoizedCache()->flexible(ArticleCacheKey::BreakingNews, [minutes(1), minutes(5)], function () {
             return Article::query()
                 ->published()
                 ->breaking()
@@ -46,9 +51,9 @@ class ArticleCacheService
         });
     }
 
-    public function getFeaturedArticles()
+    public function getFeaturedArticles(): EloquentCollection
     {
-        return Cache::remember(ArticleCacheKey::FeaturedArticles, 900, function () {
+        return $this->memoizedCache()->flexible(ArticleCacheKey::FeaturedArticles, [minutes(5), minutes(15)], function () {
             return Article::query()
                 ->published()
                 ->featured()
@@ -64,7 +69,7 @@ class ArticleCacheService
      */
     public function getStatsOverview(): array
     {
-        return Cache::remember(ArticleCacheKey::StatsOverview, 600, function (): array {
+        return $this->memoizedCache()->flexible(ArticleCacheKey::StatsOverview, [minutes(2), minutes(10)], function (): array {
             $lastParse = RssFeed::query()
                 ->active()
                 ->orderByDesc('last_parsed_at')
@@ -74,14 +79,14 @@ class ArticleCacheService
                 'articles' => [
                     'total' => Article::query()->published()->count(),
                     'today' => Article::query()->published()->whereDate('published_at', today())->count(),
-                    'this_week' => Article::query()->published()->where('published_at', '>=', now()->subDays(7))->count(),
+                    'this_week' => Article::query()->published()->where('published_at', '>=', now()->minus(days: 7))->count(),
                     'breaking' => Article::query()->published()->breaking()->count(),
                     'featured' => Article::query()->published()->featured()->count(),
                 ],
                 'views' => [
                     'total' => Article::query()->published()->sum('views_count'),
                     'today' => ArticleView::query()->whereDate('viewed_at', today())->count(),
-                    'this_week' => ArticleView::query()->where('viewed_at', '>=', now()->subDays(7))->count(),
+                    'this_week' => ArticleView::query()->where('viewed_at', '>=', now()->minus(days: 7))->count(),
                     'unique_today' => ArticleView::query()->whereDate('viewed_at', today())->distinct('ip_hash')->count('ip_hash'),
                 ],
                 'top_categories' => Category::query()
@@ -110,5 +115,10 @@ class ArticleCacheService
                 ],
             ];
         });
+    }
+
+    private function memoizedCache(): Repository
+    {
+        return Cache::memo();
     }
 }

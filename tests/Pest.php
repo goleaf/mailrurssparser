@@ -1,5 +1,9 @@
 <?php
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithCachedConfig;
+use Illuminate\Foundation\Testing\WithCachedRoutes;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -12,7 +16,7 @@
 */
 
 pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->use(RefreshDatabase::class, WithCachedConfig::class, WithCachedRoutes::class)
     ->in('Feature');
 
 beforeEach(function () {

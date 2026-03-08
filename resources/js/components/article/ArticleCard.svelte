@@ -1,5 +1,6 @@
 <script lang="ts">
     import { showToast } from '@/components/ui/Toast.svelte';
+    import { getArticleContentTypeLabel } from '@/lib/articleEnums';
     import { cn } from '@/lib/utils';
     import { toggleBookmark, isBookmarked } from '@/stores/bookmarks.svelte.js';
 
@@ -26,6 +27,7 @@
         is_breaking?: boolean;
         is_recent?: boolean;
         content_type?: string | null;
+        content_type_label?: string | null;
         views_count?: number | null;
         reading_time?: number | null;
         tags?: ArticleTag[];
@@ -36,13 +38,6 @@
         bookmarked: boolean;
         total?: number;
         articleId: number | string;
-    };
-
-    const contentTypeLabels: Record<string, string> = {
-        opinion: 'Мнение',
-        analysis: 'Аналитика',
-        interview: 'Интервью',
-        article: 'Статья',
     };
 
     let {
@@ -131,7 +126,7 @@
             <span
                 class="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white"
             >
-                {contentTypeLabels[article.content_type] || ''}
+                {article.content_type_label ?? getArticleContentTypeLabel(article.content_type)}
             </span>
         {/if}
     </div>

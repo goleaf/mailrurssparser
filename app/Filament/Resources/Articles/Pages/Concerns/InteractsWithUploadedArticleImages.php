@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Articles\Pages\Concerns;
 
+use App\Services\StorageDisk;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -25,14 +26,14 @@ trait InteractsWithUploadedArticleImages
             $this->deleteManagedArticleImage($existingImageUrl);
         }
 
-        $data['image_url'] = Storage::disk('public')->url((string) $uploadedImage);
+        $data['image_url'] = Storage::disk(StorageDisk::Public)->url((string) $uploadedImage);
 
         return $data;
     }
 
     protected function deleteManagedArticleImage(string $imageUrl): void
     {
-        $disk = Storage::disk('public');
+        $disk = Storage::disk(StorageDisk::Public);
         $publicPrefix = rtrim($disk->url(''), '/');
 
         if (! Str::startsWith($imageUrl, $publicPrefix.'/')) {

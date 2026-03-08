@@ -44,7 +44,8 @@ it('returns overview analytics with top categories and tags', function () {
 
     $response->assertSuccessful()
         ->assertHeaderContains('Cache-Control', 'public')
-        ->assertHeaderContains('Cache-Control', 'max-age=300')
+        ->assertHeaderContains('Cache-Control', 'max-age=120')
+        ->assertHeaderContains('Cache-Control', 'stale-while-revalidate=480')
         ->assertJsonPath('articles.total', 1)
         ->assertJsonPath('articles.today', 1)
         ->assertJsonPath('articles.this_week', 1)

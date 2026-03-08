@@ -23,7 +23,7 @@ class CleanOldArticles extends Command
     {
         $days = max(1, (int) $this->option('days'));
         $status = (string) $this->option('status');
-        $cutoff = now()->subDays($days);
+        $cutoff = now()->minus(days: $days);
 
         $query = Article::withTrashed()
             ->where(function (Builder $query) use ($cutoff, $status): void {
@@ -52,7 +52,7 @@ class CleanOldArticles extends Command
                     return [
                         $article->id,
                         $article->title,
-                        $article->status,
+                        $article->status instanceof \BackedEnum ? $article->status->value : $article->status,
                         $article->published_at?->format('Y-m-d H:i'),
                         $article->deleted_at?->format('Y-m-d H:i'),
                     ];
