@@ -23,7 +23,7 @@ class CategoriesTable
             ->columns([
                 TextColumn::make('icon')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->label('Icon'),
+                    ->label('Иконка'),
                 TextColumn::make('name')
                     ->searchable()
                     ->toggleable()
@@ -42,7 +42,7 @@ class CategoriesTable
                 TextColumn::make('articles_count_cache')
                     ->numeric()
                     ->toggleable()
-                    ->label('Articles'),
+                    ->label('Статей'),
             ])
             ->filters([
                 TernaryFilter::make('is_active'),

@@ -8,8 +8,7 @@ it('lists the configured rss and maintenance schedule entries', function () {
 
     expect($exitCode)->toBe(0);
     expect($output)
-        ->toContain('php artisan rss:parse --due')
-        ->toContain('php artisan rss:parse --category=main')
+        ->toContain('php artisan rss:parse --all')
         ->toContain('php artisan rss:clean --days=90 --force')
         ->toContain('php artisan rss:reindex')
         ->toContain('recalculate-engagement')

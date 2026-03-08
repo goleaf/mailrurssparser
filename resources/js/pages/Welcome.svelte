@@ -151,7 +151,7 @@
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-300">
-                        Public UI
+                        Публичный интерфейс
                     </span>
                     <div class="rounded-full border border-white/10 bg-black/15 px-3 py-1 text-xs text-slate-300">
                         Публичная оболочка новостного портала
@@ -167,7 +167,7 @@
                         href={toUrl(dashboard())}
                         class="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/12"
                     >
-                        Dashboard
+                        Панель
                     </Link>
                     <a
                         href="/admin"

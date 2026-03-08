@@ -2,7 +2,7 @@
     import ChevronLeft from 'lucide-svelte/icons/chevron-left';
     import ChevronRight from 'lucide-svelte/icons/chevron-right';
     import * as api from '@/lib/api';
-    import { cn } from '@/lib/utils';
+    import { cn, formatNumber } from '@/lib/utils';
     import { clearDate, filters, setDate } from '@/stores/articles.svelte.js';
 
     const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -34,6 +34,42 @@
     const totalArticles = $derived(
         Object.values(calendarData).reduce((sum, count) => sum + count, 0),
     );
+
+    function normalizeCalendarData(payload: unknown): Record<string, number> {
+        const rawData =
+            payload &&
+            typeof payload === 'object' &&
+            !Array.isArray(payload) &&
+            'data' in payload &&
+            payload.data &&
+            typeof payload.data === 'object' &&
+            !Array.isArray(payload.data)
+                ? payload.data
+                : payload;
+
+        if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
+            return {};
+        }
+
+        return Object.entries(rawData).reduce<Record<string, number>>(
+            (counts, [day, value]) => {
+                if (!/^\d+$/.test(day)) {
+                    return counts;
+                }
+
+                const numericValue = Number(value);
+
+                if (!Number.isFinite(numericValue) || numericValue <= 0) {
+                    return counts;
+                }
+
+                counts[day] = numericValue;
+
+                return counts;
+            },
+            {},
+        );
+    }
 
     function formatDay(day: number): string {
         return `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(
@@ -84,7 +120,7 @@
             .getCalendar(year, month)
             .then((response) => {
                 if (!cancelled) {
-                    calendarData = response.data ?? {};
+                    calendarData = normalizeCalendarData(response.data);
                 }
             })
             .catch(() => {
@@ -118,7 +154,7 @@
                     clearDate();
                 }}
             >
-                Clear date
+                Сбросить дату
             </button>
         {/if}
     </div>
@@ -196,6 +232,7 @@
     </div>
 
     <div class="mt-4 text-sm text-slate-500 dark:text-slate-400">
-        За месяц: <span class="font-semibold text-slate-900 dark:text-white">{totalArticles}</span>
+        За месяц:
+        <span class="font-semibold text-slate-900 dark:text-white">{formatNumber(totalArticles)}</span>
     </div>
 </aside>

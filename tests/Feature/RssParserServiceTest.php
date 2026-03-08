@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Article;
+use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
 use App\Models\SubCategory;
@@ -323,6 +324,43 @@ XML, 'SimpleXMLElement', LIBXML_NOCDATA);
         ->and($article->importance)->toBeGreaterThanOrEqual(5)
         ->and($article->tags)->toHaveCount(1)
         ->and(Tag::query()->where('name', 'Политика')->exists())->toBeTrue();
+});
+
+it('creates subcategories from rss item categories and assigns them to articles', function () {
+    $category = Category::factory()->create([
+        'name' => 'Спорт',
+        'slug' => 'sport',
+    ]);
+
+    $feed = RssFeed::factory()->create([
+        'category_id' => $category->id,
+        'title' => 'Спорт',
+        'source_name' => '',
+        'extra_settings' => null,
+    ]);
+
+    $item = simplexml_load_string(<<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<item>
+  <title>Матч КХЛ</title>
+  <link>https://example.test/khl-match</link>
+  <description><![CDATA[<p>Body text.</p>]]></description>
+  <category>Спорт: КХЛ</category>
+  <pubDate>Mon, 01 Jan 2024 12:00:00 +0000</pubDate>
+</item>
+XML, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+    $article = invokeRssMethod(new RssParserService, 'processItem', $item, $feed->category_id, $feed->id, $feed);
+    $subCategory = SubCategory::query()
+        ->where('category_id', $category->id)
+        ->where('slug', 'kkhl')
+        ->first();
+
+    expect($article)->toBeInstanceOf(Article::class)
+        ->and($subCategory)->not->toBeNull()
+        ->and($subCategory?->name)->toBe('КХЛ')
+        ->and($article?->sub_category_id)->toBe($subCategory?->id)
+        ->and($article?->tags->pluck('name')->all())->toContain('Спорт: КХЛ');
 });
 
 it('builds article data using feed extra settings overrides', function () {
@@ -825,6 +863,38 @@ HTML, 200),
         ->and($article->canonical_url)->toBe('https://example.test/articles/missing-fields')
         ->and($article->structured_data)->toBeArray()
         ->and($article->rss_content)->toContain('First body paragraph from source page.');
+});
+
+it('persists stored metadata fallbacks when source page enrichment fails', function () {
+    Http::preventStrayRequests();
+
+    Http::fake([
+        'https://example.test/source-down' => Http::response('Temporarily unavailable', 503),
+    ]);
+
+    $article = Article::factory()->create([
+        'title' => 'Stored fallback title',
+        'source_url' => 'https://example.test/source-down',
+        'short_description' => 'Stored fallback subtitle',
+        'full_description' => '<p>Stored fallback body paragraph.</p>',
+        'rss_content' => null,
+        'meta_title' => null,
+        'meta_description' => null,
+        'canonical_url' => null,
+        'source_name' => null,
+        'last_edited_at' => null,
+    ]);
+
+    $updated = (new RssParserService)->enrichExistingArticle($article);
+
+    $article->refresh();
+
+    expect($updated)->toBeTrue()
+        ->and($article->getRawOriginal('meta_title'))->toBe('Stored fallback title')
+        ->and($article->getRawOriginal('meta_description'))->toBe('Stored fallback subtitle')
+        ->and($article->canonical_url)->toBe('https://example.test/source-down')
+        ->and($article->source_name)->toBe('example.test')
+        ->and($article->last_edited_at)->not->toBeNull();
 });
 
 it('prefers the original publisher marker over generic portal publisher labels', function () {

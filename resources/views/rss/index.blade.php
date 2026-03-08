@@ -1,30 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title>RSS Feed Manager</title>
+        <title>Менеджер RSS-лент</title>
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="min-h-screen bg-slate-100 text-slate-900">
         @php
             $feedGroups = $feeds->groupBy(fn ($feed) => $feed->category?->slug ?? 'uncategorized');
-            $lastParsedAt = $stats['last_system_parse'] ? \Illuminate\Support\Carbon::parse($stats['last_system_parse'])->format('d.m.Y H:i') : 'Never';
+            $lastParsedAt = $stats['last_system_parse'] ? \Illuminate\Support\Carbon::parse($stats['last_system_parse'])->format('d.m.Y H:i') : 'Никогда';
         @endphp
 
         <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             <div class="mb-8 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
                 <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                     <div class="space-y-2">
-                        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Operations</p>
-                        <h1 class="text-3xl font-semibold tracking-tight text-slate-950">RSS Feed Manager</h1>
+                        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Операции</p>
+                        <h1 class="text-3xl font-semibold tracking-tight text-slate-950">Менеджер RSS-лент</h1>
                         <p class="text-sm text-slate-600">
-                            Last system parse: <span class="font-medium text-slate-900">{{ $lastParsedAt }}</span>
+                            Последний системный запуск: <span class="font-medium text-slate-900">{{ $lastParsedAt }}</span>
                             <span class="mx-2 text-slate-300">|</span>
-                            Total articles: <span class="font-medium text-slate-900">{{ $stats['total_articles'] }}</span>
+                            Всего статей: <span class="font-medium text-slate-900">{{ $stats['total_articles'] }}</span>
                             <span class="mx-2 text-slate-300">|</span>
-                            Today: <span class="font-medium text-slate-900">{{ $stats['today_articles'] }}</span>
+                            Сегодня: <span class="font-medium text-slate-900">{{ $stats['today_articles'] }}</span>
                         </p>
                     </div>
 
@@ -37,7 +37,7 @@
                                 class="inline-flex items-center gap-2 rounded-full bg-sky-600 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-sky-300"
                             >
                                 <span class="inline-flex h-2.5 w-2.5 rounded-full bg-white/80"></span>
-                                Parse All Feeds
+                                Запустить все ленты
                             </button>
                         </form>
 
@@ -46,7 +46,7 @@
                             id="refresh-status-button"
                             class="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
                         >
-                            Refresh Status
+                            Обновить статус
                         </button>
                     </div>
                 </div>
@@ -75,10 +75,10 @@
                                     style="background-color: {{ $category?->color ?? '#94A3B8' }}1f; color: {{ $category?->color ?? '#475569' }};"
                                 >
                                     <span>{{ $category?->icon ?? '🛰️' }}</span>
-                                    <span>{{ $category?->name ?? 'Uncategorized' }}</span>
+                                    <span>{{ $category?->name ?? 'Без категории' }}</span>
                                 </span>
-                                <span class="text-sm text-slate-500">{{ $group->count() }} feeds</span>
-                                <span class="text-sm text-slate-500">{{ $categoryArticles }} total articles</span>
+                                <span class="text-sm text-slate-500">{{ $group->count() }} лент</span>
+                                <span class="text-sm text-slate-500">{{ $categoryArticles }} статей всего</span>
                             </div>
 
                             @if ($category?->slug)
@@ -87,7 +87,7 @@
                                     onclick="parseCategory('{{ $category->slug }}', this)"
                                     class="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
                                 >
-                                    Parse Category
+                                    Запустить категорию
                                 </button>
                             @endif
                         </div>
@@ -96,14 +96,14 @@
                             <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
                                 <thead class="bg-slate-50 text-slate-500">
                                     <tr>
-                                        <th class="px-6 py-3 font-medium">Feed Name</th>
+                                        <th class="px-6 py-3 font-medium">Название ленты</th>
                                         <th class="px-6 py-3 font-medium">URL</th>
-                                        <th class="px-6 py-3 font-medium">Active</th>
-                                        <th class="px-6 py-3 font-medium">Last Parsed</th>
-                                        <th class="px-6 py-3 font-medium">New (last)</th>
-                                        <th class="px-6 py-3 font-medium">Total</th>
-                                        <th class="px-6 py-3 font-medium">Error</th>
-                                        <th class="px-6 py-3 font-medium">Actions</th>
+                                        <th class="px-6 py-3 font-medium">Активность</th>
+                                        <th class="px-6 py-3 font-medium">Последний запуск</th>
+                                        <th class="px-6 py-3 font-medium">Новых за запуск</th>
+                                        <th class="px-6 py-3 font-medium">Всего</th>
+                                        <th class="px-6 py-3 font-medium">Ошибка</th>
+                                        <th class="px-6 py-3 font-medium">Действия</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
@@ -117,11 +117,11 @@
                                             </td>
                                             <td class="px-6 py-4">
                                                 <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $feed->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
-                                                    {{ $feed->is_active ? 'Active' : 'Inactive' }}
+                                                    {{ $feed->is_active ? 'Активна' : 'Отключена' }}
                                                 </span>
                                             </td>
                                             <td class="px-6 py-4 text-slate-600" data-column="last-parsed">
-                                                {{ $feed->last_parsed_at?->format('d.m.Y H:i') ?? 'Never' }}
+                                                {{ $feed->last_parsed_at?->format('d.m.Y H:i') ?? 'Никогда' }}
                                             </td>
                                             <td class="px-6 py-4 text-slate-600" data-column="new-last">{{ $feed->last_run_new_count }}</td>
                                             <td class="px-6 py-4 text-slate-600" data-column="total">{{ $feed->articles_parsed_total }}</td>
@@ -132,7 +132,7 @@
                                                     onclick="parseFeed({{ $feed->id }}, this)"
                                                     class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                                                 >
-                                                    Parse Now
+                                                    Запустить
                                                 </button>
                                             </td>
                                         </tr>
@@ -174,13 +174,13 @@
                     buttonEl.textContent = loadingText;
                     buttonEl.disabled = true;
                 } else {
-                    buttonEl.textContent = buttonEl.dataset.originalText || 'Parse Now';
+                    buttonEl.textContent = buttonEl.dataset.originalText || 'Запустить';
                     buttonEl.disabled = false;
                 }
             };
 
             async function parseFeed(feedId, buttonEl) {
-                setButtonLoading(buttonEl, true, 'Parsing...');
+                setButtonLoading(buttonEl, true, 'Идёт парсинг...');
 
                 try {
                     const response = await fetch(`/admin/rss/parse/${feedId}`, {
@@ -196,26 +196,26 @@
                     const data = await response.json();
 
                     if (! response.ok || ! data.success) {
-                        throw new Error(data.message || 'Feed parsing failed.');
+                        throw new Error(data.message || 'Не удалось обработать ленту.');
                     }
 
                     const row = document.getElementById(`feed-row-${feedId}`);
 
-                    row.querySelector('[data-column="last-parsed"]').textContent = data.last_parsed_at_human || 'Just now';
+                    row.querySelector('[data-column="last-parsed"]').textContent = data.last_parsed_at_human || 'Только что';
                     row.querySelector('[data-column="new-last"]').textContent = data.last_run_new_count;
                     row.querySelector('[data-column="total"]').textContent = data.articles_parsed_total;
                     row.querySelector('[data-column="error"]').textContent = data.last_error || '—';
 
-                    showFlash(`Feed parsed. New: ${data.new}, Skipped: ${data.skipped}`);
+                    showFlash(`Лента обработана. Новые: ${data.new}, Пропущено: ${data.skipped}`);
                 } catch (error) {
-                    showFlash(error.message || 'Feed parsing failed.', 'error');
+                    showFlash(error.message || 'Не удалось обработать ленту.', 'error');
                 } finally {
-                    setButtonLoading(buttonEl, false, 'Parse Now');
+                    setButtonLoading(buttonEl, false, 'Запустить');
                 }
             }
 
             async function parseCategory(slug, buttonEl) {
-                setButtonLoading(buttonEl, true, 'Parsing...');
+                setButtonLoading(buttonEl, true, 'Идёт парсинг...');
 
                 try {
                     const response = await fetch(`/admin/rss/parse-category/${slug}`, {
@@ -231,15 +231,15 @@
                     const data = await response.json();
 
                     if (! response.ok || ! data.success) {
-                        throw new Error(data.message || 'Category parsing failed.');
+                        throw new Error(data.message || 'Не удалось обработать категорию.');
                     }
 
-                    showFlash(`Category parsed. New: ${data.new}, Skipped: ${data.skipped}`);
+                    showFlash(`Категория обработана. Новые: ${data.new}, Пропущено: ${data.skipped}`);
                     window.setTimeout(() => window.location.reload(), 600);
                 } catch (error) {
-                    showFlash(error.message || 'Category parsing failed.', 'error');
+                    showFlash(error.message || 'Не удалось обработать категорию.', 'error');
                 } finally {
-                    setButtonLoading(buttonEl, false, 'Parse Category');
+                    setButtonLoading(buttonEl, false, 'Запустить категорию');
                 }
             }
 
@@ -250,7 +250,7 @@
             document.getElementById('parse-all-form').addEventListener('submit', (event) => {
                 const button = document.getElementById('parse-all-button');
                 button.disabled = true;
-                button.textContent = 'Parsing all feeds...';
+                button.textContent = 'Запуск всех лент...';
             });
         </script>
     </body>

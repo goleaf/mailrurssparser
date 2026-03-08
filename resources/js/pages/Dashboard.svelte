@@ -86,7 +86,7 @@
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
-            title: 'Dashboard',
+            title: 'Панель',
             href: dashboard(),
         },
     ];
@@ -149,7 +149,7 @@
     ]);
 </script>
 
-<AppHead title="Dashboard" />
+<AppHead title="Панель" />
 
 <AppLayout {breadcrumbs}>
     <div class="relative flex flex-1 flex-col gap-6 overflow-x-hidden p-4 md:p-6">
@@ -170,7 +170,7 @@
                         <span
                             class="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.65rem] font-semibold tracking-[0.28em] text-sky-100 uppercase backdrop-blur-xs"
                         >
-                            Inertia v2.2 feed
+                            Лента Inertia v2.2
                         </span>
                         <span
                             class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200"
@@ -184,8 +184,8 @@
                             Лента редактора теперь догружает публикации по мере прокрутки.
                         </h1>
                         <p class="max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
-                            Dashboard использует настоящий Inertia infinite scroll: сервер
-                            отдает курсорный поток статей, а интерфейс подхватывает
+                            Панель использует настоящую бесконечную прокрутку Inertia:
+                            сервер отдает курсорный поток статей, а интерфейс подхватывает
                             следующие страницы без ручной пагинации и без замены уже
                             загруженных карточек.
                         </p>
@@ -319,7 +319,7 @@
             >
                 <div>
                     <div class="text-[0.68rem] font-semibold tracking-[0.24em] text-slate-400 uppercase">
-                        Infinite stream
+                        Бесконечный поток
                     </div>
                     <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
                         Последние публикации

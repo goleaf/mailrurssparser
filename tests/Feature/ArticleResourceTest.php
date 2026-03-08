@@ -11,7 +11,9 @@ use App\Models\SubCategory;
 use App\Models\Tag;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
+use App\Support\Utf8Normalizer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     if (! trait_exists(Laravel\Scout\Searchable::class)) {
@@ -132,6 +134,56 @@ it('builds the article list resource without show-only fields', function () {
         ->not->toHaveKey('related_articles')
         ->not->toHaveKey('similar_articles')
         ->not->toHaveKey('more_from_category');
+});
+
+it('normalizes invalid utf-8 values before serializing article resources', function () {
+    $category = Category::factory()->create();
+    $article = Article::factory()->create([
+        'category_id' => $category->id,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+        'structured_data' => [
+            'headline' => 'Заголовок',
+            'publisher' => [
+                'name' => 'Тест',
+            ],
+        ],
+    ]);
+
+    DB::table('articles')
+        ->where('id', $article->id)
+        ->update([
+            'image_caption' => "РБ\x80",
+        ]);
+
+    $article = $article->fresh()->load('category');
+    $listResource = (new ArticleListResource($article))
+        ->toArray(Request::create('/articles', 'GET'));
+
+    expect(fn () => json_encode($listResource, JSON_THROW_ON_ERROR))->not->toThrow(Throwable::class)
+        ->and($listResource['image_caption'])->toBe('РБ');
+
+    $request = Request::create(
+        route('api.v1.articles.show', ['slug' => $article->slug]),
+        'GET',
+    );
+    $request->setRouteResolver(fn () => app('router')->getRoutes()->match($request));
+
+    $showResource = (new ArticleResource($article))
+        ->toArray($request);
+
+    expect(fn () => json_encode($showResource, JSON_THROW_ON_ERROR))->not->toThrow(Throwable::class)
+        ->and(Utf8Normalizer::normalize([
+            'headline' => "Тест\x80",
+            'publisher' => [
+                'name' => "Издатель\x80",
+            ],
+        ]))->toBe([
+            'headline' => 'Тест',
+            'publisher' => [
+                'name' => 'Издатель',
+            ],
+        ]);
 });
 
 it('builds the category resource payload', function () {

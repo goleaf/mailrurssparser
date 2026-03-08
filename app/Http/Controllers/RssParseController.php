@@ -52,7 +52,7 @@ class RssParseController extends Controller
 
         return redirect()
             ->route('rss.index')
-            ->with('status', "Parse complete. New: {$summary['new']}, Skipped: {$summary['skipped']}, Errors: {$summary['errors']}");
+            ->with('status', "Парсинг завершён. Новые: {$summary['new']}, Пропущено: {$summary['skipped']}, Ошибки: {$summary['errors']}");
     }
 
     public function parseFeed(Request $request, int $feedId, RssParserService $parser): JsonResponse
@@ -73,10 +73,10 @@ class RssParseController extends Controller
             'skipped' => (int) ($result['skip'] ?? 0),
             'errors' => (int) ($result['errors'] ?? 0),
             'message' => $success
-                ? "New: {$result['new']}, Skipped: {$result['skip']}"
+                ? "Новые: {$result['new']}, Пропущено: {$result['skip']}"
                 : (string) $result['error'],
             'last_parsed_at' => $feed->last_parsed_at?->toIso8601String(),
-            'last_parsed_at_human' => $feed->last_parsed_at?->format('d.m.Y H:i') ?? 'Never',
+            'last_parsed_at_human' => $feed->last_parsed_at?->format('d.m.Y H:i') ?? 'Никогда',
             'articles_parsed_total' => $feed->articles_parsed_total,
             'last_run_new_count' => $feed->last_run_new_count,
             'last_error' => $feed->last_error,
@@ -95,7 +95,7 @@ class RssParseController extends Controller
         if ($feeds->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No active feeds found for this category.',
+                'message' => 'Для этой категории не найдено активных лент.',
                 'new' => 0,
                 'skipped' => 0,
                 'errors' => 0,
@@ -117,8 +117,8 @@ class RssParseController extends Controller
         return response()->json([
             'success' => $success,
             'message' => $success
-                ? "Category parsed. New: {$summary['new']}, Skipped: {$summary['skipped']}"
-                : 'Category parsed with errors.',
+                ? "Категория обработана. Новые: {$summary['new']}, Пропущено: {$summary['skipped']}"
+                : 'Категория обработана с ошибками.',
             'new' => $summary['new'],
             'skipped' => $summary['skipped'],
             'errors' => $summary['errors'],

@@ -32,8 +32,8 @@
                         wire:target="parseAll"
                         class="inline-flex items-center justify-center rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        <span wire:loading.remove wire:target="parseAll">Parse All</span>
-                        <span wire:loading wire:target="parseAll">Parsing...</span>
+                        <span wire:loading.remove wire:target="parseAll">Запустить всё</span>
+                        <span wire:loading wire:target="parseAll">Идёт парсинг...</span>
                     </button>
                 </div>
             </div>
@@ -44,7 +44,7 @@
                 <div class="mb-4 flex items-center justify-between gap-4">
                     <div>
                         <h3 class="text-base font-semibold text-gray-950 dark:text-white">{{ $categoryName }}</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ count($feeds) }} feed(s)</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ count($feeds) }} лент</p>
                     </div>
                 </div>
 
@@ -56,10 +56,10 @@
                             $lastParsedAt = filled($feed['last_parsed_at'] ?? null) ? \Illuminate\Support\Carbon::parse($feed['last_parsed_at']) : null;
                             $nextParseAt = filled($feed['next_parse_at'] ?? null) ? \Illuminate\Support\Carbon::parse($feed['next_parse_at']) : null;
                             $status = ! ($feed['is_active'] ?? false)
-                                ? ['label' => 'Disabled', 'classes' => 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300']
+                                ? ['label' => 'Отключена', 'classes' => 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300']
                                 : (filled($feed['last_error'] ?? null)
-                                    ? ['label' => 'Error', 'classes' => 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300']
-                                    : ['label' => 'OK', 'classes' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300']);
+                                    ? ['label' => 'Ошибка', 'classes' => 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300']
+                                    : ['label' => 'Работает', 'classes' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300']);
                         @endphp
 
                         <div wire:key="feed-{{ $feed['id'] }}" class="rounded-2xl border border-gray-200 p-5 dark:border-white/10">
@@ -85,19 +85,19 @@
 
                             <dl class="mt-4 grid gap-3 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-2">
                                 <div>
-                                    <dt class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Last parsed</dt>
-                                    <dd>{{ $lastParsedAt?->diffForHumans() ?? 'Never' }}</dd>
+                                    <dt class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Последний запуск</dt>
+                                    <dd>{{ $lastParsedAt?->diffForHumans() ?? 'Никогда' }}</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Next parse</dt>
-                                    <dd>{{ $nextParseAt?->diffForHumans() ?? 'Not scheduled' }}</dd>
+                                    <dt class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Следующий запуск</dt>
+                                    <dd>{{ $nextParseAt?->diffForHumans() ?? 'Не запланирован' }}</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Articles total</dt>
+                                    <dt class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Всего статей</dt>
                                     <dd>{{ number_format((int) ($feed['articles_parsed_total'] ?? 0)) }}</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Failures</dt>
+                                    <dt class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Сбоев подряд</dt>
                                     <dd>{{ $feed['consecutive_failures'] ?? 0 }}</dd>
                                 </div>
                             </dl>
@@ -116,9 +116,9 @@
                                     @disabled($isParsing)
                                 >
                                     @if ($isParsing && $parsingFeedId === $feed['id'])
-                                        Parsing...
+                                        Идёт парсинг...
                                     @else
-                                        Parse Now
+                                        Запустить
                                     @endif
                                 </button>
 
@@ -128,14 +128,14 @@
                                     class="inline-flex items-center justify-center rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:text-gray-950 dark:border-white/10 dark:text-gray-200 dark:hover:border-white/20 dark:hover:text-white"
                                     @disabled($isParsing)
                                 >
-                                    {{ ($feed['is_active'] ?? false) ? 'Disable' : 'Enable' }}
+                                    {{ ($feed['is_active'] ?? false) ? 'Отключить' : 'Включить' }}
                                 </button>
 
                                 <a
                                     href="{{ \App\Filament\Resources\RssFeeds\RssFeedResource::getUrl('edit', ['record' => $feed['id']]) }}"
                                     class="inline-flex items-center justify-center rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-primary-600 transition hover:bg-primary-50 hover:text-primary-700 dark:text-primary-300 dark:hover:bg-primary-500/10"
                                 >
-                                    Edit
+                                    Редактировать
                                 </a>
                             </div>
                         </div>
@@ -156,11 +156,11 @@
                     <table class="min-w-full divide-y divide-gray-200 text-left text-sm dark:divide-white/10">
                         <thead class="bg-gray-50 text-gray-500 dark:bg-white/5 dark:text-gray-400">
                             <tr>
-                                <th class="px-4 py-3 font-medium">Feed</th>
-                                <th class="px-4 py-3 font-medium">New</th>
-                                <th class="px-4 py-3 font-medium">Skip</th>
-                                <th class="px-4 py-3 font-medium">Errors</th>
-                                <th class="px-4 py-3 font-medium">Status</th>
+                                <th class="px-4 py-3 font-medium">Лента</th>
+                                <th class="px-4 py-3 font-medium">Новые</th>
+                                <th class="px-4 py-3 font-medium">Пропущено</th>
+                                <th class="px-4 py-3 font-medium">Ошибки</th>
+                                <th class="px-4 py-3 font-medium">Статус</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-white/10">
@@ -174,7 +174,7 @@
                                         @if (filled($result['error'] ?? null))
                                             <span class="text-rose-600 dark:text-rose-300">{{ $result['error'] }}</span>
                                         @else
-                                            <span class="text-emerald-600 dark:text-emerald-300">OK</span>
+                                            <span class="text-emerald-600 dark:text-emerald-300">Успешно</span>
                                         @endif
                                     </td>
                                 </tr>

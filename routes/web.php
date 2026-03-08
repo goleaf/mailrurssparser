@@ -14,6 +14,8 @@ Route::get('/robots.txt', fn () => response(
     ['Content-Type' => 'text/plain'],
 ))->name('robots');
 Route::view('offline.html', 'offline')->name('offline');
+Route::get('scheduler/pulse', fn () => response()->noContent()->header('Cache-Control', 'no-store, no-cache, must-revalidate'))
+    ->name('scheduler.pulse');
 
 Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),

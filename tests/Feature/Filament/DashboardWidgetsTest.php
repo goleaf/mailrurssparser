@@ -122,18 +122,18 @@ it('builds the stats overview widget metrics', function () {
     $stats = invokeWidgetMethod(StatsOverviewWidget::class, 'getStats');
 
     expect(array_map(fn (Stat $stat): string => (string) $stat->getLabel(), $stats))->toBe([
-        'Total Published',
-        'Today',
-        'Views Today',
-        'Total Views',
-        'Top Country 7d',
-        'Top TZ 7d',
-        'Threats 24h',
-        'Active Feeds',
-        'Trending Tags',
-        'Bookmarks 24h',
-        'Subscriptions 7d',
-        'RSS Imports 24h',
+        'Всего опубликовано',
+        'Сегодня',
+        'Просмотры сегодня',
+        'Всего просмотров',
+        'Топ-страна за 7 дн.',
+        'Топ-часовой пояс за 7 дн.',
+        'Угрозы за 24 ч',
+        'Активные ленты',
+        'Популярные теги',
+        'Закладки за 24 ч',
+        'Подписки за 7 дн.',
+        'Импорт RSS за 24 ч',
     ])
         ->and($stats[0]->getValue())->toBe(2)
         ->and(count($stats[0]->getChart() ?? []))->toBe(7)
@@ -143,7 +143,7 @@ it('builds the stats overview widget metrics', function () {
         ->and($stats[4]->getValue())->toBe('DE')
         ->and($stats[5]->getValue())->toBe('Europe/Berlin')
         ->and($stats[6]->getValue())->toBe(2)
-        ->and($stats[6]->getDescription())->toBe('1 high severity')
+        ->and($stats[6]->getDescription())->toBe('1 высокого уровня')
         ->and($stats[7]->getValue())->toBe(1)
         ->and($stats[8]->getValue())->toBe(1)
         ->and($stats[9]->getValue())->toBe(2)
@@ -192,7 +192,7 @@ it('parses a feed from the feed status widget action', function () {
     Livewire::test(FeedStatusWidget::class)
         ->assertSee('Sport feed')
         ->callAction(TestAction::make('parse')->table($feed))
-        ->assertNotified('Parse Complete');
+        ->assertNotified('Парсинг завершён');
 });
 
 it('renders the parse logs widget rows', function () {

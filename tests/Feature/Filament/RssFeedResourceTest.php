@@ -137,7 +137,7 @@ it('renders the recent parse logs footer below the rss feeds table', function ()
     ]);
 
     Livewire::test(ListRssFeeds::class)
-        ->assertSee('Recent Parse Logs')
+        ->assertSee('Последние логи парсинга')
         ->assertSee('Politics feed')
         ->assertSee('850 ms');
 });
@@ -177,15 +177,15 @@ it('shows a feed summary and recent parse runs on the view page', function () {
         'record' => $feed->getRouteKey(),
     ])
         ->assertOk()
-        ->assertSee('Feed overview')
+        ->assertSee('Обзор ленты')
         ->assertSee('Politics feed')
-        ->assertSee('Feed overrides')
+        ->assertSee('Переопределения ленты')
         ->assertSee('status')
         ->assertSee('Custom Source')
-        ->assertSee('Recent parse runs')
-        ->assertSee('Manual')
+        ->assertSee('Последние запуски парсинга')
+        ->assertSee('Вручную')
         ->assertSee('850 ms')
-        ->assertSee('Failure')
+        ->assertSee('Сбой')
         ->assertSee('HTTP 500');
 });
 
@@ -198,6 +198,6 @@ it('shows a custom empty state on the feed view page before any parse runs exist
         'record' => $feed->getRouteKey(),
     ])
         ->assertOk()
-        ->assertSee('No parse runs yet')
-        ->assertSee('Run this feed once or wait for the scheduler to collect the first batch.');
+        ->assertSee('Запусков парсинга ещё не было')
+        ->assertSee('Запустите эту ленту вручную или дождитесь первого запуска по расписанию.');
 });

@@ -11,16 +11,16 @@
     const flashStatus = $derived($page.flash.status ?? '');
 </script>
 
-<AppHead title="Email verification" />
+<AppHead title="Подтверждение email" />
 
 <AuthLayout
-    title="Verify email"
-    description="Please verify your email address by clicking on the link we just emailed to you."
+    title="Подтвердите email"
+    description="Подтвердите адрес email, перейдя по ссылке, которую мы только что отправили."
 >
     {#if flashStatus === 'verification-link-sent'}
         <div class="mb-4 text-center text-sm font-medium text-green-600">
-            A new verification link has been sent to the email address you
-            provided during registration.
+            На адрес email, указанный при регистрации, отправлена новая ссылка
+            для подтверждения.
         </div>
     {/if}
 
@@ -28,11 +28,11 @@
         {#snippet children({ processing })}
             <Button type="submit" disabled={processing} variant="secondary">
                 {#if processing}<Spinner />{/if}
-                Resend verification email
+                Отправить письмо повторно
             </Button>
 
             <TextLink href={logout()} as="button" class="mx-auto block text-sm">
-                Log out
+                Выйти
             </TextLink>
         {/snippet}
     </Form>

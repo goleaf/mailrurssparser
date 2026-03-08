@@ -621,7 +621,7 @@
                             <div
                                 class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-slate-950"
                             >
-                                Shares: {article.shares_count ?? 0}
+                                Поделились: {article.shares_count ?? 0}
                             </div>
                         </div>
                     </section>
@@ -719,7 +719,7 @@
                                 <dt
                                     class="font-medium text-slate-900 dark:text-white"
                                 >
-                                    RSS feed
+                                    RSS-лента
                                 </dt>
                                 <dd class="mt-1">
                                     {article.rss_feed?.title || 'Нет данных'}
@@ -740,7 +740,7 @@
                             <div
                                 class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 text-shadow-2xs text-shadow-sky-200/60 dark:text-sky-300 dark:text-shadow-sky-950/80"
                             >
-                                Related content
+                                Читайте также
                             </div>
                             <div
                                 class="mt-2 text-sm text-slate-500 dark:text-slate-400"
@@ -770,7 +770,7 @@
                     <div
                         class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 text-shadow-2xs text-shadow-sky-200/60 dark:text-sky-300 dark:text-shadow-sky-950/80"
                     >
-                        Similar stories
+                        Похожие сюжеты
                     </div>
                     <div
                         class="mb-5 text-sm text-slate-500 dark:text-slate-400"
@@ -797,7 +797,7 @@
                     <div
                         class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 text-shadow-2xs text-shadow-sky-200/60 dark:text-sky-300 dark:text-shadow-sky-950/80"
                     >
-                        More from {article.category.name}
+                        Ещё из раздела {article.category.name}
                     </div>
                     <div
                         class="mb-5 text-sm text-slate-500 dark:text-slate-400"

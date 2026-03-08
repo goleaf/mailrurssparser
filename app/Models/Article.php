@@ -348,11 +348,11 @@ class Article extends Model implements HasRichContent
 
         $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $value = trim((string) preg_replace('/^[©\s]+/u', '', $value));
-        $value = trim($value, " \t\n\r\0\x0B\"'`«»„“”‚‘’");
+        $value = preg_replace('/^[\s"\'`«»„“”‚‘’]+|[\s"\'`«»„“”‚‘’]+$/u', '', $value) ?? $value;
         $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
         $value = preg_replace('/\s*-\s*Новости$/u', '', $value) ?? $value;
         $value = preg_replace('/\s+-\s+.+$/u', '', $value) ?? $value;
-        $value = trim($value, " \t\n\r\0\x0B\"'`«»„“”‚‘’");
+        $value = preg_replace('/^[\s"\'`«»„“”‚‘’]+|[\s"\'`«»„“”‚‘’]+$/u', '', $value) ?? $value;
 
         if ($value === '') {
             return null;
@@ -371,9 +371,6 @@ class Article extends Model implements HasRichContent
         return [
             Str::lower((string) config('rss.feed_host', implode('.', ['news', 'mail', 'ru']))),
             Str::lower(implode('.', ['mail', 'ru'])),
-            'новости mail',
-            'спорт mail',
-            'погода mail',
         ];
     }
 

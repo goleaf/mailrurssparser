@@ -46,7 +46,7 @@ it('recalculates tag usage counts from the header action', function () {
 
     Livewire::test(ListTags::class)
         ->callAction('recalculateCounts')
-        ->assertNotified('Tag counts recalculated');
+        ->assertNotified('Счётчики тегов пересчитаны');
 
     expect($tag->refresh()->usage_count)->toBe(1);
 });

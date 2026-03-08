@@ -14,23 +14,23 @@
 
     const breadcrumbItems: BreadcrumbItem[] = [
         {
-            title: 'Password settings',
+            title: 'Настройки пароля',
             href: edit(),
         },
     ];
 </script>
 
-<AppHead title="Password settings" />
+<AppHead title="Настройки пароля" />
 
 <AppLayout breadcrumbs={breadcrumbItems}>
-    <h1 class="sr-only">Password settings</h1>
+    <h1 class="sr-only">Настройки пароля</h1>
 
     <SettingsLayout>
         <div class="space-y-6">
             <Heading
                 variant="small"
-                title="Update password"
-                description="Ensure your account is using a long, random password to stay secure"
+                title="Обновить пароль"
+                description="Используйте длинный и случайный пароль, чтобы защитить аккаунт"
             />
 
             <Form
@@ -46,34 +46,34 @@
             >
                 {#snippet children({ errors, processing })}
                     <div class="grid gap-2">
-                        <Label for="current_password">Current password</Label>
+                        <Label for="current_password">Текущий пароль</Label>
                         <Input
                             id="current_password"
                             name="current_password"
                             type="password"
                             class="mt-1 block w-full"
                             autocomplete="current-password"
-                            placeholder="Current password"
+                            placeholder="Текущий пароль"
                         />
                         <InputError message={errors.current_password} />
                     </div>
 
                     <div class="grid gap-2">
-                        <Label for="password">New password</Label>
+                        <Label for="password">Новый пароль</Label>
                         <Input
                             id="password"
                             name="password"
                             type="password"
                             class="mt-1 block w-full"
                             autocomplete="new-password"
-                            placeholder="New password"
+                            placeholder="Новый пароль"
                         />
                         <InputError message={errors.password} />
                     </div>
 
                     <div class="grid gap-2">
                         <Label for="password_confirmation"
-                            >Confirm password</Label
+                            >Подтвердите пароль</Label
                         >
                         <Input
                             id="password_confirmation"
@@ -81,7 +81,7 @@
                             type="password"
                             class="mt-1 block w-full"
                             autocomplete="new-password"
-                            placeholder="Confirm password"
+                            placeholder="Подтвердите пароль"
                         />
                         <InputError message={errors.password_confirmation} />
                     </div>
@@ -92,7 +92,7 @@
                             disabled={processing}
                             data-test="update-password-button"
                         >
-                            Save password
+                            Сохранить пароль
                         </Button>
                     </div>
                 {/snippet}

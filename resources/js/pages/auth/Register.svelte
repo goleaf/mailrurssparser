@@ -12,11 +12,11 @@
     import { store } from '@/routes/register';
 </script>
 
-<AppHead title="Register" />
+<AppHead title="Регистрация" />
 
 <AuthBase
-    title="Create an account"
-    description="Enter your details below to create your account"
+    title="Создать аккаунт"
+    description="Укажите данные ниже, чтобы создать аккаунт"
 >
     <Form
         {...store.form()}
@@ -26,20 +26,20 @@
         {#snippet children({ errors, processing })}
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="name">Name</Label>
+                    <Label for="name">Имя</Label>
                     <Input
                         id="name"
                         type="text"
                         required
                         autocomplete="name"
                         name="name"
-                        placeholder="Full name"
+                        placeholder="Полное имя"
                     />
                     <InputError message={errors.name} />
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
+                    <Label for="email">Электронная почта</Label>
                     <Input
                         id="email"
                         type="email"
@@ -52,27 +52,27 @@
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password">Password</Label>
+                    <Label for="password">Пароль</Label>
                     <Input
                         id="password"
                         type="password"
                         required
                         autocomplete="new-password"
                         name="password"
-                        placeholder="Password"
+                        placeholder="Пароль"
                     />
                     <InputError message={errors.password} />
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password_confirmation">Confirm password</Label>
+                    <Label for="password_confirmation">Подтвердите пароль</Label>
                     <Input
                         id="password_confirmation"
                         type="password"
                         required
                         autocomplete="new-password"
                         name="password_confirmation"
-                        placeholder="Confirm password"
+                        placeholder="Подтвердите пароль"
                     />
                     <InputError message={errors.password_confirmation} />
                 </div>
@@ -84,14 +84,14 @@
                     data-test="register-user-button"
                 >
                     {#if processing}<Spinner />{/if}
-                    Create account
+                    Создать аккаунт
                 </Button>
             </div>
 
             <div class="text-center text-sm text-muted-foreground">
-                Already have an account?
+                Уже есть аккаунт?
                 <TextLink href={login()} class="underline underline-offset-4">
-                    Log in
+                    Войти
                 </TextLink>
             </div>
         {/snippet}

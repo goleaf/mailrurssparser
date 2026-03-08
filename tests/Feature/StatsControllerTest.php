@@ -15,7 +15,9 @@ it('validates calendar parameters', function () {
 
 it('returns overview analytics with top categories and tags', function () {
     $category = Category::factory()->create(['name' => 'News', 'slug' => 'news']);
+    Category::factory()->create(['name' => 'Ghost', 'slug' => 'ghost']);
     $tag = Tag::factory()->create(['name' => 'Politics', 'usage_count' => 25]);
+    Tag::factory()->create(['name' => 'Unused', 'usage_count' => 0]);
     $feed = RssFeed::factory()->create([
         'category_id' => $category->id,
         'title' => 'Main Feed',
@@ -80,7 +82,11 @@ it('returns overview analytics with top categories and tags', function () {
         ->assertJsonPath('last_parse', $feed->last_parsed_at?->toIso8601String())
         ->assertJsonPath('feeds.total', 1)
         ->assertJsonPath('feeds.active', 1)
-        ->assertJsonPath('feeds.errors', 0);
+        ->assertJsonPath('feeds.errors', 0)
+        ->assertJsonCount(1, 'top_categories')
+        ->assertJsonMissing([
+            'name' => 'Unused',
+        ]);
 });
 
 it('returns chart data grouped for the requested period', function () {
@@ -217,6 +223,12 @@ it('returns category breakdown with percentages and top article', function () {
         'color' => '#DC2626',
     ]);
 
+    Category::factory()->create([
+        'name' => 'Empty',
+        'slug' => 'empty',
+        'color' => '#2563EB',
+    ]);
+
     $topArticle = Article::factory()->create([
         'category_id' => $category->id,
         'title' => 'Top Story',
@@ -237,5 +249,6 @@ it('returns category breakdown with percentages and top article', function () {
         ->assertSuccessful()
         ->assertJsonPath('data.0.slug', 'politics')
         ->assertJsonPath('data.0.article_count', 2)
-        ->assertJsonPath('data.0.top_article.slug', $topArticle->slug);
+        ->assertJsonPath('data.0.top_article.slug', $topArticle->slug)
+        ->assertJsonCount(1, 'data');
 });

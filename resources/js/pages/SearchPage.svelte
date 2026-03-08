@@ -4,9 +4,9 @@
     import X from 'lucide-svelte/icons/x';
     import { onMount } from 'svelte';
     import AppHead from '@/components/AppHead.svelte';
-    import SearchAutocompletePanel from '@/components/SearchAutocompletePanel.svelte';
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import Pagination from '@/components/Pagination.svelte';
+    import SearchAutocompletePanel from '@/components/SearchAutocompletePanel.svelte';
     import SkeletonCard from '@/components/SkeletonCard.svelte';
     import { setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
@@ -14,10 +14,12 @@
     import {
         buildSearchAutocompleteItems,
         emptySearchSuggestions,
-        type SearchAutocompleteItem,
-        type SearchSuggestionCategory,
-        type SearchSuggestionTag,
-        type SearchSuggestions,
+    } from '@/lib/searchAutocomplete';
+    import type {
+        SearchAutocompleteItem,
+        SearchSuggestionCategory,
+        SearchSuggestionTag,
+        SearchSuggestions,
     } from '@/lib/searchAutocomplete';
     import { cn } from '@/lib/utils';
     import { appState, initApp } from '@/stores/app.svelte.js';
@@ -641,7 +643,7 @@
 
                 <div class="rounded-[1.9rem] border border-slate-200/80 bg-white/75 p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
                     <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Search pulse
+                        Пульс поиска
                     </div>
                     <div class="mt-4 space-y-3">
                         {#each searchSnapshots as snapshot (snapshot.label)}

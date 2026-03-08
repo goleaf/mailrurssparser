@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
+use App\Support\Utf8Normalizer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,7 +18,7 @@ class ArticleListResource extends JsonResource
         $status = ArticleStatus::fromValue($this->status);
         $contentType = ArticleContentType::fromValue($this->content_type);
 
-        return [
+        return Utf8Normalizer::normalize([
             'id' => $this->id,
             'title' => $this->title,
             'slug' => $this->slug,
@@ -72,6 +73,6 @@ class ArticleListResource extends JsonResource
                     'color' => $tag->color,
                 ])->values()->all();
             }),
-        ];
+        ]);
     }
 }

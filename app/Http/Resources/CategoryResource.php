@@ -12,6 +12,8 @@ class CategoryResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $articlesCount = $this->resource->articles_count ?? $this->articles_count_cache ?? 0;
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -19,7 +21,7 @@ class CategoryResource extends JsonResource
             'color' => $this->color,
             'icon' => $this->icon,
             'description' => $this->description,
-            'articles_count_cache' => $this->articles_count_cache,
+            'articles_count_cache' => (int) $articlesCount,
             'sub_categories' => $this->whenLoaded('subCategories', function () {
                 return $this->subCategories->map(fn ($subCategory): array => [
                     'id' => $subCategory->id,

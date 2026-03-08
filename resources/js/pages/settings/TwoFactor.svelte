@@ -25,7 +25,7 @@
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
-            title: 'Two-factor authentication',
+            title: 'Двухфакторная аутентификация',
             href: show(),
         },
     ];
@@ -38,34 +38,33 @@
     });
 </script>
 
-<AppHead title="Two-factor authentication" />
+<AppHead title="Двухфакторная аутентификация" />
 
 <AppLayout {breadcrumbs}>
-    <h1 class="sr-only">Two-factor authentication settings</h1>
+    <h1 class="sr-only">Настройки двухфакторной аутентификации</h1>
 
     <SettingsLayout>
         <div class="space-y-6">
             <Heading
                 variant="small"
-                title="Two-factor authentication"
-                description="Manage your two-factor authentication settings"
+                title="Двухфакторная аутентификация"
+                description="Управляйте настройками двухфакторной аутентификации"
             />
 
             {#if !twoFactorEnabled}
                 <div class="flex flex-col items-start justify-start space-y-4">
-                    <Badge variant="destructive">Disabled</Badge>
+                    <Badge variant="destructive">Выключена</Badge>
 
                     <p class="text-muted-foreground">
-                        When you enable two-factor authentication, you will be
-                        prompted for a secure pin during login. This pin can be
-                        retrieved from a TOTP-supported application on your
-                        phone.
+                        После включения двухфакторной аутентификации система
+                        будет запрашивать одноразовый код при входе. Код можно
+                        получать в приложении-аутентификаторе на телефоне.
                     </p>
 
                     <div>
                         {#if twoFactorAuth.hasSetupData()}
                             <Button onclick={() => (showSetupModal = true)}>
-                                <ShieldCheck class="size-4" />Continue setup
+                                <ShieldCheck class="size-4" />Продолжить настройку
                             </Button>
                         {:else}
                             <Form
@@ -74,7 +73,7 @@
                             >
                                 {#snippet children({ processing })}
                                     <Button type="submit" disabled={processing}>
-                                        <ShieldCheck class="size-4" />Enable 2FA
+                                        <ShieldCheck class="size-4" />Включить 2FA
                                     </Button>
                                 {/snippet}
                             </Form>
@@ -83,13 +82,12 @@
                 </div>
             {:else}
                 <div class="flex flex-col items-start justify-start space-y-4">
-                    <Badge variant="default">Enabled</Badge>
+                    <Badge variant="default">Включена</Badge>
 
                     <p class="text-muted-foreground">
-                        With two-factor authentication enabled, you will be
-                        prompted for a secure, random pin during login, which
-                        you can retrieve from the TOTP-supported application on
-                        your phone.
+                        При включённой двухфакторной аутентификации система
+                        будет запрашивать одноразовый код при входе, который
+                        показывает приложение-аутентификатор на телефоне.
                     </p>
 
                     <TwoFactorRecoveryCodes />
@@ -103,7 +101,7 @@
                                     disabled={processing}
                                 >
                                     <ShieldBan class="size-4" />
-                                    Disable 2FA
+                                    Выключить 2FA
                                 </Button>
                             {/snippet}
                         </Form>

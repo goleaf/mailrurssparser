@@ -18,11 +18,11 @@
     } = $props();
 </script>
 
-<AppHead title="Reset password" />
+<AppHead title="Сброс пароля" />
 
 <AuthLayout
-    title="Reset password"
-    description="Please enter your new password below"
+    title="Сброс пароля"
+    description="Введите новый пароль ниже"
 >
     <Form
         {...update.form()}
@@ -32,7 +32,7 @@
         {#snippet children({ errors, processing })}
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="email">Email</Label>
+                    <Label for="email">Электронная почта</Label>
                     <Input
                         id="email"
                         type="email"
@@ -46,27 +46,27 @@
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password">Password</Label>
+                    <Label for="password">Пароль</Label>
                     <Input
                         id="password"
                         type="password"
                         name="password"
                         autocomplete="new-password"
                         class="mt-1 block w-full"
-                        placeholder="Password"
+                        placeholder="Пароль"
                     />
                     <InputError message={errors.password} />
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password_confirmation">Confirm password</Label>
+                    <Label for="password_confirmation">Подтвердите пароль</Label>
                     <Input
                         id="password_confirmation"
                         type="password"
                         name="password_confirmation"
                         autocomplete="new-password"
                         class="mt-1 block w-full"
-                        placeholder="Confirm password"
+                        placeholder="Подтвердите пароль"
                     />
                     <InputError message={errors.password_confirmation} />
                 </div>
@@ -78,7 +78,7 @@
                     data-test="reset-password-button"
                 >
                     {#if processing}<Spinner />{/if}
-                    Reset password
+                    Сохранить новый пароль
                 </Button>
             </div>
         {/snippet}

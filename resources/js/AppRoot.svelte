@@ -1,7 +1,8 @@
 <script lang="ts">
     import { page } from '@inertiajs/svelte';
     import { onMount } from 'svelte';
-    import Toast, { showToast, type ToastType } from '@/components/ui/Toast.svelte';
+    import Toast, { showToast } from '@/components/ui/Toast.svelte';
+    import type { ToastType } from '@/components/ui/Toast.svelte';
     import { initApp } from '@/stores/app.svelte.js';
 
     type AppRootProps = {
@@ -28,6 +29,19 @@
 
     let updateRegistration = $state<ServiceWorkerRegistration | null>(null);
     let lastFlashToastSignature = $state('');
+
+    async function sendSchedulerHeartbeat(): Promise<void> {
+        try {
+            await fetch('/scheduler/pulse', {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                keepalive: true,
+            });
+        } catch {
+            return;
+        }
+    }
 
     function applyUpdate(): void {
         updateRegistration?.waiting?.postMessage({
@@ -65,6 +79,9 @@
         const unsubscribePage = page.subscribe((currentPage) => {
             syncFlashToast(currentPage as InertiaPage | undefined);
         });
+        const heartbeatTimer = window.setInterval(() => {
+            void sendSchedulerHeartbeat();
+        }, 60_000);
 
         const handleUpdate = (event: Event): void => {
             const detail = (event as CustomEvent<UpdateDetail>).detail;
@@ -76,6 +93,7 @@
 
         return () => {
             unsubscribePage();
+            window.clearInterval(heartbeatTimer);
             window.removeEventListener('sw:update-ready', handleUpdate);
         };
     });

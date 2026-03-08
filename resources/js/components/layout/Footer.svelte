@@ -102,7 +102,7 @@
                     </span>
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300">
-                            News Portal
+                            Новостной портал
                         </div>
                         <div class="text-2xl font-semibold">Новости</div>
                     </div>

@@ -8,6 +8,7 @@ use App\Models\RssFeed;
 use App\Models\RssParseLog;
 use App\Models\SubCategory;
 use App\Models\Tag;
+use App\Support\Utf8Normalizer;
 use Carbon\Carbon;
 use DOMDocument;
 use DOMElement;
@@ -359,28 +360,30 @@ class RssParserService
                 $converted = preg_replace('/(<\?xml[^>]+encoding=["\'])[^"\']+(["\'])/i', '$1UTF-8$2', $converted) ?? $converted;
                 $converted = preg_replace('/(<meta[^>]+charset=)[a-zA-Z0-9\-_]+/i', '$1UTF-8', $converted) ?? $converted;
 
-                return $converted;
+                return Utf8Normalizer::normalizeString($converted) ?? '';
             }
         }
 
-        return $body;
+        return Utf8Normalizer::normalizeString($body) ?? '';
     }
 
     private function sanitizeText(string $text): string
     {
+        $text = Utf8Normalizer::normalizeString($text) ?? '';
         $text = preg_replace('/<(script|iframe|style|object|embed|form)\b[^>]*>.*?<\/\1>/is', '', $text) ?? $text;
         $text = strip_tags($text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
 
-        return trim($text);
+        return trim(Utf8Normalizer::normalizeString($text) ?? '');
     }
 
     private function sanitizeHtml(string $html): string
     {
+        $html = Utf8Normalizer::normalizeString($html) ?? '';
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-        return trim((string) preg_replace('/<(script|iframe|style|object|embed|form|noscript)\b[^>]*>.*?<\/\1>/is', '', $html));
+        return trim(Utf8Normalizer::normalizeString((string) preg_replace('/<(script|iframe|style|object|embed|form|noscript)\b[^>]*>.*?<\/\1>/is', '', $html)) ?? '');
     }
 
     private function fetchSourcePage(string $url, ?int $maxRetries = null): string
@@ -575,7 +578,7 @@ class RssParserService
                 continue;
             }
 
-            $trimmed = trim($value);
+            $trimmed = trim(Utf8Normalizer::normalizeString($value) ?? '');
 
             if ($trimmed !== '') {
                 return $trimmed;
@@ -1334,12 +1337,12 @@ class RssParserService
             return false;
         }
 
+        $sourceData = [];
+
         try {
             $sourceData = $this->extractSourceArticleData($sourceUrl, $settings);
         } catch (Throwable $exception) {
             $this->logger()->warning("Stored article enrichment failed for {$sourceUrl}: {$exception->getMessage()}");
-
-            return false;
         }
 
         $updates = [];
@@ -1361,6 +1364,8 @@ class RssParserService
                 $updates['source_url'] = $updates['canonical_url'];
             }
         }
+
+        $updates = $this->addStoredArticleFallbackUpdates($article, $updates);
 
         if (isset($updates['full_description']) && is_string($updates['full_description']) && $updates['full_description'] !== '') {
             $updates['rss_content'] = $this->sanitizeText($updates['full_description']);
@@ -1398,12 +1403,118 @@ class RssParserService
         return true;
     }
 
+    /**
+     * @param  array<string, mixed>  $updates
+     * @return array<string, mixed>
+     */
+    private function addStoredArticleFallbackUpdates(Article $article, array $updates): array
+    {
+        $fallbackData = $this->buildStoredArticleFallbackData($article, $updates);
+
+        foreach (['short_description', 'meta_title', 'meta_description', 'canonical_url', 'source_url', 'source_name'] as $key) {
+            if (array_key_exists($key, $updates)) {
+                continue;
+            }
+
+            $value = $fallbackData[$key] ?? null;
+
+            if ($value === null || $this->isBlankArticleAttribute($value)) {
+                continue;
+            }
+
+            if (! $this->shouldReplaceExistingArticleAttribute($article, $key)) {
+                continue;
+            }
+
+            if ($article->getRawOriginal($key) === $value) {
+                continue;
+            }
+
+            $updates[$key] = $value;
+        }
+
+        return $updates;
+    }
+
+    /**
+     * @param  array<string, mixed>  $updates
+     * @return array<string, mixed>
+     */
+    private function buildStoredArticleFallbackData(Article $article, array $updates): array
+    {
+        $articleData = [
+            'title' => $updates['title'] ?? $article->title,
+            'short_description' => $updates['short_description'] ?? $article->short_description,
+            'full_description' => $updates['full_description'] ?? $article->full_description,
+            'rss_content' => $updates['rss_content'] ?? $article->rss_content,
+            'source_url' => $updates['source_url'] ?? $article->source_url,
+            'source_name' => $updates['source_name'] ?? $article->source_name,
+            'meta_title' => $updates['meta_title'] ?? $article->getRawOriginal('meta_title'),
+            'meta_description' => $updates['meta_description'] ?? $article->getRawOriginal('meta_description'),
+            'canonical_url' => $updates['canonical_url'] ?? $article->canonical_url,
+        ];
+
+        if ($this->isBlankArticleAttribute($articleData['short_description']) && ! $this->isBlankArticleAttribute($articleData['full_description'])) {
+            $articleData['short_description'] = $this->makeShortDescription(
+                (string) $articleData['full_description'],
+                (int) config('rss.article.short_description_length', 300),
+            );
+        }
+
+        if ($this->isBlankArticleAttribute($articleData['meta_title']) && ! $this->isBlankArticleAttribute($articleData['title'])) {
+            $articleData['meta_title'] = trim((string) $articleData['title']);
+        }
+
+        if ($this->isBlankArticleAttribute($articleData['meta_description'])) {
+            $articleData['meta_description'] = $this->firstNonEmptyString(
+                is_string($articleData['short_description'] ?? null)
+                    ? $this->makeShortDescription(
+                        $articleData['short_description'],
+                        (int) config('rss.article.short_description_length', 300),
+                    )
+                    : null,
+                is_string($articleData['full_description'] ?? null)
+                    ? $this->makeShortDescription(
+                        $articleData['full_description'],
+                        (int) config('rss.article.short_description_length', 300),
+                    )
+                    : null,
+                is_string($articleData['rss_content'] ?? null)
+                    ? $this->makeShortDescription(
+                        $articleData['rss_content'],
+                        (int) config('rss.article.short_description_length', 300),
+                    )
+                    : null,
+            );
+        }
+
+        if ($this->isBlankArticleAttribute($articleData['canonical_url']) && ! $this->isBlankArticleAttribute($articleData['source_url'])) {
+            $articleData['canonical_url'] = trim((string) $articleData['source_url']);
+        }
+
+        if ($this->isBlankArticleAttribute($articleData['source_url']) && ! $this->isBlankArticleAttribute($articleData['canonical_url'])) {
+            $articleData['source_url'] = trim((string) $articleData['canonical_url']);
+        }
+
+        if ($this->isBlankArticleAttribute($articleData['source_name'])) {
+            $articleData['source_name'] = $this->inferSourceNameFromUrl(
+                is_string($articleData['canonical_url'] ?? null) && trim($articleData['canonical_url']) !== ''
+                    ? $articleData['canonical_url']
+                    : (is_string($articleData['source_url'] ?? null) ? $articleData['source_url'] : null),
+            );
+        }
+
+        return $articleData;
+    }
+
     private function shouldReplaceExistingArticleAttribute(Article $article, string $key): bool
     {
         return match ($key) {
             'title' => $this->isBlankArticleAttribute($article->title)
                 || $this->isBlankArticleAttribute($article->full_description),
-            'short_description', 'meta_title', 'meta_description' => $this->isBlankArticleAttribute($article->{$key})
+            'short_description' => $this->isBlankArticleAttribute($article->short_description)
+                || $this->isBlankArticleAttribute($article->full_description),
+            'meta_title', 'meta_description' => $this->isBlankArticleAttribute($article->getRawOriginal($key))
                 || $this->isBlankArticleAttribute($article->full_description),
             'author' => $this->isBlankArticleAttribute($article->author)
                 || $article->author === config('rss.article.default_author')
@@ -1425,6 +1536,23 @@ class RssParserService
         }
 
         return $value === null;
+    }
+
+    private function inferSourceNameFromUrl(?string $url): ?string
+    {
+        if (! is_string($url) || trim($url) === '') {
+            return null;
+        }
+
+        $host = parse_url(trim($url), PHP_URL_HOST);
+
+        if (! is_string($host) || trim($host) === '') {
+            return null;
+        }
+
+        $host = preg_replace('/^www\./i', '', trim($host)) ?? trim($host);
+
+        return $this->normalizeSourceName(Str::lower($host));
     }
 
     /**
@@ -1494,7 +1622,7 @@ class RssParserService
             $guid = $this->extractLink($item);
         }
 
-        return trim($guid);
+        return trim(Utf8Normalizer::normalizeString($guid) ?? '');
     }
 
     private function extractDescription(SimpleXMLElement $item): string
@@ -1756,7 +1884,8 @@ class RssParserService
         }
 
         $updates = [];
-        $subCategory = $this->resolveFeedSubCategory($feed);
+        $itemCategories = $this->extractCategories($item);
+        $subCategory = $this->resolveItemSubCategory($feed, $itemCategories);
         $link = $this->extractLink($item);
         $guid = $this->extractGuid($item);
         $description = $this->extractDescription($item);
@@ -1776,7 +1905,7 @@ class RssParserService
             $updates['rss_feed_id'] = $feed->id;
         }
 
-        if ($this->isBlankArticleAttribute($article->sub_category_id) && $subCategory?->id !== null) {
+        if ($subCategory?->id !== null && $article->sub_category_id !== $subCategory->id) {
             $updates['sub_category_id'] = $subCategory->id;
         }
 
@@ -1820,6 +1949,7 @@ class RssParserService
     {
         /** @var array<string, mixed> $extraSettings */
         $extraSettings = is_array($feed->extra_settings) ? $feed->extra_settings : [];
+        $itemCategories = $this->extractCategories($item);
         $title = $this->extractTitle($item);
         $description = $this->extractDescription($item);
         $fullHtml = $this->extractFullHtml($item);
@@ -1844,7 +1974,7 @@ class RssParserService
             : (string) config('rss.article.default_author', 'Редакция');
         $author = $this->extractAuthor($item)
             ?? ($defaultAuthor !== '' ? $defaultAuthor : $sourceName);
-        $subCategory = $this->resolveFeedSubCategory($feed);
+        $subCategory = $this->resolveItemSubCategory($feed, $itemCategories);
 
         $articleData = [
             'category_id' => $categoryId,
@@ -1872,7 +2002,154 @@ class RssParserService
             'rss_parsed_at' => now(),
         ];
 
-        return $this->enrichArticleDataFromSource($articleData, $extraSettings);
+        return Utf8Normalizer::normalize($this->enrichArticleDataFromSource($articleData, $extraSettings));
+    }
+
+    /**
+     * @param  array<int, string>  $itemCategories
+     */
+    private function resolveItemSubCategory(RssFeed $feed, array $itemCategories): ?SubCategory
+    {
+        $resolvedName = $this->resolveItemSubCategoryName($feed, $itemCategories);
+
+        if ($resolvedName !== null) {
+            return $this->resolveSubCategoryByName($feed, $resolvedName);
+        }
+
+        return $this->resolveFeedSubCategory($feed);
+    }
+
+    /**
+     * @param  array<int, string>  $itemCategories
+     */
+    private function resolveItemSubCategoryName(RssFeed $feed, array $itemCategories): ?string
+    {
+        $categoryName = $feed->relationLoaded('category')
+            ? ($feed->category?->name ?? '')
+            : (string) Category::query()->whereKey($feed->category_id)->value('name');
+        $categorySlug = $feed->relationLoaded('category')
+            ? ($feed->category?->slug ?? '')
+            : (string) Category::query()->whereKey($feed->category_id)->value('slug');
+        $aggregateCategory = in_array(Str::lower($categorySlug), ['all', 'main'], true);
+
+        foreach ($itemCategories as $itemCategory) {
+            $normalizedItemCategory = trim($itemCategory);
+
+            if ($normalizedItemCategory === '') {
+                continue;
+            }
+
+            if ($aggregateCategory) {
+                return $normalizedItemCategory;
+            }
+
+            if (! str_contains($normalizedItemCategory, ':')) {
+                continue;
+            }
+
+            [$prefix, $suffix] = array_map('trim', explode(':', $normalizedItemCategory, 2));
+
+            if ($suffix === '') {
+                continue;
+            }
+
+            if ($categoryName !== '' && Str::lower($prefix) === Str::lower($categoryName)) {
+                return $suffix;
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveSubCategoryByName(RssFeed $feed, string $subCategoryName): ?SubCategory
+    {
+        $normalizedName = trim($subCategoryName);
+
+        if ($normalizedName === '') {
+            return null;
+        }
+
+        $subCategorySlug = Str::slug(strtr($normalizedName, self::RU_TRANSLIT));
+
+        return $this->firstOrCreateSubCategory(
+            $feed->category_id,
+            $normalizedName,
+            $subCategorySlug !== '' ? $subCategorySlug : null,
+        );
+    }
+
+    private function firstOrCreateSubCategory(int $categoryId, string $subCategoryName, ?string $subCategorySlug = null): ?SubCategory
+    {
+        $normalizedName = trim($subCategoryName);
+        $normalizedSlug = trim((string) $subCategorySlug);
+
+        if ($normalizedName === '' && $normalizedSlug === '') {
+            return null;
+        }
+
+        $query = SubCategory::query()->where('category_id', $categoryId);
+
+        if ($normalizedSlug !== '') {
+            $existingSubCategory = (clone $query)->where('slug', $normalizedSlug)->first();
+
+            if ($existingSubCategory instanceof SubCategory) {
+                return $existingSubCategory;
+            }
+        }
+
+        if ($normalizedName !== '') {
+            $existingSubCategory = (clone $query)->where('name', $normalizedName)->first();
+
+            if ($existingSubCategory instanceof SubCategory) {
+                return $existingSubCategory;
+            }
+        }
+
+        if ($normalizedSlug === '') {
+            $normalizedSlug = Str::slug(strtr($normalizedName, self::RU_TRANSLIT));
+        }
+
+        $uniqueSlug = $this->makeUniqueSubCategorySlug($categoryId, $normalizedSlug !== '' ? $normalizedSlug : null, $normalizedName);
+
+        return SubCategory::query()->create([
+            'category_id' => $categoryId,
+            'name' => $normalizedName !== '' ? $normalizedName : $normalizedSlug,
+            'slug' => $uniqueSlug,
+            'description' => null,
+            'is_active' => true,
+            'order' => 0,
+        ]);
+    }
+
+    private function makeUniqueSubCategorySlug(int $categoryId, ?string $preferredSlug, string $subCategoryName): string
+    {
+        $baseSlug = trim((string) $preferredSlug);
+
+        if ($baseSlug === '') {
+            $baseSlug = Str::slug(strtr($subCategoryName, self::RU_TRANSLIT));
+        }
+
+        if ($baseSlug === '') {
+            $baseSlug = 'sub-category';
+        }
+
+        $existingBySlug = SubCategory::query()->where('slug', $baseSlug)->first();
+
+        if (! $existingBySlug instanceof SubCategory || $existingBySlug->category_id === $categoryId) {
+            return $baseSlug;
+        }
+
+        $categorySlug = (string) Category::query()->whereKey($categoryId)->value('slug');
+        $baseSlug = trim($categorySlug) !== '' ? "{$categorySlug}-{$baseSlug}" : "{$baseSlug}-{$categoryId}";
+        $slug = $baseSlug;
+        $counter = 2;
+
+        while (SubCategory::query()->where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 
     private function resolveFeedSubCategory(RssFeed $feed): ?SubCategory
@@ -1905,34 +2182,11 @@ class RssParserService
             return null;
         }
 
-        $query = SubCategory::query()->where('category_id', $feed->category_id);
-
-        if ($subCategorySlug !== '') {
-            $existingSubCategory = (clone $query)->where('slug', $subCategorySlug)->first();
-
-            if ($existingSubCategory instanceof SubCategory) {
-                return $existingSubCategory;
-            }
-        }
-
-        if ($subCategoryName !== '') {
-            $existingSubCategory = (clone $query)->where('name', $subCategoryName)->first();
-
-            if ($existingSubCategory instanceof SubCategory) {
-                return $existingSubCategory;
-            }
-
-            return SubCategory::query()->create([
-                'category_id' => $feed->category_id,
-                'name' => $subCategoryName,
-                'slug' => $subCategorySlug !== '' ? $subCategorySlug : null,
-                'description' => null,
-                'is_active' => true,
-                'order' => 0,
-            ]);
-        }
-
-        return null;
+        return $this->firstOrCreateSubCategory(
+            $feed->category_id,
+            $subCategoryName,
+            $subCategorySlug !== '' ? $subCategorySlug : null,
+        );
     }
 
     private function guessImportance(string $title, string $desc): int

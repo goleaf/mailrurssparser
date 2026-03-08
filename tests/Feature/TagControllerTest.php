@@ -11,8 +11,17 @@ beforeEach(function () {
 });
 
 it('lists tags ordered by usage count', function () {
+    $category = Category::factory()->create();
     $low = Tag::factory()->create(['name' => 'Low', 'usage_count' => 1]);
     $high = Tag::factory()->create(['name' => 'High', 'usage_count' => 10]);
+    $hidden = Tag::factory()->create(['name' => 'Hidden', 'usage_count' => 0]);
+    $article = Article::factory()->create([
+        'category_id' => $category->id,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $article->tags()->attach([$low->id, $high->id]);
 
     $response = $this->getJson('/api/v1/tags');
 
@@ -22,12 +31,22 @@ it('lists tags ordered by usage count', function () {
 
     expect($payload[0]['name'])->toBe('High')
         ->and($payload[0]['id'])->toBe($high->id)
-        ->and($payload)->toHaveCount(2);
+        ->and($payload)->toHaveCount(2)
+        ->and(collect($payload)->pluck('id'))->not->toContain($hidden->id);
 });
 
 it('supports trending and limit query parameters for tags', function () {
-    Tag::factory()->create(['name' => 'Regular', 'usage_count' => 40, 'is_trending' => false]);
+    $category = Category::factory()->create();
+    $regular = Tag::factory()->create(['name' => 'Regular', 'usage_count' => 40, 'is_trending' => false]);
     $trending = Tag::factory()->create(['name' => 'Trending', 'usage_count' => 30, 'is_trending' => true]);
+    Tag::factory()->create(['name' => 'Zero Trending', 'usage_count' => 0, 'is_trending' => true]);
+    $article = Article::factory()->create([
+        'category_id' => $category->id,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $article->tags()->attach([$regular->id, $trending->id]);
 
     $response = $this->getJson('/api/v1/tags?trending=1&limit=1');
 

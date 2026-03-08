@@ -77,8 +77,8 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
             ->map(fn (int $days): int => (int) ($articleCounts[today()->minus(days: $days)->toDateString()] ?? 0))
             ->all();
 
-        $threatStat = Stat::make('Threats 24h', $threatsLastDay)
-            ->description($highThreatsLastDay > 0 ? number_format($highThreatsLastDay).' high severity' : 'No high severity threats')
+        $threatStat = Stat::make('Угрозы за 24 ч', $threatsLastDay)
+            ->description($highThreatsLastDay > 0 ? number_format($highThreatsLastDay).' высокого уровня' : 'Угроз высокого уровня нет')
             ->color($highThreatsLastDay > 0 ? 'danger' : 'gray');
 
         if ($threatDashboardUrl !== null) {
@@ -86,31 +86,31 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
         }
 
         return [
-            Stat::make('Total Published', Article::query()->published()->count())
+            Stat::make('Всего опубликовано', Article::query()->published()->count())
                 ->chart($chart)
                 ->color('success'),
-            Stat::make('Today', Article::query()->publishedBetween($todayStart, $todayEnd)->count())
+            Stat::make('Сегодня', Article::query()->publishedBetween($todayStart, $todayEnd)->count())
                 ->color('info'),
-            Stat::make('Views Today', ArticleView::query()->viewedBetween($todayStart, $todayEnd)->count())
+            Stat::make('Просмотры сегодня', ArticleView::query()->viewedBetween($todayStart, $todayEnd)->count())
                 ->color('warning'),
-            Stat::make('Total Views', number_format((int) Article::query()->published()->sum('views_count')))
+            Stat::make('Всего просмотров', number_format((int) Article::query()->published()->sum('views_count')))
                 ->color('gray'),
-            Stat::make('Top Country 7d', $topCountry?->country_code ?? '—')
-                ->description($topCountry !== null ? number_format((int) $topCountry->aggregate).' views' : 'No geo data yet')
+            Stat::make('Топ-страна за 7 дн.', $topCountry?->country_code ?? '—')
+                ->description($topCountry !== null ? number_format((int) $topCountry->aggregate).' просмотров' : 'Данных по географии пока нет')
                 ->color('primary'),
-            Stat::make('Top TZ 7d', $topTimezone?->timezone ?? '—')
-                ->description($topTimezone !== null ? number_format((int) $topTimezone->aggregate).' views' : 'No timezone data yet')
+            Stat::make('Топ-часовой пояс за 7 дн.', $topTimezone?->timezone ?? '—')
+                ->description($topTimezone !== null ? number_format((int) $topTimezone->aggregate).' просмотров' : 'Данных по часовым поясам пока нет')
                 ->color('gray'),
             $threatStat,
-            Stat::make('Active Feeds', RssFeed::query()->active()->count())
+            Stat::make('Активные ленты', RssFeed::query()->active()->count())
                 ->color('primary'),
-            Stat::make('Trending Tags', Tag::query()->where('is_trending', true)->count())
+            Stat::make('Популярные теги', Tag::query()->where('is_trending', true)->count())
                 ->color(Color::Purple),
-            Stat::make('Bookmarks 24h', $metricTotals[TrackedMetric::BookmarkAdded->value] ?? 0)
+            Stat::make('Закладки за 24 ч', $metricTotals[TrackedMetric::BookmarkAdded->value] ?? 0)
                 ->color('info'),
-            Stat::make('Subscriptions 7d', $newsletterTotals[TrackedMetric::NewsletterSubscription->value] ?? 0)
+            Stat::make('Подписки за 7 дн.', $newsletterTotals[TrackedMetric::NewsletterSubscription->value] ?? 0)
                 ->color('success'),
-            Stat::make('RSS Imports 24h', $metricTotals[TrackedMetric::RssArticleImported->value] ?? 0)
+            Stat::make('Импорт RSS за 24 ч', $metricTotals[TrackedMetric::RssArticleImported->value] ?? 0)
                 ->color('warning'),
         ];
     }

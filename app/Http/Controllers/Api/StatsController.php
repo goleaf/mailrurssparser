@@ -313,6 +313,7 @@ class StatsController extends Controller
 
         $categories = Category::query()
             ->where('is_active', true)
+            ->whereHas('articles', fn (Builder $query): Builder => $query->published())
             ->withCount([
                 'articles',
                 'articles as published_count' => fn (Builder $query) => $query->published(),

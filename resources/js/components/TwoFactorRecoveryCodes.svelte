@@ -47,11 +47,11 @@
 <Card class="w-full">
     <CardHeader>
         <CardTitle class="flex gap-3">
-            <LockKeyhole class="size-4" />2FA recovery codes
+            <LockKeyhole class="size-4" />Резервные коды 2FA
         </CardTitle>
         <CardDescription>
-            Recovery codes let you regain access if you lose your 2FA device.
-            Store them in a secure password manager.
+            Резервные коды помогут вернуть доступ, если вы потеряете устройство
+            для 2FA. Храните их в защищённом менеджере паролей.
         </CardDescription>
     </CardHeader>
     <CardContent>
@@ -64,7 +64,7 @@
                 {:else}
                     <Eye class="size-4" />
                 {/if}
-                {isRecoveryCodesVisible ? 'Hide' : 'View'} recovery codes
+                {isRecoveryCodesVisible ? 'Скрыть' : 'Показать'} резервные коды
             </Button>
 
             {#if isRecoveryCodesVisible && twoFactorAuth.state.recoveryCodesList.length}
@@ -79,7 +79,7 @@
                             type="submit"
                             disabled={processing}
                         >
-                            <RefreshCw class="size-4" /> Regenerate codes
+                            <RefreshCw class="size-4" /> Обновить коды
                         </Button>
                     {/snippet}
                 </Form>
@@ -115,9 +115,9 @@
                         {/if}
                     </div>
                     <p class="text-xs text-muted-foreground select-none">
-                        Each recovery code can be used once to access your
-                        account and will be removed after use. If you need more,
-                        click <span class="font-bold">Regenerate codes</span> above.
+                        Каждый резервный код можно использовать только один раз.
+                        После применения он удаляется. Если нужны новые коды,
+                        нажмите <span class="font-bold">«Обновить коды»</span> выше.
                     </p>
                 </div>
             {/if}

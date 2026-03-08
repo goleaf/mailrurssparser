@@ -16,6 +16,29 @@ it('lists active categories with sub categories', function () {
         'slug' => 'politics',
         'name' => 'Politics',
         'is_active' => true,
+        'show_in_menu' => true,
+    ]);
+
+    RssFeed::factory()->create([
+        'category_id' => $category->id,
+    ]);
+
+    Category::factory()->create([
+        'slug' => 'hidden-without-feed',
+        'name' => 'Hidden',
+        'is_active' => true,
+        'show_in_menu' => true,
+    ]);
+
+    $emptyCategory = Category::factory()->create([
+        'slug' => 'empty-with-feed',
+        'name' => 'Empty With Feed',
+        'is_active' => true,
+        'show_in_menu' => true,
+    ]);
+
+    RssFeed::factory()->create([
+        'category_id' => $emptyCategory->id,
     ]);
 
     $subCategory = SubCategory::factory()->create([
@@ -42,8 +65,10 @@ it('lists active categories with sub categories', function () {
     expect($payload)->toHaveCount(1)
         ->and($payload[0]['slug'])->toBe('politics')
         ->and($payload[0]['id'])->toBe($category->id)
+        ->and($payload[0]['articles_count_cache'])->toBe(1)
         ->and($payload[0]['sub_categories'])->toHaveCount(1)
-        ->and($payload[0]['sub_categories'][0]['id'])->toBe($subCategory->id);
+        ->and($payload[0]['sub_categories'][0]['id'])->toBe($subCategory->id)
+        ->and(collect($payload)->pluck('slug'))->not->toContain('empty-with-feed');
 });
 
 it('shows a category with feeds', function () {

@@ -3,6 +3,7 @@
 use App\Http\Middleware\ApplyApiRequestContext;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\TriggerSchedulerFromWebRequests;
 use App\Models\Article;
 use App\Models\Category;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -37,21 +38,22 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             ThreatDetectionMiddleware::class,
+            TriggerSchedulerFromWebRequests::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule): void {
-        // Parse all feeds every 15 minutes, no overlap.
-        $schedule->command('rss:parse --due')
-            ->everyFifteenMinutes()
-            ->withoutOverlapping(14)
+        // Parse all feeds every minute, no overlap.
+        $schedule->command('rss:parse --all')
+            ->everyMinute()
+            ->withoutOverlapping(1)
+            ->runInBackground();
+
+        // Backfill missing article fields from saved source links every hour.
+        $schedule->command('rss:enrich-articles --limit=100')
+            ->hourlyAt(10)
+            ->withoutOverlapping(50)
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/scheduler.log'));
-
-        // Parse main/breaking news every 5 minutes.
-        $schedule->command('rss:parse --category=main')
-            ->everyFiveMinutes()
-            ->withoutOverlapping(4)
-            ->runInBackground();
 
         // Clean old articles every Sunday at 3am.
         $schedule->command('rss:clean --days=90 --force')

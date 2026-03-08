@@ -131,6 +131,14 @@ HTML;
         ->and($parsed['full_description'])->not->toContain('Remove me entirely');
 });
 
+it('normalizes invalid utf-8 fragments during source text cleanup', function () {
+    $service = app(SourceArticleParserService::class);
+    $method = new ReflectionMethod($service, 'sanitizeText');
+    $method->setAccessible(true);
+
+    expect($method->invoke($service, "РБ\x80"))->toBe('РБ');
+});
+
 it('extracts rich article data from preloaded page state when preload_article is absent', function () {
     $pageState = json_encode([
         'article' => [

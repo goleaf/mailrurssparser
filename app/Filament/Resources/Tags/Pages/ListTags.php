@@ -18,7 +18,7 @@ class ListTags extends ListRecords
         return [
             CreateAction::make(),
             Action::make('recalculateCounts')
-                ->label('Recalculate Counts')
+                ->label('Пересчитать счётчики')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
                 ->action(function (): void {
@@ -32,7 +32,7 @@ class ListTags extends ListRecords
                     ');
 
                     Notification::make()
-                        ->title('Tag counts recalculated')
+                        ->title('Счётчики тегов пересчитаны')
                         ->success()
                         ->send();
                 }),

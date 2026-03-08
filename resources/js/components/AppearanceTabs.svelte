@@ -13,9 +13,9 @@
         | (new (...args: any[]) => SvelteComponent<{ class?: string }>);
 
     const tabs: { value: Appearance; Icon: IconComponent; label: string }[] = [
-        { value: 'light', Icon: Sun, label: 'Light' },
-        { value: 'dark', Icon: Moon, label: 'Dark' },
-        { value: 'system', Icon: Monitor, label: 'System' },
+        { value: 'light', Icon: Sun, label: 'Светлая' },
+        { value: 'dark', Icon: Moon, label: 'Тёмная' },
+        { value: 'system', Icon: Monitor, label: 'Системная' },
     ];
 
     function handleAppearanceChange(value: Appearance) {

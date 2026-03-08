@@ -77,7 +77,7 @@ class RssFeedsTable
             ])
             ->recordActions([
                 Action::make('parseNow')
-                    ->label('Parse Now')
+                    ->label('Запустить')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->action(function (RssFeed $record, RssParserService $parser): void {
@@ -85,7 +85,7 @@ class RssFeedsTable
 
                         if (! empty($result['error'])) {
                             Notification::make()
-                                ->title('Parse Failed')
+                                ->title('Ошибка парсинга')
                                 ->body((string) $result['error'])
                                 ->danger()
                                 ->send();
@@ -94,8 +94,8 @@ class RssFeedsTable
                         }
 
                         Notification::make()
-                            ->title('Parse Complete')
-                            ->body("New: {$result['new']}, Skipped: {$result['skip']}")
+                            ->title('Парсинг завершён')
+                            ->body("Новые: {$result['new']}, Пропущено: {$result['skip']}")
                             ->success()
                             ->send();
                     }),

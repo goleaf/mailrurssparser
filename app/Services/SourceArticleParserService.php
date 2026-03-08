@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Article;
+use App\Support\Utf8Normalizer;
 use Carbon\Carbon;
 use DOMDocument;
 use DOMElement;
@@ -221,7 +222,7 @@ class SourceArticleParserService
             $meta['article:section'] ?? null,
         );
 
-        return [
+        return Utf8Normalizer::normalize([
             'title' => $title,
             'subtitle' => $subtitle,
             'short_description' => $description,
@@ -253,7 +254,7 @@ class SourceArticleParserService
                 section: $section,
                 keywords: $keywords,
             ),
-        ];
+        ]);
     }
 
     private function extractScriptContentById(DOMXPath $xpath, string $scriptId): ?string
@@ -997,19 +998,21 @@ class SourceArticleParserService
 
     private function sanitizeText(string $text): string
     {
+        $text = Utf8Normalizer::normalizeString($text) ?? '';
         $text = preg_replace('/<(script|iframe|style|object|embed|form)\b[^>]*>.*?<\/\1>/is', '', $text) ?? $text;
         $text = strip_tags($text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
 
-        return trim($text);
+        return trim(Utf8Normalizer::normalizeString($text) ?? '');
     }
 
     private function sanitizeHtml(string $html): string
     {
+        $html = Utf8Normalizer::normalizeString($html) ?? '';
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-        return trim((string) preg_replace('/<(script|iframe|style|object|embed|form|noscript)\b[^>]*>.*?<\/\1>/is', '', $html));
+        return trim(Utf8Normalizer::normalizeString((string) preg_replace('/<(script|iframe|style|object|embed|form|noscript)\b[^>]*>.*?<\/\1>/is', '', $html)) ?? '');
     }
 
     private function detectEncoding(string $body): string
@@ -1028,11 +1031,11 @@ class SourceArticleParserService
             $converted = iconv('Windows-1251', 'UTF-8//IGNORE', $body);
 
             if ($converted !== false) {
-                return $converted;
+                return Utf8Normalizer::normalizeString($converted) ?? '';
             }
         }
 
-        return $body;
+        return Utf8Normalizer::normalizeString($body) ?? '';
     }
 
     private function firstNonEmptyString(mixed ...$values): ?string
@@ -1042,7 +1045,7 @@ class SourceArticleParserService
                 continue;
             }
 
-            $trimmed = trim($value);
+            $trimmed = trim(Utf8Normalizer::normalizeString($value) ?? '');
 
             if ($trimmed !== '') {
                 return $trimmed;

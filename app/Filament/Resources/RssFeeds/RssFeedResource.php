@@ -51,7 +51,7 @@ class RssFeedResource extends Resource
     {
         return $schema
             ->components([
-                Section::make('Feed overview')
+                Section::make('Обзор ленты')
                     ->columns(2)
                     ->schema([
                         TextEntry::make('title')
@@ -65,116 +65,123 @@ class RssFeedResource extends Resource
                             ->copyable(),
                         TextEntry::make('source_name'),
                         TextEntry::make('fetch_interval')
-                            ->suffix(' min'),
+                            ->suffix(' мин'),
                         TextEntry::make('is_active')
                             ->badge()
-                            ->formatStateUsing(fn (bool $state): string => $state ? 'Active' : 'Disabled')
+                            ->formatStateUsing(fn (bool $state): string => $state ? 'Активна' : 'Отключена')
                             ->color(fn (bool $state): string => $state ? 'success' : 'gray'),
                         TextEntry::make('auto_publish')
                             ->badge()
-                            ->formatStateUsing(fn (bool $state): string => $state ? 'Auto publish' : 'Manual moderation')
+                            ->formatStateUsing(fn (bool $state): string => $state ? 'Автопубликация' : 'Ручная модерация')
                             ->color(fn (bool $state): string => $state ? 'info' : 'warning'),
                         TextEntry::make('auto_featured')
                             ->badge()
-                            ->formatStateUsing(fn (bool $state): string => $state ? 'Auto featured' : 'Standard import')
+                            ->formatStateUsing(fn (bool $state): string => $state ? 'Автовыделение' : 'Обычный импорт')
                             ->color(fn (bool $state): string => $state ? 'success' : 'gray'),
                     ]),
-                Section::make('Parser status')
+                Section::make('Состояние парсера')
                     ->columns(3)
                     ->schema([
                         TextEntry::make('last_parsed_at')
-                            ->label('Last parsed')
+                            ->label('Последний запуск')
                             ->since()
-                            ->placeholder('Never'),
+                            ->placeholder('Никогда'),
                         TextEntry::make('next_parse_at')
-                            ->label('Next parse')
+                            ->label('Следующий запуск')
                             ->since()
-                            ->placeholder('Waiting for schedule'),
+                            ->placeholder('Ожидает расписания'),
                         TextEntry::make('articles_parsed_total')
-                            ->label('Imported articles')
+                            ->label('Импортировано статей')
                             ->numeric(),
                         TextEntry::make('last_run_new_count')
-                            ->label('Last run new')
+                            ->label('Новых за последний запуск')
                             ->badge()
                             ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'success' : 'gray'),
                         TextEntry::make('last_run_skip_count')
-                            ->label('Last run skipped')
+                            ->label('Пропущено за последний запуск')
                             ->numeric(),
                         TextEntry::make('consecutive_failures')
+                            ->label('Сбоев подряд')
                             ->badge()
                             ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'danger' : 'gray'),
                         TextEntry::make('last_error')
                             ->columnSpanFull()
-                            ->placeholder('No recent errors recorded.'),
+                            ->placeholder('Свежих ошибок нет.'),
                     ]),
-                Section::make('Feed overrides')
+                Section::make('Переопределения ленты')
                     ->schema([
-                        EmptyState::make('No feed overrides configured')
-                            ->description('This feed currently uses the shared importer defaults.')
+                        EmptyState::make('Переопределения не заданы')
+                            ->description('Сейчас эта лента использует общие настройки импортера.')
                             ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
                             ->visible(fn (RssFeed $record): bool => blank($record->extra_settings)),
                         KeyValueEntry::make('extra_settings')
                             ->columnSpanFull()
                             ->hidden(fn (RssFeed $record): bool => blank($record->extra_settings)),
                     ]),
-                Section::make('Recent parse runs')
+                Section::make('Последние запуски парсинга')
                     ->schema([
-                        EmptyState::make('No parse runs yet')
-                            ->description('Run this feed once or wait for the scheduler to collect the first batch.')
+                        EmptyState::make('Запусков парсинга ещё не было')
+                            ->description('Запустите эту ленту вручную или дождитесь первого запуска по расписанию.')
                             ->icon(Heroicon::OutlinedClock)
                             ->visible(fn (RssFeed $record): bool => ! $record->parseLogs()->exists()),
                         RepeatableEntry::make('recent_parse_logs')
                             ->hidden(fn (RssFeed $record): bool => ! $record->parseLogs()->exists())
                             ->state(fn (RssFeed $record): array => static::recentParseLogsState($record))
                             ->table([
-                                RepeatableTableColumn::make('Started')
+                                RepeatableTableColumn::make('Запуск')
                                     ->width('170px'),
-                                RepeatableTableColumn::make('Trigger')
+                                RepeatableTableColumn::make('Источник')
                                     ->width('130px'),
-                                RepeatableTableColumn::make('New')
+                                RepeatableTableColumn::make('Новые')
                                     ->alignment('center')
                                     ->width('80px'),
-                                RepeatableTableColumn::make('Skip')
+                                RepeatableTableColumn::make('Пропущено')
                                     ->alignment('center')
                                     ->width('80px'),
-                                RepeatableTableColumn::make('Errors')
+                                RepeatableTableColumn::make('Ошибки')
                                     ->alignment('center')
                                     ->width('80px'),
-                                RepeatableTableColumn::make('Duration')
+                                RepeatableTableColumn::make('Длительность')
                                     ->alignment('center')
                                     ->width('100px'),
-                                RepeatableTableColumn::make('Status')
+                                RepeatableTableColumn::make('Статус')
                                     ->width('120px'),
-                                RepeatableTableColumn::make('Error')
+                                RepeatableTableColumn::make('Ошибка')
                                     ->wrapHeader(),
                             ])
                             ->schema([
                                 TextEntry::make('started_at')
-                                    ->label('Started')
+                                    ->label('Запуск')
                                     ->dateTime('d.m.Y H:i:s'),
                                 TextEntry::make('triggered_by')
-                                    ->label('Trigger')
+                                    ->label('Источник')
                                     ->badge()
-                                    ->formatStateUsing(fn (?string $state): string => Str::headline((string) $state)),
+                                    ->formatStateUsing(fn (?string $state): string => match ((string) $state) {
+                                        'scheduler' => 'Планировщик',
+                                        'manual' => 'Вручную',
+                                        'api' => 'API',
+                                        'filament' => 'Filament',
+                                        default => Str::headline((string) $state),
+                                    }),
                                 TextEntry::make('new_count')
-                                    ->label('New')
+                                    ->label('Новые')
                                     ->numeric(),
                                 TextEntry::make('skip_count')
-                                    ->label('Skip')
+                                    ->label('Пропущено')
                                     ->numeric(),
                                 TextEntry::make('error_count')
-                                    ->label('Errors')
+                                    ->label('Ошибки')
                                     ->numeric(),
                                 TextEntry::make('duration_ms')
-                                    ->label('Duration')
+                                    ->label('Длительность')
                                     ->formatStateUsing(fn (?int $state): string => number_format((int) $state).' ms'),
                                 TextEntry::make('success')
-                                    ->label('Status')
+                                    ->label('Статус')
                                     ->badge()
-                                    ->formatStateUsing(fn (bool $state): string => $state ? 'Success' : 'Failure')
+                                    ->formatStateUsing(fn (bool $state): string => $state ? 'Успешно' : 'Сбой')
                                     ->color(fn (bool $state): string => $state ? 'success' : 'danger'),
                                 TextEntry::make('error_message')
-                                    ->label('Error')
+                                    ->label('Ошибка')
                                     ->placeholder('—')
                                     ->limit(60),
                             ]),

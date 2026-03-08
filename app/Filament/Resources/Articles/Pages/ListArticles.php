@@ -20,15 +20,15 @@ class ListArticles extends ListRecords
         return [
             CreateAction::make(),
             Action::make('importFromUrl')
-                ->label('Import from URL')
+                ->label('Импорт из ссылки')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('gray')
-                ->modalHeading('Импорт из RSS URL')
+                ->modalHeading('Импорт из RSS-ссылки')
                 ->modalDescription('Будет импортирован первый материал из RSS-ленты и создан черновик статьи.')
                 ->modalSubmitActionLabel('Импортировать')
                 ->schema([
                     TextInput::make('url')
-                        ->label('RSS URL')
+                        ->label('Ссылка RSS')
                         ->url()
                         ->required()
                         ->placeholder(rtrim((string) config('rss.feed_origin', 'https://example.com'), '/').'/rss/main/'),

@@ -232,8 +232,10 @@ it('formats the reading time text', function () {
     expect($article->reading_time_text)->toBe('7 мин чтения');
 });
 
-it('sanitizes generic and malformed source names', function () {
-    expect(Article::sanitizeSourceName('Новости Mail'))->toBeNull()
+it('sanitizes malformed source names while keeping site-level mail source labels', function () {
+    expect(Article::sanitizeSourceName('Новости Mail'))->toBe('Новости Mail')
+        ->and(Article::sanitizeSourceName('Спорт Mail'))->toBe('Спорт Mail')
+        ->and(Article::sanitizeSourceName('РБК'))->toBe('РБК')
         ->and(Article::sanitizeSourceName('Спортс"'))->toBe('Спортс')
         ->and(Article::sanitizeSourceName('Коммерсантъ-Новости'))->toBe('Коммерсантъ');
 });

@@ -24,7 +24,7 @@ class RssFeedForm
     {
         return $schema
             ->components([
-                Section::make('Feed')
+                Section::make('Лента')
                     ->schema([
                         Select::make('category_id')
                             ->relationship('category', 'name')
@@ -56,28 +56,28 @@ class RssFeedForm
                             ->numeric()
                             ->integer()
                             ->default(15)
-                            ->suffix('min'),
+                            ->suffix('мин'),
                     ])
                     ->columns(2),
-                Section::make('Feed overrides')
+                Section::make('Переопределения ленты')
                     ->description('Переопределите значения, которые RSS-парсер подставляет в импортируемые статьи.')
                     ->schema([
                         Repeater::make('extra_settings_rows')
-                            ->label('Structured overrides')
+                            ->label('Структурированные переопределения')
                             ->default([])
                             ->defaultItems(0)
                             ->table([
-                                TableColumn::make('Override')
+                                TableColumn::make('Параметр')
                                     ->markAsRequired()
                                     ->width('220px'),
-                                TableColumn::make('Value')
+                                TableColumn::make('Значение')
                                     ->markAsRequired()
                                     ->alignment(Alignment::Start),
                             ])
                             ->compact()
                             ->schema([
                                 Select::make('key')
-                                    ->label('Override')
+                                    ->label('Параметр')
                                     ->required()
                                     ->searchable()
                                     ->native(false)
@@ -85,7 +85,7 @@ class RssFeedForm
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                     ->options(self::extraSettingOptions()),
                                 TextInput::make('value')
-                                    ->label('Value')
+                                    ->label('Значение')
                                     ->required()
                                     ->live(onBlur: true)
                                     ->placeholder(fn (Get $get): ?string => self::extraSettingPlaceholder($get('key')))
@@ -101,24 +101,24 @@ class RssFeedForm
                                 return self::extraSettingOptions()[$key] ?? $key;
                             }),
                     ]),
-                Section::make('Status (readonly)')
+                Section::make('Состояние (только чтение)')
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 Placeholder::make('last_parsed_at_display')
-                                    ->label('last_parsed_at')
+                                    ->label('Последний запуск')
                                     ->content(fn (?RssFeed $record): string => $record?->last_parsed_at?->format('d.m.Y H:i') ?? '—'),
                                 Placeholder::make('next_parse_at_display')
-                                    ->label('next_parse_at')
+                                    ->label('Следующий запуск')
                                     ->content(fn (?RssFeed $record): string => $record?->next_parse_at?->format('d.m.Y H:i') ?? '—'),
                                 Placeholder::make('articles_parsed_total_display')
-                                    ->label('articles_parsed_total')
+                                    ->label('Импортировано статей')
                                     ->content(fn (?RssFeed $record): string => (string) ($record?->articles_parsed_total ?? 0)),
                                 Placeholder::make('last_run_new_count_display')
-                                    ->label('last_run_new_count')
+                                    ->label('Новых за последний запуск')
                                     ->content(fn (?RssFeed $record): string => (string) ($record?->last_run_new_count ?? 0)),
                                 Placeholder::make('consecutive_failures_display')
-                                    ->label('consecutive_failures')
+                                    ->label('Сбоев подряд')
                                     ->content(fn (?RssFeed $record): string => (string) ($record?->consecutive_failures ?? 0)),
                             ]),
                         Textarea::make('last_error')
@@ -137,21 +137,21 @@ class RssFeedForm
     public static function extraSettingOptions(): array
     {
         return [
-            'status' => 'Article status',
-            'content_type' => 'Content type',
-            'source_name' => 'Source name',
-            'default_author' => 'Default author',
-            'sub_category_name' => 'Sub category name',
-            'sub_category_slug' => 'Sub category slug',
-            'short_description_length' => 'Short description length',
-            'source_page_enabled' => 'Source page enrichment',
-            'source_page_min_body_characters' => 'Source body minimum characters',
-            'source_page_title_selector' => 'Source title selectors',
-            'source_page_subtitle_selector' => 'Source subtitle selectors',
-            'source_page_article_selector' => 'Source article selectors',
-            'source_page_author_selector' => 'Source author selectors',
-            'source_page_image_selector' => 'Source image selectors',
-            'source_page_remove_selectors' => 'Source cleanup selectors',
+            'status' => 'Статус статьи',
+            'content_type' => 'Тип материала',
+            'source_name' => 'Название источника',
+            'default_author' => 'Автор по умолчанию',
+            'sub_category_name' => 'Название подкатегории',
+            'sub_category_slug' => 'Слаг подкатегории',
+            'short_description_length' => 'Длина краткого описания',
+            'source_page_enabled' => 'Обогащение со страницы источника',
+            'source_page_min_body_characters' => 'Минимальная длина текста источника',
+            'source_page_title_selector' => 'CSS-селекторы заголовка',
+            'source_page_subtitle_selector' => 'CSS-селекторы подзаголовка',
+            'source_page_article_selector' => 'CSS-селекторы статьи',
+            'source_page_author_selector' => 'CSS-селекторы автора',
+            'source_page_image_selector' => 'CSS-селекторы изображения',
+            'source_page_remove_selectors' => 'CSS-селекторы очистки',
         ];
     }
 
@@ -209,8 +209,8 @@ class RssFeedForm
         return match ($key) {
             'status' => 'draft / pending / published',
             'content_type' => 'news / analysis / opinion',
-            'source_name' => 'Custom source',
-            'default_author' => 'Feed Author',
+            'source_name' => 'Пользовательский источник',
+            'default_author' => 'Автор ленты',
             'sub_category_name' => 'Отрасли',
             'sub_category_slug' => 'otrasli',
             'short_description_length' => '300',
@@ -229,19 +229,19 @@ class RssFeedForm
     private static function extraSettingHelperText(?string $key): ?string
     {
         return match ($key) {
-            'status' => 'Allowed: '.implode(', ', ArticleStatus::values()),
-            'content_type' => 'Allowed: '.implode(', ', ArticleContentType::values()),
-            'short_description_length' => 'Stores a positive integer character limit.',
-            'sub_category_name' => 'Assigns imported articles to a subcategory under the feed category.',
-            'sub_category_slug' => 'Uses the provided slug when matching or creating the subcategory.',
-            'source_page_enabled' => 'Use 1 or 0 to enable parsing the original article page linked from RSS.',
-            'source_page_min_body_characters' => 'Minimum cleaned body length before source HTML replaces RSS text.',
+            'status' => 'Допустимые значения: '.implode(', ', ArticleStatus::values()),
+            'content_type' => 'Допустимые значения: '.implode(', ', ArticleContentType::values()),
+            'short_description_length' => 'Сохраняет положительное целое число символов.',
+            'sub_category_name' => 'Назначает импортируемые статьи в подкатегорию внутри рубрики ленты.',
+            'sub_category_slug' => 'Использует указанный слаг при поиске или создании подкатегории.',
+            'source_page_enabled' => 'Используйте 1 или 0 для включения парсинга оригинальной страницы материала из RSS.',
+            'source_page_min_body_characters' => 'Минимальная длина очищенного текста перед заменой RSS-контента HTML-версией источника.',
             'source_page_title_selector',
             'source_page_subtitle_selector',
             'source_page_article_selector',
             'source_page_author_selector',
             'source_page_image_selector',
-            'source_page_remove_selectors' => 'Comma separated CSS selectors. Feed-level values are tried before global defaults.',
+            'source_page_remove_selectors' => 'CSS-селекторы через запятую. Значения ленты применяются раньше глобальных.',
             default => null,
         };
     }

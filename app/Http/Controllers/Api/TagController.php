@@ -17,7 +17,9 @@ class TagController extends Controller
     public function index(Request $request): JsonResponse
     {
         $limit = max(1, min(100, (int) $request->integer('limit', 100)));
-        $query = Tag::query()->orderByDesc('usage_count');
+        $query = Tag::query()
+            ->whereHas('articles', fn (Builder $query): Builder => $query->published())
+            ->orderByDesc('usage_count');
 
         if ($request->boolean('trending')) {
             $query->trending();
@@ -34,7 +36,12 @@ class TagController extends Controller
     {
         return response()->json([
             'data' => TagResource::collection(
-                Tag::query()->trending()->popular()->limit(30)->get(),
+                Tag::query()
+                    ->trending()
+                    ->whereHas('articles', fn (Builder $query): Builder => $query->published())
+                    ->popular()
+                    ->limit(30)
+                    ->get(),
             )->resolve(),
         ]);
     }

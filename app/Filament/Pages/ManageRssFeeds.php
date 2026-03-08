@@ -58,8 +58,8 @@ class ManageRssFeeds extends Page
             $newArticles = collect($allResults)->sum(fn (array $result): int => (int) ($result['new'] ?? 0));
 
             Notification::make()
-                ->title('Parsing complete')
-                ->body("Parsing complete: {$newArticles} new articles")
+                ->title('Парсинг завершён')
+                ->body("Добавлено новых статей: {$newArticles}")
                 ->success()
                 ->send();
         } finally {
@@ -80,8 +80,8 @@ class ManageRssFeeds extends Page
             $this->refreshFeeds();
 
             $notification = Notification::make()
-                ->title(empty($result['error']) ? 'Feed parsed' : 'Feed parse failed')
-                ->body(empty($result['error']) ? "New: {$result['new']}, Skipped: {$result['skip']}, Errors: {$result['errors']}" : (string) $result['error']);
+                ->title(empty($result['error']) ? 'Лента обработана' : 'Не удалось обработать ленту')
+                ->body(empty($result['error']) ? "Новые: {$result['new']}, Пропущено: {$result['skip']}, Ошибки: {$result['errors']}" : (string) $result['error']);
 
             if (empty($result['error'])) {
                 $notification->success();
@@ -107,7 +107,7 @@ class ManageRssFeeds extends Page
         $this->refreshFeeds();
 
         Notification::make()
-            ->title($feed->fresh()->is_active ? 'Feed enabled' : 'Feed disabled')
+            ->title($feed->fresh()->is_active ? 'Лента включена' : 'Лента отключена')
             ->success()
             ->send();
     }

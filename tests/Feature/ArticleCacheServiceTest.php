@@ -17,10 +17,22 @@ test('article cache service stores categories using enum-backed cache keys', fun
         'slug' => 'politics',
     ]);
 
+    RssFeed::factory()->create([
+        'category_id' => $category->id,
+    ]);
+
     Article::factory()->create([
         'category_id' => $category->id,
         'status' => 'published',
         'published_at' => now()->subHour(),
+    ]);
+
+    $emptyCategory = Category::factory()->create([
+        'slug' => 'empty-category',
+    ]);
+
+    RssFeed::factory()->create([
+        'category_id' => $emptyCategory->id,
     ]);
 
     $categories = app(ArticleCacheService::class)->getCategories();
@@ -35,11 +47,21 @@ test('article cache service stores categories using enum-backed cache keys', fun
 test('article cache service stores trending tags using centralized cache key generation', function () {
     Cache::forget(ArticleCacheKey::trendingTags(10));
 
-    Tag::factory()->count(12)->create();
+    $category = Category::factory()->create(['slug' => 'tag-cache-category']);
+    $article = Article::factory()->create([
+        'category_id' => $category->id,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+    $tagsForArticle = Tag::factory()->count(12)->create(['usage_count' => 5]);
+    $hidden = Tag::factory()->create(['usage_count' => 0]);
+
+    $article->tags()->attach($tagsForArticle->pluck('id')->all());
 
     $tags = app(ArticleCacheService::class)->getTrendingTags(10);
 
     expect($tags)->toHaveCount(10)
+        ->and($tags->contains(fn (Tag $tag): bool => $tag->id === $hidden->id))->toBeFalse()
         ->and(Cache::has(ArticleCacheKey::trendingTags(10)))->toBeTrue()
         ->and(Cache::has(ArticleCacheKey::flexibleCreated(ArticleCacheKey::trendingTags(10))))->toBeTrue()
         ->and(Cache::get(ArticleCacheKey::trendingTags(10)))->toHaveCount(10);
@@ -49,12 +71,14 @@ test('article cache service stores overview analytics using the shared cache key
     Cache::forget(ArticleCacheKey::StatsOverview);
 
     $category = Category::factory()->create(['slug' => 'politics']);
+    Category::factory()->create(['slug' => 'empty-politics']);
     $feed = RssFeed::factory()->create([
         'category_id' => $category->id,
         'is_active' => true,
         'last_parsed_at' => now()->subMinute(),
     ]);
     $tag = Tag::factory()->create(['name' => 'Urgent', 'usage_count' => 12]);
+    Tag::factory()->create(['name' => 'Unused', 'usage_count' => 0]);
     $article = Article::factory()->create([
         'category_id' => $category->id,
         'rss_feed_id' => $feed->id,

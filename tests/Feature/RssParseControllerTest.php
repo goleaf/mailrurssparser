@@ -31,7 +31,7 @@ it('renders the rss dashboard for authenticated users', function () {
     $this->actingAs($user)
         ->get(route('rss.index'))
         ->assertSuccessful()
-        ->assertSee('RSS Feed Manager')
+        ->assertSee('Менеджер RSS-лент')
         ->assertSee('Politics Feed');
 });
 
@@ -141,7 +141,7 @@ it('returns failed dependency when a category has no active feeds', function () 
         ->assertFailedDependency()
         ->assertJson([
             'success' => false,
-            'message' => 'No active feeds found for this category.',
+            'message' => 'Для этой категории не найдено активных лент.',
             'new' => 0,
             'skipped' => 0,
             'errors' => 0,

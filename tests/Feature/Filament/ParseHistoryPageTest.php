@@ -81,7 +81,7 @@ it('shows the running parse count in the summary cards', function () {
     ]);
 
     $component = Livewire::test(ParseHistory::class)
-        ->assertSee('Running Now');
+        ->assertSee('Сейчас выполняются');
 
     expect($component->instance()->summary['runs_in_progress'])->toBe(2);
 

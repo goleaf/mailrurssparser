@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\Utf8Normalizer;
 use Illuminate\Http\Request;
 
 class ArticleResource extends ArticleListResource
@@ -13,7 +14,7 @@ class ArticleResource extends ArticleListResource
     {
         $isShowRoute = $request->routeIs('*.show');
 
-        return array_merge(parent::toArray($request), [
+        return Utf8Normalizer::normalize(array_merge(parent::toArray($request), [
             'full_content' => $this->when(
                 $isShowRoute,
                 function (): string {
@@ -43,6 +44,6 @@ class ArticleResource extends ArticleListResource
                 $isShowRoute,
                 fn (): array => $this->more_from_category ?? [],
             ),
-        ]);
+        ]));
     }
 }

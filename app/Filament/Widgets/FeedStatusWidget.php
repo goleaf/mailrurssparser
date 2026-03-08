@@ -43,14 +43,14 @@ class FeedStatusWidget extends TableWidget
             ])
             ->recordActions([
                 Action::make('parse')
-                    ->label('Parse')
+                    ->label('Запустить')
                     ->icon('heroicon-o-arrow-path')
                     ->action(function (RssFeed $record, RssParserService $parser): void {
                         $result = $parser->parseFeed($record, 'filament');
 
                         if (! empty($result['error'])) {
                             Notification::make()
-                                ->title('Parse Failed')
+                                ->title('Ошибка парсинга')
                                 ->body((string) $result['error'])
                                 ->danger()
                                 ->send();
@@ -59,8 +59,8 @@ class FeedStatusWidget extends TableWidget
                         }
 
                         Notification::make()
-                            ->title('Parse Complete')
-                            ->body("New: {$result['new']}, Skipped: {$result['skip']}")
+                            ->title('Парсинг завершён')
+                            ->body("Новые: {$result['new']}, Пропущено: {$result['skip']}")
                             ->success()
                             ->send();
                     }),

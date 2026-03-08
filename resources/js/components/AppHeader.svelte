@@ -59,7 +59,7 @@
 
     const mainNavItems: NavItem[] = [
         {
-            title: 'Dashboard',
+            title: 'Панель',
             href: dashboard(),
             icon: LayoutGrid,
         },
@@ -67,12 +67,12 @@
 
     const rightNavItems: NavItem[] = [
         {
-            title: 'Repository',
+            title: 'Репозиторий',
             href: 'https://github.com/laravel/svelte-starter-kit',
             icon: Folder,
         },
         {
-            title: 'Documentation',
+            title: 'Документация',
             href: 'https://laravel.com/docs/starter-kits#svelte',
             icon: BookOpen,
         },
@@ -99,7 +99,7 @@
                         {/snippet}
                     </SheetTrigger>
                     <SheetContent side="left" class="w-[300px] p-6">
-                        <SheetTitle class="sr-only">Navigation menu</SheetTitle>
+                        <SheetTitle class="sr-only">Меню навигации</SheetTitle>
                         <SheetHeader class="flex justify-start text-left">
                             <AppLogoIcon
                                 class="size-6 fill-current text-black dark:text-white"

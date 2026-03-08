@@ -20,7 +20,7 @@ class ListRssFeeds extends ListRecords
         return [
             CreateAction::make(),
             Action::make('parseAllFeeds')
-                ->label('Parse All Active')
+                ->label('Запустить все активные')
                 ->action(function (RssParserService $parser): void {
                     $results = $parser->parseAllFeeds('filament');
 
@@ -37,14 +37,14 @@ class ListRssFeeds extends ListRecords
                         }
                     }
 
-                    $body = "New: {$newCount}, Skipped: {$skippedCount}";
+                    $body = "Новые: {$newCount}, Пропущено: {$skippedCount}";
 
                     if ($errorCount > 0) {
-                        $body .= ", Errors: {$errorCount}";
+                        $body .= ", Ошибки: {$errorCount}";
                     }
 
                     $notification = Notification::make()
-                        ->title($errorCount > 0 ? 'Parse Completed with Errors' : 'Parse Complete')
+                        ->title($errorCount > 0 ? 'Парсинг завершён с ошибками' : 'Парсинг завершён')
                         ->body($body);
 
                     if ($errorCount > 0) {

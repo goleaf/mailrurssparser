@@ -23,6 +23,15 @@ class ArticleCacheService
         return $this->memoizedCache()->flexible(ArticleCacheKey::Categories, [minutes(15), hours(1)], function () {
             return Category::query()
                 ->active()
+                ->inMenu()
+                ->has('rssFeeds')
+                ->whereHas('articles', fn (Builder $query): Builder => $query->published())
+                ->with([
+                    'subCategories' => fn ($query) => $query
+                        ->where('is_active', true)
+                        ->orderBy('order')
+                        ->orderBy('name'),
+                ])
                 ->withCount(['articles' => fn ($query) => $query->published()])
                 ->get();
         });
@@ -32,6 +41,7 @@ class ArticleCacheService
     {
         return $this->memoizedCache()->flexible(ArticleCacheKey::trendingTags($limit), [minutes(10), minutes(30)], function () use ($limit) {
             return Tag::query()
+                ->whereHas('articles', fn (Builder $query): Builder => $query->published())
                 ->orderByDesc('usage_count')
                 ->limit($limit)
                 ->get();
@@ -123,6 +133,7 @@ class ArticleCacheService
                     ->all(),
                 'top_categories' => Category::query()
                     ->active()
+                    ->whereHas('articles', fn (Builder $query): Builder => $query->published())
                     ->withCount(['articles as article_count' => fn (Builder $query) => $query->published()])
                     ->orderByDesc('article_count')
                     ->limit(8)
@@ -137,7 +148,11 @@ class ArticleCacheService
                     ])
                     ->all(),
                 'trending_tags' => TagResource::collection(
-                    Tag::query()->orderByDesc('usage_count')->limit(20)->get(),
+                    Tag::query()
+                        ->whereHas('articles', fn (Builder $query): Builder => $query->published())
+                        ->orderByDesc('usage_count')
+                        ->limit(20)
+                        ->get(),
                 )->resolve(),
                 'last_parse' => $lastParse?->toIso8601String(),
                 'feeds' => [

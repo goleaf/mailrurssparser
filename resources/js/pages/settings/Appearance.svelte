@@ -9,23 +9,23 @@
 
     const breadcrumbItems: BreadcrumbItem[] = [
         {
-            title: 'Appearance settings',
+            title: 'Настройки оформления',
             href: editAppearance(),
         },
     ];
 </script>
 
-<AppHead title="Appearance settings" />
+<AppHead title="Настройки оформления" />
 
 <AppLayout breadcrumbs={breadcrumbItems}>
-    <h1 class="sr-only">Appearance settings</h1>
+    <h1 class="sr-only">Настройки оформления</h1>
 
     <SettingsLayout>
         <div class="space-y-6">
             <Heading
                 variant="small"
-                title="Appearance settings"
-                description="Update your account's appearance settings"
+                title="Настройки оформления"
+                description="Выберите внешний вид интерфейса для своего аккаунта"
             />
             <AppearanceTabs />
         </div>

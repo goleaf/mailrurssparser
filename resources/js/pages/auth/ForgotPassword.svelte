@@ -14,11 +14,11 @@
     const flashStatus = $derived($page.flash.status ?? '');
 </script>
 
-<AppHead title="Forgot password" />
+<AppHead title="Забыли пароль" />
 
 <AuthLayout
-    title="Forgot password"
-    description="Enter your email to receive a password reset link"
+    title="Забыли пароль"
+    description="Введите email, чтобы получить ссылку для сброса пароля"
 >
     {#if flashStatus}
         <div class="mb-4 text-center text-sm font-medium text-green-600">
@@ -30,7 +30,7 @@
         <Form {...email.form()}>
             {#snippet children({ errors, processing })}
                 <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
+                    <Label for="email">Электронная почта</Label>
                     <Input
                         id="email"
                         type="email"
@@ -49,15 +49,15 @@
                         data-test="email-password-reset-link-button"
                     >
                         {#if processing}<Spinner />{/if}
-                        Email password reset link
+                        Отправить ссылку для сброса
                     </Button>
                 </div>
             {/snippet}
         </Form>
 
         <div class="space-x-1 text-center text-sm text-muted-foreground">
-            <span>Or, return to</span>
-            <TextLink href={login()}>log in</TextLink>
+            <span>Или вернуться ко</span>
+            <TextLink href={login()}>входу</TextLink>
         </div>
     </div>
 </AuthLayout>

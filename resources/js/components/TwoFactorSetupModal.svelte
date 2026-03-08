@@ -45,27 +45,27 @@
     const modalConfig: TwoFactorConfigContent = $derived.by(() => {
         if (twoFactorEnabled) {
             return {
-                title: 'Two-factor authentication enabled',
+                title: 'Двухфакторная аутентификация включена',
                 description:
-                    'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
-                buttonText: 'Close',
+                    'Двухфакторная аутентификация включена. Отсканируйте QR-код или введите ключ вручную в приложении-аутентификаторе.',
+                buttonText: 'Закрыть',
             };
         }
 
         if (showVerificationStep) {
             return {
-                title: 'Verify authentication code',
+                title: 'Подтвердите код',
                 description:
-                    'Enter the 6-digit code from your authenticator app',
-                buttonText: 'Continue',
+                    'Введите 6-значный код из приложения-аутентификатора',
+                buttonText: 'Продолжить',
             };
         }
 
         return {
-            title: 'Enable two-factor authentication',
+            title: 'Включение двухфакторной аутентификации',
             description:
-                'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
-            buttonText: 'Continue',
+                'Чтобы завершить настройку, отсканируйте QR-код или введите ключ вручную в приложении-аутентификаторе',
+            buttonText: 'Продолжить',
         };
     });
 
@@ -183,7 +183,7 @@
                                     >
                                         <img
                                             src={qrCodeDataUrl}
-                                            alt="Two-factor authentication QR code"
+                                            alt="QR-код двухфакторной аутентификации"
                                             class="size-full"
                                         />
                                     </div>
@@ -205,7 +205,7 @@
                             class="absolute inset-0 top-1/2 h-px w-full bg-border"
                         ></div>
                         <span class="relative bg-card px-2 py-1"
-                            >or, enter the code manually</span
+                            >или введите код вручную</span
                         >
                     </div>
 
@@ -289,14 +289,14 @@
                                         (showVerificationStep = false)}
                                     disabled={processing}
                                 >
-                                    Back
+                                    Назад
                                 </Button>
                                 <Button
                                     type="submit"
                                     class="w-auto flex-1"
                                     disabled={processing || code.length < 6}
                                 >
-                                    Confirm
+                                    Подтвердить
                                 </Button>
                             </div>
                         </div>
