@@ -1,7 +1,7 @@
 <script lang="ts">
     import X from 'lucide-svelte/icons/x';
-    import { usePolling } from '@/composables/usePolling.js';
     import { showToast } from '@/components/ui/Toast.svelte';
+    import { usePolling } from '@/composables/usePolling.js';
     import * as api from '@/lib/api';
     import { appState, initApp, setBreakingNews } from '@/stores/app.svelte.js';
 

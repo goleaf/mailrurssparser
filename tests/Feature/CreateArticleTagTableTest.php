@@ -10,5 +10,7 @@ it('creates article tag table with expected columns', function () {
     expect($columns)->toContain(
         'article_id',
         'tag_id',
+        'created_at',
+        'updated_at',
     );
 });

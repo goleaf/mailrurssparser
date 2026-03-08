@@ -6,7 +6,9 @@ use App\Models\RssParseLog;
 use App\Models\Tag;
 use App\Services\RssParserService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Monolog\Formatter\LineFormatter;
 
 function invokeRssMethod(RssParserService $service, string $method, mixed ...$arguments): mixed
 {
@@ -47,6 +49,47 @@ XML, 200),
     expect((string) $xml->channel->item->title)->toBe('Redirected item');
 
     Http::assertSentCount(2);
+});
+
+it('logs feed responses through the after response callback', function () {
+    $logPath = storage_path('framework/testing/rss-after-response.log');
+
+    File::ensureDirectoryExists(dirname($logPath));
+    File::delete($logPath);
+
+    config([
+        'logging.channels.rss' => [
+            'driver' => 'single',
+            'path' => $logPath,
+            'level' => 'debug',
+            'formatter' => LineFormatter::class,
+            'formatter_with' => [
+                'format' => "[%datetime%] %level_name%: %message% %context%\n",
+            ],
+            'replace_placeholders' => true,
+        ],
+    ]);
+
+    Http::fake([
+        '*' => Http::response(<<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<rss>
+  <channel>
+    <item><title>Observed item</title></item>
+  </channel>
+</rss>
+XML, 200),
+    ]);
+
+    $xml = (new RssParserService)->fetchFeedXml('https://example.test/rss');
+
+    expect((string) $xml->channel->item->title)->toBe('Observed item')
+        ->and(File::exists($logPath))->toBeTrue()
+        ->and(File::get($logPath))->toContain('RSS response received.')
+        ->and(File::get($logPath))->toContain('"url":"https://example.test/rss"')
+        ->and(File::get($logPath))->toContain('"status":200');
+
+    File::delete($logPath);
 });
 
 it('detects and converts windows-1251 feeds before parsing', function () {

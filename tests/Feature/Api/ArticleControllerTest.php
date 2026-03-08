@@ -210,11 +210,9 @@ it('can fetch an article without tracking a new view and returns cache headers',
     $response = $this->getJson('/api/v1/articles/'.$article->slug.'?track=0');
 
     $response->assertSuccessful()
+        ->assertHeaderContains('Cache-Control', 'public')
+        ->assertHeaderContains('Cache-Control', 'max-age=60')
         ->assertJsonPath('data.views_count', 7);
-
-    expect((string) $response->headers->get('Cache-Control'))
-        ->toContain('public')
-        ->toContain('max-age=60');
 
     expect($article->fresh()->views_count)->toBe(7);
 });

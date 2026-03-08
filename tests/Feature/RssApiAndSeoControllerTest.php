@@ -169,14 +169,12 @@ it('returns a sitemap xml response', function () {
 
     $response = $this->get(route('sitemap'));
 
-    $response->assertSuccessful();
+    $response->assertSuccessful()
+        ->assertHeaderContains('Content-Type', 'application/xml')
+        ->assertHeaderContains('Cache-Control', 'public')
+        ->assertHeaderContains('Cache-Control', 'max-age=3600');
 
-    $cacheControl = (string) $response->headers->get('Cache-Control');
-
-    expect($response->headers->get('Content-Type'))->toContain('application/xml')
-        ->and($cacheControl)->toContain('public')
-        ->and($cacheControl)->toContain('max-age=3600')
-        ->and($response->getContent())->toContain('<?xml version="1.0" encoding="UTF-8"?>')
+    expect($response->getContent())->toContain('<?xml version="1.0" encoding="UTF-8"?>')
         ->and($response->getContent())->toContain('/#/category/'.$category->slug)
         ->and($response->getContent())->toContain('/#/articles/'.$article->slug);
 });
@@ -194,10 +192,10 @@ it('returns a portal rss xml response', function () {
 
     $response = $this->get(route('rss-feed'));
 
-    $response->assertSuccessful();
+    $response->assertSuccessful()
+        ->assertHeaderContains('Content-Type', 'application/rss+xml');
 
-    expect($response->headers->get('Content-Type'))->toContain('application/rss+xml')
-        ->and($response->getContent())->toContain('<rss version="2.0">')
+    expect($response->getContent())->toContain('<rss version="2.0">')
         ->and($response->getContent())->toContain('<title>Новая статья</title>')
         ->and($response->getContent())->toContain('/#/articles/'.$article->slug);
 });

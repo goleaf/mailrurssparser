@@ -9,11 +9,11 @@
     import X from 'lucide-svelte/icons/x';
     import SearchModal from '@/components/SearchModal.svelte';
     import { usePolling } from '@/composables/usePolling.js';
+    import * as api from '@/lib/api';
     import { cn } from '@/lib/utils';
     import { appState, initApp, toggleDarkMode, toggleSidebar } from '@/stores/app.svelte.js';
     import { resetFilters } from '@/stores/articles.svelte.js';
     import { bookmarkIds, loadBookmarks } from '@/stores/bookmarks.svelte.js';
-    import * as api from '@/lib/api';
 
     type Category = {
         id: number | string;

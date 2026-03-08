@@ -87,6 +87,7 @@ it('provides seo fallbacks and content accessors', function () {
         'full_description' => '<p>Full content</p>',
         'rss_content' => '<p>RSS content</p>',
         'slug' => 'important-update',
+        'canonical_url' => null,
     ]);
 
     $seoData = $article->getSeoData();

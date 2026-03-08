@@ -152,6 +152,10 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - The application is served by Laravel Herd and will be available at: `https?://[kebab-case-project-dir].test`. Use the `get-absolute-url` tool to generate valid URLs for the user.
 - You must not run any commands to make the site available via HTTP(S). It is always available through Laravel Herd.
+- This repository has project-specific worktree automation through `php artisan herd:worktree`. Prefer that command over ad-hoc manual worktree setup when the task is about isolated branch environments.
+- Worktrees live under `/.worktrees` by default, and each local worktree should keep its own SQLite database file under `database/<site>.sqlite`.
+- Do not add Sanctum-specific environment keys when preparing Herd worktrees for this app. Sanctum is not installed here.
+- Vite is already configured for Herd worktrees with `host: 'localhost'` and `cors: true`, so do not introduce extra Herd-only frontend host workarounds unless you verify the existing setup is insufficient.
 
 === tests rules ===
 
@@ -268,6 +272,11 @@ protected function isAccessible(User $user, ?string $path = null): bool
 Wayfinder generates TypeScript functions for Laravel routes. Import from `@/actions/` (controllers) or `@/routes/` (named routes).
 
 - IMPORTANT: Activate `wayfinder-development` skill whenever referencing backend routes in frontend components.
+- In this repository, prefer named route imports from `@/routes` for navigation and controller imports from `@/actions/...` for form submissions or grouped controller actions.
+- Normalize Wayfinder route objects to strings with `toUrl()` from `resources/js/lib/utils.ts` whenever a component prop, keyed `{#each}` block, or helper expects a plain URL string.
+- Breadcrumbs and nav item `href` values may stay as Wayfinder objects in shared data structures, because layouts and helpers already normalize them downstream.
+- For Svelte `<Form>` usage, follow the existing pattern of generated controller helpers such as `ProfileController.update.form()` instead of hand-writing action and method attributes.
+- Avoid hardcoding internal app URLs like dashboard, login, register, profile, password, or verification routes when a generated helper already exists.
 - Invokable Controllers: `import StorePost from '@/actions/.../StorePostController'; StorePost()`.
 - Parameter Binding: Detects route keys (`{post:slug}`) — `show({ slug: "my-post" })`.
 - Query Merging: `show(1, { mergeQuery: { page: 2, sort: null } })` merges with current URL, `null` removes params.
@@ -289,6 +298,11 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 - Do NOT delete tests without approval.
 - CRITICAL: ALWAYS use `search-docs` tool for version-specific Pest documentation and updated code examples.
 - IMPORTANT: Activate `pest-testing` every time you're working with a Pest or testing-related task.
+- Keep the current expectation-chaining style for feature tests. Prefer `expect(...)->toBe...()->and(...)` over switching between multiple assertion styles in the same test.
+- For Inertia page responses, follow the existing `assertInertia(fn (Assert $page) => ...)` pattern instead of asserting only status codes.
+- For route registration checks, keep using direct `Route::has(...)` expectations in focused feature tests instead of broader end-to-end requests when route existence is what matters.
+- For Boost discovery tests, use `Symfony\Component\Process\Process` with `APP_ENV=local` when you need to assert the real generated guideline or skill context outside the testing environment.
+- Prefer focused Pest execution like `php artisan test --compact tests/Feature/Boost/ProjectAiContextTest.php` or a small set of related files, matching this repository's fast feedback loop.
 
 === inertia-svelte/core rules ===
 
@@ -317,5 +331,11 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 - Always use existing Tailwind conventions; check project patterns before adding new ones.
 - IMPORTANT: Always use `search-docs` tool for version-specific Tailwind CSS documentation and updated code examples. Never rely on training data.
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
+- Prefer updating shared theme tokens in `resources/css/app.css` through the existing Tailwind v4 `@theme inline` variables and app color custom properties instead of scattering one-off raw color values.
+- The public news UI already leans on slate, sky, emerald, and red accents with layered gradients, translucent borders, large radii, and `backdrop-blur-*` surfaces. Extend that visual language before introducing a different palette or flatter layout style.
+- For conditional class composition in Svelte components, follow the existing `cn()` helper pattern from `resources/js/lib/utils.ts`.
+- Keep dark mode support aligned with the existing `dark:` variants and shared CSS variables in `resources/css/app.css`; new public-facing UI should not work only in light mode.
+- Prefer utility classes over component-local `<style>` blocks. Reserve local CSS for cases that are genuinely utility-unfriendly, like the custom ticker keyframes in `resources/js/components/layout/BreakingNewsTicker.svelte`.
+- Dynamic category or feed colors may use inline `style=` values when they come from API data, but keep layout, spacing, borders, shadows, and typography in Tailwind utilities.
 
 </laravel-boost-guidelines>

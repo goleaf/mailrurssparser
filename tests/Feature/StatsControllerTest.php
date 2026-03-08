@@ -27,7 +27,7 @@ it('returns overview analytics with top categories and tags', function () {
         'category_id' => $category->id,
         'rss_feed_id' => $feed->id,
         'status' => 'published',
-        'published_at' => now()->subHour(),
+        'published_at' => now(),
         'is_breaking' => true,
         'is_featured' => true,
         'views_count' => 5,
@@ -43,6 +43,8 @@ it('returns overview analytics with top categories and tags', function () {
     $response = $this->getJson('/api/v1/stats/overview');
 
     $response->assertSuccessful()
+        ->assertHeaderContains('Cache-Control', 'public')
+        ->assertHeaderContains('Cache-Control', 'max-age=300')
         ->assertJsonPath('articles.total', 1)
         ->assertJsonPath('articles.today', 1)
         ->assertJsonPath('articles.this_week', 1)
@@ -57,10 +59,6 @@ it('returns overview analytics with top categories and tags', function () {
         ->assertJsonPath('feeds.total', 1)
         ->assertJsonPath('feeds.active', 1)
         ->assertJsonPath('feeds.errors', 0);
-
-    expect((string) $response->headers->get('Cache-Control'))
-        ->toContain('public')
-        ->toContain('max-age=300');
 });
 
 it('returns chart data grouped for the requested period', function () {

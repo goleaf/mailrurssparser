@@ -3,9 +3,9 @@
     import AppHead from '@/components/AppHead.svelte';
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import ArticleCardCompact from '@/components/article/ArticleCardCompact.svelte';
+    import { showToast } from '@/components/ui/Toast.svelte';
     import { usePolling } from '@/composables/usePolling.js';
     import { injectJsonLd, setSeoMeta } from '@/composables/useSeo.js';
-    import { showToast } from '@/components/ui/Toast.svelte';
     import * as api from '@/lib/api';
     import { cn } from '@/lib/utils';
     import {

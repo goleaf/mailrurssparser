@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tags\Schemas;
 
+use App\Filament\Support\SlugGeneratorAction;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -26,6 +27,12 @@ class TagForm
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true)
+                                    ->afterContent(
+                                        SlugGeneratorAction::make(
+                                            sourceField: 'name',
+                                            name: 'generateTagSlug',
+                                        ),
+                                    )
                                     ->afterStateUpdated(function (Set $set, ?string $state): void {
                                         $set('slug', Str::slug($state ?? ''));
                                     }),
@@ -39,7 +46,7 @@ class TagForm
                                 TextInput::make('usage_count')
                                     ->numeric()
                                     ->disabled()
-                                    ->dehydrated(false)
+                                    ->saved(false)
                                     ->default(0),
                             ]),
                         Textarea::make('description')

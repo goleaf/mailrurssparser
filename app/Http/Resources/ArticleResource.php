@@ -16,7 +16,13 @@ class ArticleResource extends ArticleListResource
         return array_merge(parent::toArray($request), [
             'full_content' => $this->when(
                 $isShowRoute,
-                fn (): string => (string) ($this->full_description ?? $this->rss_content),
+                function (): string {
+                    if (filled($this->full_description) && method_exists($this->resource, 'renderRichContent')) {
+                        return (string) $this->resource->renderRichContent('full_description');
+                    }
+
+                    return (string) ($this->rss_content ?? '');
+                },
             ),
             'meta_title' => $this->when($isShowRoute, $this->meta_title),
             'meta_description' => $this->when($isShowRoute, $this->meta_description),

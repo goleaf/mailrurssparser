@@ -7,6 +7,11 @@ use Laravel\Fortify\Features;
 
 Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 Route::get('rss.xml', [SeoController::class, 'rss'])->name('rss-feed');
+Route::get('/robots.txt', fn () => response(
+    "User-agent: *\nAllow: /\nSitemap: ".url('sitemap.xml'),
+    200,
+    ['Content-Type' => 'text/plain'],
+))->name('robots');
 Route::view('offline.html', 'offline')->name('offline');
 
 Route::inertia('/', 'Welcome', [

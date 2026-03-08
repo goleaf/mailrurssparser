@@ -4,6 +4,7 @@
     import SlidersHorizontal from 'lucide-svelte/icons/sliders-horizontal';
     import X from 'lucide-svelte/icons/x';
     import { slide } from 'svelte/transition';
+    import { cn, debounce } from '@/lib/utils';
     import { appState } from '@/stores/app.svelte.js';
     import {
         activeFiltersCount,
@@ -18,7 +19,6 @@
         setSort,
         toggleTag,
     } from '@/stores/articles.svelte.js';
-    import { cn, debounce } from '@/lib/utils';
 
     type Tag = {
         id: number | string;
@@ -92,35 +92,40 @@
             return;
         }
 
-        const now = new Date();
-        const toIsoDate = (value: Date): string =>
-            value.toLocaleDateString('en-CA');
+        const currentTime = Date.now();
+        const toIsoDate = (value: number): string =>
+            new Date(value).toLocaleDateString('en-CA');
 
         if (preset === 'today') {
-            setDate(toIsoDate(now));
+            setDate(toIsoDate(currentTime));
 
             return;
         }
 
         if (preset === 'yesterday') {
-            const yesterday = new Date(now);
-            yesterday.setDate(now.getDate() - 1);
-            setDate(toIsoDate(yesterday));
+            setDate(toIsoDate(currentTime - 24 * 60 * 60 * 1000));
 
             return;
         }
 
         if (preset === 'week') {
-            const start = new Date(now);
-            start.setDate(now.getDate() - 6);
-            setDateRange(toIsoDate(start), toIsoDate(now));
+            setDateRange(
+                toIsoDate(currentTime - 6 * 24 * 60 * 60 * 1000),
+                toIsoDate(currentTime),
+            );
 
             return;
         }
 
         if (preset === 'month') {
-            const start = new Date(now.getFullYear(), now.getMonth(), 1);
-            setDateRange(toIsoDate(start), toIsoDate(now));
+            const current = new Date(currentTime);
+            const startOfMonthTime = Date.UTC(
+                current.getUTCFullYear(),
+                current.getUTCMonth(),
+                1,
+            );
+
+            setDateRange(toIsoDate(startOfMonthTime), toIsoDate(currentTime));
 
             return;
         }

@@ -32,7 +32,9 @@ it('lists active categories with sub categories', function () {
 
     $response = $this->getJson('/api/v1/categories');
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertHeaderContains('Cache-Control', 'public')
+        ->assertHeaderContains('Cache-Control', 'max-age=3600');
 
     $payload = $response->json('data');
 
@@ -41,10 +43,6 @@ it('lists active categories with sub categories', function () {
         ->and($payload[0]['id'])->toBe($category->id)
         ->and($payload[0]['sub_categories'])->toHaveCount(1)
         ->and($payload[0]['sub_categories'][0]['id'])->toBe($subCategory->id);
-
-    expect((string) $response->headers->get('Cache-Control'))
-        ->toContain('public')
-        ->toContain('max-age=3600');
 });
 
 it('shows a category with feeds', function () {

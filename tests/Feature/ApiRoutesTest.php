@@ -44,6 +44,7 @@ it('registers seo and spa web routes', function () {
     expect(Route::has('home'))->toBeTrue()
         ->and(Route::has('sitemap'))->toBeTrue()
         ->and(Route::has('rss-feed'))->toBeTrue()
+        ->and(Route::has('robots'))->toBeTrue()
         ->and(Route::has('offline'))->toBeTrue()
         ->and(Route::has('spa'))->toBeTrue();
 });

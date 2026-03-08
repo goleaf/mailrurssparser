@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Attla\EncodedAttributes\HasEncodedAttributes;
+use Filament\Forms\Components\RichEditor\MentionProvider;
+use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
+use Filament\Forms\Components\RichEditor\Models\Contracts\HasRichContent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,15 +18,27 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Scout\Searchable;
 
-class Article extends Model
+class Article extends Model implements HasRichContent
 {
     use HasEncodedAttributes;
-
     /** @use HasFactory<\Database\Factories\ArticleFactory> */
     use HasFactory;
 
+    use InteractsWithRichContent;
+
     use Searchable;
     use SoftDeletes;
+
+    protected function setUpRichContent(): void
+    {
+        $this->registerRichContent('full_description')
+            ->fileAttachmentsDisk('public')
+            ->fileAttachmentsVisibility('public')
+            ->mentions([
+                self::categoryMentionProvider(),
+                self::tagMentionProvider(),
+            ]);
+    }
 
     /**
      * @var list<string>
@@ -295,6 +310,66 @@ class Article extends Model
     public function getIsRecentAttribute(): bool
     {
         return $this->published_at !== null && $this->published_at->gte(now()->subHours(6));
+    }
+
+    protected static function categoryMentionProvider(): MentionProvider
+    {
+        return MentionProvider::make('@')
+            ->searchPrompt('Начните вводить рубрику')
+            ->noItemsMessage('Рубрики пока не созданы')
+            ->getSearchResultsUsing(fn (string $search): array => Category::query()
+                ->when(
+                    filled($search),
+                    fn (Builder $query): Builder => $query->where('name', 'like', "%{$search}%"),
+                )
+                ->orderBy('order')
+                ->orderBy('name')
+                ->limit(10)
+                ->pluck('name', 'id')
+                ->all())
+            ->getLabelsUsing(fn (array $ids): array => Category::query()
+                ->whereIn('id', $ids)
+                ->pluck('name', 'id')
+                ->all())
+            ->url(function (string $id): ?string {
+                $slug = Category::query()->whereKey($id)->value('slug');
+
+                if (! filled($slug)) {
+                    return null;
+                }
+
+                return rtrim((string) config('app.url'), '/').'/#/category/'.$slug;
+            });
+    }
+
+    protected static function tagMentionProvider(): MentionProvider
+    {
+        return MentionProvider::make('#')
+            ->searchPrompt('Начните вводить тег')
+            ->noItemsMessage('Теги пока не созданы')
+            ->getSearchResultsUsing(fn (string $search): array => Tag::query()
+                ->when(
+                    filled($search),
+                    fn (Builder $query): Builder => $query->where('name', 'like', "%{$search}%"),
+                )
+                ->orderByDesc('usage_count')
+                ->orderBy('name')
+                ->limit(10)
+                ->pluck('name', 'id')
+                ->all())
+            ->getLabelsUsing(fn (array $ids): array => Tag::query()
+                ->whereIn('id', $ids)
+                ->pluck('name', 'id')
+                ->all())
+            ->url(function (string $id): ?string {
+                $slug = Tag::query()->whereKey($id)->value('slug');
+
+                if (! filled($slug)) {
+                    return null;
+                }
+
+                return rtrim((string) config('app.url'), '/').'/#/tag/'.$slug;
+            });
     }
 
     /**

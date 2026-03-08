@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Articles\Schemas;
 
+use App\Filament\Support\SlugGeneratorAction;
 use App\Models\Article;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -51,6 +53,12 @@ class ArticleForm
                     ->maxLength(1000)
                     ->columnSpanFull()
                     ->live(onBlur: true)
+                    ->afterContent(
+                        SlugGeneratorAction::make(
+                            sourceField: 'title',
+                            name: 'generateArticleSlug',
+                        ),
+                    )
                     ->afterStateUpdated(function (Set $set, ?string $state): void {
                         $set('slug', Str::slug($state ?? ''));
                     }),
@@ -99,13 +107,22 @@ class ArticleForm
                     ->nullable()
                     ->columnSpanFull()
                     ->fileAttachmentsDisk('public')
+                    ->fileAttachmentsVisibility('public')
+                    ->fileAttachmentsDirectory('article-content')
+                    ->fileAttachmentsAcceptedFileTypes([
+                        'image/jpeg',
+                        'image/png',
+                        'image/webp',
+                    ])
+                    ->fileAttachmentsMaxSize(5120)
+                    ->resizableImages()
                     ->toolbarButtons([
                         ['bold', 'italic', 'underline', 'strike', 'link'],
                         ['orderedList', 'bulletList', 'blockquote'],
                         ['h2', 'h3', 'codeBlock'],
                         ['undo', 'redo'],
                     ])
-                    ->helperText('Полное содержание. Если пусто — показывается RSS-контент.'),
+                    ->helperText('Полное содержание. Если пусто — показывается RSS-контент. Используйте @ для рубрик и # для тегов.'),
             ]);
     }
 
@@ -113,6 +130,25 @@ class ArticleForm
     {
         return Tab::make('Медиа и источник')
             ->schema([
+                FileUpload::make('uploaded_image')
+                    ->label('Загрузить изображение')
+                    ->image()
+                    ->imageEditor()
+                    ->imageAspectRatio('16:9')
+                    ->automaticallyOpenImageEditorForAspectRatio()
+                    ->acceptedFileTypes([
+                        'image/jpeg',
+                        'image/png',
+                        'image/webp',
+                    ])
+                    ->maxSize(5120)
+                    ->disk('public')
+                    ->directory('article-images')
+                    ->visibility('public')
+                    ->saved(false)
+                    ->dehydrated()
+                    ->columnSpanFull()
+                    ->helperText('Загрузите локальное изображение 16:9 или оставьте поле пустым и используйте внешний URL ниже.'),
                 TextInput::make('image_url')
                     ->url()
                     ->nullable()
@@ -150,7 +186,7 @@ class ArticleForm
                     ->rows(5)
                     ->columnSpanFull()
                     ->disabled()
-                    ->dehydrated(false)
+                    ->saved(false)
                     ->helperText('Оригинальный RSS-контент (только чтение)'),
             ]);
     }
@@ -173,6 +209,12 @@ class ArticleForm
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
+                            ->afterContent(
+                                SlugGeneratorAction::make(
+                                    sourceField: 'name',
+                                    name: 'generateNewTagSlug',
+                                ),
+                            )
                             ->afterStateUpdated(function (Set $set, ?string $state): void {
                                 $set('slug', Str::slug($state ?? ''));
                             }),

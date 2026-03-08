@@ -7,8 +7,9 @@ export function usePolling(fetchFn, intervalMs = 60000) {
         try {
             const result = await fetchFn();
             data = result;
-            lastFetched = new Date();
-        } catch {
+            lastFetched = Date.now();
+        } catch (error) {
+            void error;
         } finally {
             if (typeof window !== 'undefined') {
                 timer = window.setTimeout(run, intervalMs);

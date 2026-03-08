@@ -97,6 +97,64 @@ it('uses the project override for the inertia laravel guideline', function () {
         ->toContain('tests/Feature/ExampleTest.php');
 });
 
+it('uses the project override for the herd guideline', function () {
+    $guideline = localBoostGuideline('herd');
+
+    expect($guideline)
+        ->not()->toBeNull()
+        ->and($guideline['custom'])
+        ->toBeTrue()
+        ->and($guideline['path'])
+        ->toEndWith('/.ai/guidelines/herd/core.blade.php')
+        ->and($guideline['content'])
+        ->toContain('php artisan herd:worktree')
+        ->toContain('database/<site>.sqlite');
+});
+
+it('uses the project override for the wayfinder guideline', function () {
+    $guideline = localBoostGuideline('wayfinder/core');
+
+    expect($guideline)
+        ->not()->toBeNull()
+        ->and($guideline['custom'])
+        ->toBeTrue()
+        ->and($guideline['path'])
+        ->toEndWith('/.ai/guidelines/wayfinder/core.blade.php')
+        ->and($guideline['content'])
+        ->toContain('Normalize Wayfinder route objects to strings with `toUrl()`')
+        ->toContain('ProfileController.update.form()');
+});
+
+it('uses the project override for the pest guideline', function () {
+    $guideline = localBoostGuideline('pest/core');
+
+    expect($guideline)
+        ->not()->toBeNull()
+        ->and($guideline['custom'])
+        ->toBeTrue()
+        ->and($guideline['path'])
+        ->toEndWith('/.ai/guidelines/pest/core.blade.php')
+        ->and($guideline['content'])
+        ->toContain('assertInertia(fn (Assert $page) => ...)')
+        ->toContain('Symfony\Component\Process\Process')
+        ->toContain('APP_ENV=local');
+});
+
+it('uses the project override for the tailwind guideline', function () {
+    $guideline = localBoostGuideline('tailwindcss/core');
+
+    expect($guideline)
+        ->not()->toBeNull()
+        ->and($guideline['custom'])
+        ->toBeTrue()
+        ->and($guideline['path'])
+        ->toEndWith('/.ai/guidelines/tailwindcss/core.blade.php')
+        ->and($guideline['content'])
+        ->toContain('resources/css/app.css')
+        ->toContain('existing `cn()` helper pattern')
+        ->toContain('BreakingNewsTicker.svelte');
+});
+
 it('uses the project override for the inertia svelte guideline', function () {
     $guideline = localBoostGuideline('inertia-svelte/core');
 
@@ -164,6 +222,14 @@ it('regenerates agent guidance with the custom inertia context', function () {
 
         expect($contents)
             ->not->toBeFalse()
+            ->toContain('=== herd rules ===')
+            ->toContain('php artisan herd:worktree')
+            ->toContain('=== wayfinder/core rules ===')
+            ->toContain('Normalize Wayfinder route objects to strings with `toUrl()`')
+            ->toContain('=== pest/core rules ===')
+            ->toContain('assertInertia(fn (Assert $page) => ...)')
+            ->toContain('=== tailwindcss/core rules ===')
+            ->toContain('resources/css/app.css')
             ->toContain('=== inertia-laravel/core rules ===')
             ->toContain('public frontend through the Inertia `Welcome` page')
             ->toContain('=== inertia-svelte/core rules ===')

@@ -12,6 +12,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -22,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->preferFileBackedStoresForLocalSqlite();
+        $this->ensureTntSearchStoragePathExists();
+
         $this->app->singleton('pincryp', function ($app): PincrypFactory {
             $config = $app['config']->get('pincryp', []);
 
@@ -60,5 +64,35 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    protected function preferFileBackedStoresForLocalSqlite(): void
+    {
+        if (! $this->app->isLocal() || config('database.default') !== 'sqlite') {
+            return;
+        }
+
+        if (config('cache.default') === 'database') {
+            config(['cache.default' => 'file']);
+        }
+
+        if (config('session.driver') === 'database') {
+            config(['session.driver' => 'file']);
+        }
+    }
+
+    protected function ensureTntSearchStoragePathExists(): void
+    {
+        if (config('scout.driver') !== 'tntsearch') {
+            return;
+        }
+
+        $storagePath = config('scout.tntsearch.storage');
+
+        if (! is_string($storagePath) || $storagePath === '') {
+            return;
+        }
+
+        File::ensureDirectoryExists($storagePath);
     }
 }

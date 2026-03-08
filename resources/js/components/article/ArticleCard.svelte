@@ -74,11 +74,7 @@
             ? Date.now() - publishedDate.getTime() < 6 * 60 * 60 * 1000
             : false,
     );
-    let imageLoaded = $state(true);
-
-    $effect(() => {
-        imageLoaded = !article.image_url;
-    });
+    let imageLoaded = $derived(!article.image_url);
 </script>
 
 <article

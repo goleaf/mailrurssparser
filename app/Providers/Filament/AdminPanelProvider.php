@@ -9,6 +9,8 @@ use App\Filament\Widgets\LatestArticlesWidget;
 use App\Filament\Widgets\ParseLogsWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
 use App\Filament\Widgets\ViewsChartWidget;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Auth\MultiFactor\Email\EmailAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -33,6 +35,13 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->profile(isSimple: false)
+            ->multiFactorAuthentication([
+                AppAuthentication::make()
+                    ->recoverable()
+                    ->brandName((string) config('app.name').' Admin'),
+                EmailAuthentication::make(),
+            ])
             ->colors([
                 'primary' => Color::Amber,
             ])

@@ -32,6 +32,9 @@ class UserFactory extends Factory
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
+            'app_authentication_secret' => null,
+            'app_authentication_recovery_codes' => null,
+            'has_email_authentication' => false,
         ];
     }
 

@@ -76,7 +76,7 @@ class RssFeedForm
                         Textarea::make('last_error')
                             ->rows(3)
                             ->disabled()
-                            ->dehydrated(false)
+                            ->saved(false)
                             ->columnSpanFull()
                             ->extraInputAttributes(['class' => 'text-danger-600']),
                     ]),

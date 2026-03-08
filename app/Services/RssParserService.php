@@ -9,6 +9,7 @@ use App\Models\RssParseLog;
 use App\Models\Tag;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -105,6 +106,21 @@ class RssParserService
                 $response = Http::timeout((int) config('rss.parser.timeout', 30))
                     ->connectTimeout((int) config('rss.parser.connect_timeout', 10))
                     ->withoutVerifying()
+                    ->afterResponse(function (Response $response) use ($attempt, &$currentUrl): void {
+                        $context = [
+                            'url' => $currentUrl,
+                            'attempt' => $attempt,
+                            'status' => $response->status(),
+                        ];
+
+                        $location = trim((string) $response->header('Location'));
+
+                        if ($location !== '') {
+                            $context['location'] = $location;
+                        }
+
+                        $this->logger()->debug('RSS response received.', $context);
+                    })
                     ->withHeaders([
                         'User-Agent' => (string) config('rss.parser.user_agent'),
                         'Accept' => 'application/rss+xml, application/xml, text/xml, */*',
