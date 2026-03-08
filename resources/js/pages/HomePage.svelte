@@ -9,15 +9,16 @@
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import ArticleCardCompact from '@/components/article/ArticleCardCompact.svelte';
     import FilterBar from '@/components/FilterBar.svelte';
+    import Pagination from '@/components/Pagination.svelte';
     import SidebarCategoryTree from '@/components/sidebar/SidebarCategoryTree.svelte';
     import SidebarDateCalendar from '@/components/sidebar/SidebarDateCalendar.svelte';
     import SidebarNewsletterBox from '@/components/sidebar/SidebarNewsletterBox.svelte';
     import SidebarPopularArticles from '@/components/sidebar/SidebarPopularArticles.svelte';
     import SidebarTagCloud from '@/components/sidebar/SidebarTagCloud.svelte';
+    import SkeletonCard from '@/components/SkeletonCard.svelte';
     import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
     import { setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
-    import { cn } from '@/lib/utils';
     import { appState, initApp } from '@/stores/app.svelte.js';
     import {
         activeFiltersCount,
@@ -140,18 +141,6 @@
         }
 
         return chips;
-    });
-
-    const visiblePages = $derived.by(() => {
-        const pages: number[] = [];
-        const start = Math.max(1, currentPage - 2);
-        const end = Math.min(lastPage, currentPage + 2);
-
-        for (let page = start; page <= end; page += 1) {
-            pages.push(page);
-        }
-
-        return pages;
     });
 
     const leadStory = $derived.by(() => {
@@ -555,15 +544,7 @@
                         {#if listState.loading}
                             <div class="grid gap-5 md:grid-cols-2">
                                 {#each Array.from({ length: 6 }) as _, index (`home-loading-${index}`)}
-                                    <div class="rounded-3xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-slate-950">
-                                        <Skeleton class="h-48 w-full rounded-2xl" />
-                                        <div class="mt-4 space-y-3">
-                                            <Skeleton class="h-4 w-20" />
-                                            <Skeleton class="h-6 w-full" />
-                                            <Skeleton class="h-4 w-4/5" />
-                                            <Skeleton class="h-4 w-full" />
-                                        </div>
-                                    </div>
+                                    <SkeletonCard lineWidths={['w-20', 'w-full', 'w-4/5', 'w-full']} />
                                 {/each}
                             </div>
                         {:else if listState.error}
@@ -602,54 +583,13 @@
                         {/if}
                     </div>
 
-                    {#if lastPage > 1}
-                        <div class="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-6 dark:border-white/10">
-                            <div class="text-sm text-slate-500 dark:text-slate-400">
-                                Страница {currentPage} из {lastPage}
-                            </div>
-
-                            <div class="flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
-                                    onclick={() => {
-                                        changePage(currentPage - 1);
-                                    }}
-                                    disabled={currentPage <= 1}
-                                >
-                                    Назад
-                                </button>
-
-                                {#each visiblePages as pageNumber (pageNumber)}
-                                    <button
-                                        type="button"
-                                        class={cn(
-                                            'rounded-full px-4 py-2 text-sm font-medium transition',
-                                            pageNumber === currentPage
-                                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950'
-                                                : 'border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10',
-                                        )}
-                                        onclick={() => {
-                                            changePage(pageNumber);
-                                        }}
-                                    >
-                                        {pageNumber}
-                                    </button>
-                                {/each}
-
-                                <button
-                                    type="button"
-                                    class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
-                                    onclick={() => {
-                                        changePage(currentPage + 1);
-                                    }}
-                                    disabled={currentPage >= lastPage}
-                                >
-                                    Далее
-                                </button>
-                            </div>
-                        </div>
-                    {/if}
+                    <Pagination
+                        {currentPage}
+                        {lastPage}
+                        onChange={changePage}
+                        label={`Страница ${currentPage} из ${lastPage}`}
+                        nextLabel="Далее"
+                    />
                 </section>
             </section>
 

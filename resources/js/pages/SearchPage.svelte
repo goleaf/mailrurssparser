@@ -5,7 +5,8 @@
     import { onMount } from 'svelte';
     import AppHead from '@/components/AppHead.svelte';
     import ArticleCard from '@/components/article/ArticleCard.svelte';
-    import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
+    import Pagination from '@/components/Pagination.svelte';
+    import SkeletonCard from '@/components/SkeletonCard.svelte';
     import { setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
     import { cn } from '@/lib/utils';
@@ -132,18 +133,6 @@
     );
     const currentPage = $derived(Number(pagination?.current_page ?? 1));
     const lastPage = $derived(Number(pagination?.last_page ?? 1));
-    const visiblePages = $derived.by(() => {
-        const pages: number[] = [];
-        const start = Math.max(1, currentPage - 2);
-        const end = Math.min(lastPage, currentPage + 2);
-
-        for (let page = start; page <= end; page += 1) {
-            pages.push(page);
-        }
-
-        return pages;
-    });
-
     function readRecentSearches(): string[] {
         if (typeof localStorage === 'undefined') {
             return [];
@@ -680,16 +669,7 @@
                 {#if loading}
                     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                         {#each Array.from({ length: 6 }) as _, index (index)}
-                            <div class="rounded-3xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900">
-                                <Skeleton class="h-48 w-full rounded-2xl" />
-                                <div class="mt-4 space-y-3">
-                                    <Skeleton class="h-4 w-24" />
-                                    <Skeleton class="h-5 w-full" />
-                                    <Skeleton class="h-5 w-4/5" />
-                                    <Skeleton class="h-4 w-full" />
-                                    <Skeleton class="h-4 w-3/4" />
-                                </div>
-                            </div>
+                            <SkeletonCard lineWidths={['w-24', 'w-full', 'w-4/5', 'w-full', 'w-3/4']} />
                         {/each}
                     </div>
                 {:else if activeQuery && results.length === 0}
@@ -743,48 +723,7 @@
                     </div>
                 {/if}
 
-                {#if lastPage > 1}
-                    <div class="flex flex-wrap items-center justify-center gap-2 rounded-[1.75rem] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900">
-                        <button
-                            type="button"
-                            class="rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
-                            onclick={() => {
-                                changePage(currentPage - 1);
-                            }}
-                            disabled={currentPage <= 1}
-                        >
-                            Назад
-                        </button>
-
-                        {#each visiblePages as page (page)}
-                            <button
-                                type="button"
-                                class={cn(
-                                    'inline-flex size-10 items-center justify-center rounded-full text-sm font-medium transition',
-                                    page === currentPage
-                                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950'
-                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10',
-                                )}
-                                onclick={() => {
-                                    changePage(page);
-                                }}
-                            >
-                                {page}
-                            </button>
-                        {/each}
-
-                        <button
-                            type="button"
-                            class="rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
-                            onclick={() => {
-                                changePage(currentPage + 1);
-                            }}
-                            disabled={currentPage >= lastPage}
-                        >
-                            Дальше
-                        </button>
-                    </div>
-                {/if}
+                <Pagination {currentPage} {lastPage} onChange={changePage} />
             </section>
 
             <aside class="space-y-5">

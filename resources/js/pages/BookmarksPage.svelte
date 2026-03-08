@@ -4,7 +4,7 @@
     import { fly } from 'svelte/transition';
     import AppHead from '@/components/AppHead.svelte';
     import ArticleCard from '@/components/article/ArticleCard.svelte';
-    import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
+    import SkeletonCard from '@/components/SkeletonCard.svelte';
     import * as api from '@/lib/api';
     import { loadBookmarks, toggleBookmark } from '@/stores/bookmarks.svelte.js';
 
@@ -138,15 +138,7 @@
             {#if loading}
                 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                     {#each Array.from({ length: 6 }) as _, index (index)}
-                        <div class="rounded-3xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900">
-                            <Skeleton class="h-48 w-full rounded-2xl" />
-                            <div class="mt-4 space-y-3">
-                                <Skeleton class="h-4 w-24" />
-                                <Skeleton class="h-5 w-full" />
-                                <Skeleton class="h-5 w-4/5" />
-                                <Skeleton class="h-4 w-full" />
-                            </div>
-                        </div>
+                        <SkeletonCard />
                     {/each}
                 </div>
             {:else if articles.length === 0}
