@@ -128,6 +128,21 @@ it('discovers the custom news portal frontend boost skill', function () {
         ->toContain('public news portal frontend');
 });
 
+it('discovers the custom laravel herd worktree boost skill', function () {
+    $skill = localBoostSkill('laravel-herd-worktree');
+
+    expect($skill)
+        ->not()->toBeNull()
+        ->and($skill['custom'])
+        ->toBeTrue()
+        ->and($skill['package'])
+        ->toBe('user')
+        ->and($skill['path'])
+        ->toEndWith('/.ai/skills/laravel-herd-worktree')
+        ->and($skill['description'])
+        ->toContain('Laravel Herd worktrees');
+});
+
 it('discovers the versioned inertia svelte news portal frontend boost skill', function () {
     $skill = localPackageSpecificBoostSkill('news-portal-frontend');
 
@@ -154,6 +169,7 @@ it('regenerates agent guidance with the custom inertia context', function () {
             ->toContain('=== inertia-svelte/core rules ===')
             ->toContain('hybrid public frontend')
             ->toContain('AppRoot.svelte')
-            ->toContain('news-portal-frontend');
+            ->toContain('news-portal-frontend')
+            ->toContain('laravel-herd-worktree');
     }
 });
