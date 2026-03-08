@@ -6,8 +6,10 @@
     import {
         buildSearchAutocompleteItems,
         emptySearchSuggestions,
-        type SearchAutocompleteItem,
-        type SearchSuggestions,
+    } from '@/lib/searchAutocomplete';
+    import type {
+        SearchAutocompleteItem,
+        SearchSuggestions,
     } from '@/lib/searchAutocomplete';
     import { resetFilters, setCategory, toggleTag } from '@/stores/articles.svelte.js';
 

@@ -1,13 +1,15 @@
 <script lang="ts">
     import Search from 'lucide-svelte/icons/search';
-    import { cn } from '@/lib/utils';
     import {
         buildSearchAutocompleteItems,
         hasSearchSuggestions,
         highlightAutocompleteText,
-        type SearchAutocompleteItem,
-        type SearchSuggestions,
     } from '@/lib/searchAutocomplete';
+    import type {
+        SearchAutocompleteItem,
+        SearchSuggestions,
+    } from '@/lib/searchAutocomplete';
+    import { cn } from '@/lib/utils';
 
     type Props = {
         query: string;
