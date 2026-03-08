@@ -119,10 +119,10 @@ class ArticleForm
                     ->fileAttachmentsMaxSize(5120)
                     ->resizableImages()
                     ->toolbarButtons([
-                        ['bold', 'italic', 'underline', 'strike', 'link'],
-                        ['orderedList', 'bulletList', 'blockquote'],
-                        ['h2', 'h3', 'codeBlock'],
-                        ['undo', 'redo'],
+                        ['bold', 'italic', 'underline', 'strike', 'textColor', 'link'],
+                        ['h2', 'h3', 'lead', 'grid'],
+                        ['orderedList', 'bulletList', 'blockquote', 'codeBlock', 'table'],
+                        ['attachFiles', 'undo', 'redo'],
                     ])
                     ->helperText('Полное содержание. Если пусто — показывается RSS-контент. Используйте @ для рубрик и # для тегов.'),
             ]);
@@ -177,7 +177,7 @@ class ArticleForm
                             ->nullable(),
                         TextInput::make('source_name')
                             ->nullable()
-                            ->default('Новости Mail'),
+                            ->default((string) config('rss.source_name', '')),
                         TextInput::make('author')
                             ->nullable(),
                         TextInput::make('author_url')

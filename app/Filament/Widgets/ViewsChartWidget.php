@@ -17,10 +17,14 @@ class ViewsChartWidget extends ChartWidget
     {
         $points = ArticleView::query()
             ->selectRaw("strftime('%Y-%m-%d', viewed_at) as date, COUNT(*) as count")
-            ->where('viewed_at', '>=', now()->minus(days: 30))
+            ->viewedSince(now()->minus(days: 30))
             ->groupBy('date')
             ->orderBy('date')
-            ->pluck('count', 'date');
+            ->get()
+            ->pluck(
+                fn (object $row): int => (int) $row->count,
+                fn (object $row): string => (string) $row->date,
+            );
 
         return [
             'datasets' => [

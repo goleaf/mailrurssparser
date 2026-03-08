@@ -612,7 +612,9 @@
 
 <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_30%),linear-gradient(to_bottom,_#f8fbff,_#eef2ff)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),_transparent_30%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl space-y-8">
-        <section class="rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8">
+        <section class="relative overflow-hidden rounded-[2.3rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8">
+            <div class="absolute right-0 top-0 h-40 w-40 rounded-full bg-sky-200/50 blur-3xl dark:bg-sky-500/20"></div>
+            <div class="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-amber-200/50 blur-3xl dark:bg-amber-500/10"></div>
             <div class="flex flex-wrap items-end justify-between gap-6">
                 <div class="max-w-3xl">
                     <div class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
@@ -620,12 +622,24 @@
                         Живая аналитика
                     </div>
                     <h1 class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
-                        Статистика новостного портала
+                        Пульс редакции и поведение аудитории
                     </h1>
                     <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
-                        Публичная сводка публикаций, просмотров, категорий и RSS-лент.
-                        Всё на одной странице, без админки.
+                        Единая панель с публикациями, просмотрами, долей рубрик и работой RSS-лент.
+                        Подходит и для быстрого обзора, и для анализа ритма новостей.
                     </p>
+
+                    <div class="mt-5 flex flex-wrap gap-3">
+                        <div class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                            {formatNumber(overview?.articles.total ?? 0)} материалов
+                        </div>
+                        <div class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                            {formatNumber(overview?.views.total ?? 0)} просмотров
+                        </div>
+                        <div class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                            {formatNumber(overview?.feeds.active ?? 0)} активных лент
+                        </div>
+                    </div>
                 </div>
 
                 {#if overview?.last_parse}
@@ -658,7 +672,7 @@
                 {/each}
             {:else}
                 {#each cardTrends as card (card.key)}
-                    <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
+                    <article class="rounded-[1.9rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">

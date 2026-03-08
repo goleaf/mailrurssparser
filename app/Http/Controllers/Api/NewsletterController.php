@@ -6,15 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\NewsletterSubscribeRequest;
 use App\Models\NewsletterSubscriber;
 use App\Services\MetricTracker;
+use App\Services\RequestLocationService;
 use App\Services\SendNewsletterConfirmationMail;
 use App\Services\TrackedMetric;
 use Illuminate\Http\JsonResponse;
 
 class NewsletterController extends Controller
 {
+    public function __construct(
+        private readonly RequestLocationService $requestLocation,
+    ) {}
+
     public function subscribe(NewsletterSubscribeRequest $request): JsonResponse
     {
         $validated = $request->validated();
+        $location = $this->requestLocation->resolve($request);
 
         $existing = NewsletterSubscriber::query()->where('email', $validated['email'])->first();
 
@@ -37,6 +43,9 @@ class NewsletterController extends Controller
                 'confirmed_at' => null,
                 'unsubscribed_at' => null,
                 'ip_address' => $request->ip(),
+                'country_code' => $location['country_code'] ?? null,
+                'timezone' => $location['timezone'] ?? null,
+                'locale' => $location['locale'] ?? null,
             ],
         );
 

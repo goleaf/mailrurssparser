@@ -22,6 +22,8 @@ class ArticleViewFactory extends Factory
             'ip_hash' => hash('sha256', fake()->ipv4()),
             'session_hash' => hash('sha256', (string) fake()->uuid()),
             'country_code' => fake()->countryCode(),
+            'timezone' => fake()->timezone(),
+            'locale' => fake()->randomElement(['en', 'ru', 'de', 'fr', 'pl']),
             'device_type' => fake()->randomElement(['desktop', 'mobile', 'tablet']),
             'referrer_type' => fake()->randomElement(['direct', 'search', 'social', 'internal']),
             'referrer_domain' => fake()->optional()->domainName(),

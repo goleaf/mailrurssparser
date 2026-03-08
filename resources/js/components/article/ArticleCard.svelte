@@ -73,7 +73,7 @@
 </script>
 
 <article
-    class="group flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
+    class="group flex flex-col overflow-hidden rounded-[1.9rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] shadow-[0_24px_70px_-50px_rgba(15,23,42,0.5)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_90px_-48px_rgba(15,23,42,0.58)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.82))]"
 >
     <div class="relative overflow-hidden">
         {#if article.image_url}
@@ -84,7 +84,7 @@
                     loading="lazy"
                     decoding="async"
                     class={cn(
-                        'h-48 w-full object-cover transition duration-500 group-hover:scale-105',
+                        'h-52 w-full object-cover transition duration-700 group-hover:scale-105',
                         !imageLoaded && 'scale-105 blur-xl',
                     )}
                     onload={() => {
@@ -94,64 +94,73 @@
             </a>
         {:else}
             <div
-                class="flex h-48 w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600"
+                class="flex h-52 w-full items-center justify-center bg-[linear-gradient(135deg,#dbeafe,#e2e8f0,#cbd5e1)] dark:bg-[linear-gradient(135deg,#1e293b,#0f172a,#334155)]"
             >
                 <span class="text-4xl">{article.category.icon || '📰'}</span>
             </div>
         {/if}
 
-        <a
-            href={`/#/category/${article.category.slug}`}
-            class="absolute left-2 top-2 rounded-full px-2 py-1 text-xs font-bold text-white shadow"
-            style={`background-color:${article.category.color ?? '#3B82F6'}`}
-        >
-            {article.category.name}
-        </a>
+        <div class="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3">
+            <a
+                href={`/#/category/${article.category.slug}`}
+                class="rounded-full px-3 py-1.5 text-[0.68rem] font-bold tracking-[0.18em] uppercase text-white shadow"
+                style={`background-color:${article.category.color ?? '#3B82F6'}`}
+            >
+                {article.category.name}
+            </a>
 
-        {#if article.is_breaking}
-            <span
-                class="absolute right-2 top-2 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white animate-pulse"
-            >
-                СРОЧНО
-            </span>
-        {:else if isNew || article.is_recent}
-            <span
-                class="absolute right-2 top-2 rounded-full bg-green-500 px-2 py-1 text-xs font-bold text-white"
-            >
-                НОВОЕ
-            </span>
-        {/if}
+            {#if article.is_breaking}
+                <span
+                    class="rounded-full bg-red-500 px-3 py-1.5 text-[0.68rem] font-bold tracking-[0.18em] uppercase text-white animate-pulse"
+                >
+                    Срочно
+                </span>
+            {:else if isNew || article.is_recent}
+                <span
+                    class="rounded-full bg-emerald-500 px-3 py-1.5 text-[0.68rem] font-bold tracking-[0.18em] uppercase text-white"
+                >
+                    Новое
+                </span>
+            {/if}
+        </div>
 
         {#if article.content_type && article.content_type !== 'news'}
-            <span
-                class="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white"
-            >
-                {article.content_type_label ?? getArticleContentTypeLabel(article.content_type)}
-            </span>
+            <div class="absolute bottom-3 left-3">
+                <span
+                    class="rounded-full border border-white/15 bg-black/55 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur"
+                >
+                    {article.content_type_label ?? getArticleContentTypeLabel(article.content_type)}
+                </span>
+            </div>
         {/if}
     </div>
 
-    <div class="flex flex-1 flex-col p-4">
+    <div class="flex flex-1 flex-col p-5">
+        <div class="mb-3 flex items-center justify-between gap-3 text-[0.72rem] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+            <time>{formattedDate}</time>
+            <span>Поток</span>
+        </div>
+
         <a href={`/#/articles/${article.slug}`}>
             <h2
-                class="mb-2 line-clamp-3 text-sm leading-snug font-bold text-gray-900 transition-colors hover:text-blue-600 dark:text-white"
+                class="mb-3 line-clamp-3 text-[1.02rem] leading-tight font-bold text-slate-950 transition-colors hover:text-sky-700 dark:text-white dark:hover:text-sky-300"
             >
                 {article.title}
             </h2>
         </a>
 
         {#if article.short_description}
-            <p class="mb-3 line-clamp-2 flex-1 text-xs text-gray-500 dark:text-gray-400">
+            <p class="mb-4 line-clamp-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {article.short_description}
             </p>
         {/if}
 
         {#if article.tags?.length}
-            <div class="mb-3 flex flex-wrap gap-1">
+            <div class="mb-4 flex flex-wrap gap-2">
                 {#each article.tags.slice(0, 2) as tag (tag.id)}
                     <a
                         href={`/#/tag/${tag.slug}`}
-                        class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 transition-colors hover:bg-blue-100 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/50"
+                        class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[0.72rem] font-medium text-slate-500 transition-colors hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-sky-900/30 dark:hover:text-sky-200"
                     >
                         #{tag.name}
                     </a>
@@ -160,14 +169,14 @@
         {/if}
 
         <div
-            class="mt-auto flex items-center justify-between border-t border-gray-50 pt-3 dark:border-gray-700"
+            class="mt-auto flex items-center justify-between border-t border-slate-200/80 pt-4 dark:border-white/10"
         >
-            <time class="text-xs text-gray-400">{formattedDate}</time>
+            <div class="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
+                <span>👁 {article.views_count ?? 0}</span>
+                <span>⏱ {article.reading_time ?? 1}м</span>
+            </div>
 
             <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-400">👁 {article.views_count ?? 0}</span>
-                <span class="text-xs text-gray-400">⏱ {article.reading_time ?? 1}м</span>
-
                 {#if showBookmark}
                     <button
                         type="button"
@@ -186,10 +195,10 @@
                                 articleId: article.id,
                             });
                         }}
-                        class={`text-xs transition-colors ${
+                        class={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                             isBookmarked(article.id)
-                                ? 'text-yellow-500'
-                                : 'text-gray-300 hover:text-yellow-400'
+                                ? 'border-amber-300 bg-amber-50 text-amber-600 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300'
+                                : 'border-slate-200 bg-white text-slate-400 hover:border-amber-300 hover:text-amber-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-amber-400/30 dark:hover:text-amber-300'
                         }`}
                         aria-label="Переключить закладку"
                     >

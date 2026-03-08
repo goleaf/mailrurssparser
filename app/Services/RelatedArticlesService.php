@@ -141,7 +141,7 @@ class RelatedArticlesService
         return Article::query()
             ->published()
             ->with(['category', 'tags'])
-            ->where('category_id', $article->category_id)
+            ->inCategory($article->category_id)
             ->whereKeyNot($article->getKey())
             ->when($excludeIds !== [], fn (Builder $query) => $query->whereNotIn('id', $excludeIds))
             ->orderByDesc('published_at')
@@ -186,6 +186,7 @@ class RelatedArticlesService
             })
             ->filter()
             ->sortByDesc('score')
+            ->unique('related_article_id')
             ->take($limit)
             ->values()
             ->map(function (array $row): array {
@@ -201,7 +202,21 @@ class RelatedArticlesService
             return;
         }
 
-        DB::table('article_related_articles')->insert($rows);
+        DB::table('article_related_articles')->upsert(
+            $rows,
+            ['article_id', 'related_article_id'],
+            [
+                'score',
+                'shared_tags_count',
+                'shared_terms_count',
+                'same_category',
+                'same_sub_category',
+                'same_content_type',
+                'same_author',
+                'same_source',
+                'updated_at',
+            ],
+        );
     }
 
     private function buildCandidateQuery(Article $article, Collection $sourceTagIds): Builder

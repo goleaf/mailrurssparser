@@ -12,11 +12,14 @@ use App\Models\RssParseLog;
 use App\Models\Tag;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
+use App\Services\MetricTracker;
 use App\Services\RssParserService;
+use App\Services\TrackedMetric;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 function invokeWidgetMethod(string $widgetClass, string $method): mixed
@@ -68,6 +71,8 @@ it('builds the stats overview widget metrics', function () {
 
     ArticleView::factory()->create([
         'article_id' => $todayArticle->id,
+        'country_code' => 'DE',
+        'timezone' => 'Europe/Berlin',
         'viewed_at' => now(),
     ]);
 
@@ -79,6 +84,40 @@ it('builds the stats overview widget metrics', function () {
         'is_trending' => true,
     ]);
 
+    app(MetricTracker::class)->record(TrackedMetric::BookmarkAdded, 2, $todayArticle);
+    app(MetricTracker::class)->record(TrackedMetric::NewsletterSubscription, 3);
+    app(MetricTracker::class)->record(TrackedMetric::RssArticleImported, 4, RssFeed::query()->first());
+    DB::table(config('threat-detection.table_name', 'threat_logs'))->insert([
+        [
+            'ip_address' => '203.0.113.10',
+            'url' => url('/?q=%3Cscript%3E'),
+            'user_agent' => 'Pest',
+            'type' => '[middleware] Encoded XSS Detected',
+            'payload' => 'QUERY: {"q":"%3Cscript%3E"}',
+            'threat_level' => 'high',
+            'confidence_score' => 80,
+            'confidence_label' => 'high',
+            'is_false_positive' => false,
+            'action_taken' => 'logged',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'ip_address' => '203.0.113.11',
+            'url' => url('/api/v1/stats/overview?scan=1'),
+            'user_agent' => 'Pest',
+            'type' => '[middleware] Security Scanner Detected',
+            'payload' => 'QUERY: {"scan":"1"}',
+            'threat_level' => 'low',
+            'confidence_score' => 45,
+            'confidence_label' => 'medium',
+            'is_false_positive' => false,
+            'action_taken' => 'logged',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+    ]);
+
     /** @var array<int, Stat> $stats */
     $stats = invokeWidgetMethod(StatsOverviewWidget::class, 'getStats');
 
@@ -87,16 +126,29 @@ it('builds the stats overview widget metrics', function () {
         'Today',
         'Views Today',
         'Total Views',
+        'Top Country 7d',
+        'Top TZ 7d',
+        'Threats 24h',
         'Active Feeds',
         'Trending Tags',
+        'Bookmarks 24h',
+        'Subscriptions 7d',
+        'RSS Imports 24h',
     ])
         ->and($stats[0]->getValue())->toBe(2)
         ->and(count($stats[0]->getChart() ?? []))->toBe(7)
         ->and($stats[1]->getValue())->toBe(1)
         ->and($stats[2]->getValue())->toBe(1)
         ->and($stats[3]->getValue())->toBe('150')
-        ->and($stats[4]->getValue())->toBe(1)
-        ->and($stats[5]->getValue())->toBe(1);
+        ->and($stats[4]->getValue())->toBe('DE')
+        ->and($stats[5]->getValue())->toBe('Europe/Berlin')
+        ->and($stats[6]->getValue())->toBe(2)
+        ->and($stats[6]->getDescription())->toBe('1 high severity')
+        ->and($stats[7]->getValue())->toBe(1)
+        ->and($stats[8]->getValue())->toBe(1)
+        ->and($stats[9]->getValue())->toBe(2)
+        ->and($stats[10]->getValue())->toBe(3)
+        ->and($stats[11]->getValue())->toBe(4);
 });
 
 it('renders the latest articles widget rows', function () {

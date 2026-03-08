@@ -59,7 +59,7 @@
 </script>
 
 <article
-    class="group overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl dark:border-gray-700 dark:bg-gray-800"
+    class="group overflow-hidden rounded-[2.2rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] shadow-[0_30px_90px_-55px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_40px_120px_-55px_rgba(15,23,42,0.62)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(15,23,42,0.82))]"
 >
     <div class="relative overflow-hidden">
         {#if article.image_url}
@@ -70,7 +70,7 @@
                     loading="lazy"
                     decoding="async"
                     class={cn(
-                        'h-72 w-full object-cover transition duration-700 group-hover:scale-105',
+                        'h-80 w-full object-cover transition duration-700 group-hover:scale-105',
                         !imageLoaded && 'scale-105 blur-xl',
                     )}
                     onload={() => {
@@ -80,16 +80,17 @@
             </a>
         {:else}
             <div
-                class="flex h-72 w-full items-center justify-center bg-gradient-to-br from-slate-100 via-sky-100 to-blue-200 dark:from-gray-700 dark:via-slate-700 dark:to-slate-600"
+                class="flex h-80 w-full items-center justify-center bg-[linear-gradient(135deg,#dbeafe,#bfdbfe,#0f172a)] dark:bg-[linear-gradient(135deg,#1e293b,#0f172a,#0369a1)]"
             >
                 <span class="text-6xl">{article.category.icon || '📰'}</span>
             </div>
         {/if}
 
+        <div class="absolute inset-0 bg-linear-to-t from-slate-950/85 via-slate-950/30 to-transparent"></div>
         <div class="absolute inset-x-0 top-0 flex items-start justify-between p-4">
             <a
                 href={`/#/category/${article.category.slug}`}
-                class="rounded-full px-3 py-1 text-xs font-bold text-white shadow"
+                class="rounded-full px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white shadow"
                 style={`background-color:${article.category.color ?? '#3B82F6'}`}
             >
                 {article.category.name}
@@ -97,12 +98,12 @@
 
             <div class="flex items-center gap-2">
                 {#if article.is_breaking}
-                    <span class="rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white">
-                        СРОЧНО
+                    <span class="rounded-full bg-red-500 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white">
+                        Срочно
                     </span>
                 {:else if isNew || article.is_recent}
-                    <span class="rounded-full bg-green-500 px-3 py-1 text-xs font-bold text-white">
-                        НОВОЕ
+                    <span class="rounded-full bg-emerald-500 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white">
+                        Новое
                     </span>
                 {/if}
 
@@ -134,7 +135,7 @@
 
         {#if article.content_type && article.content_type !== 'news'}
             <div class="absolute bottom-4 left-4">
-                <span class="rounded-full bg-black/60 px-3 py-1 text-xs text-white">
+                <span class="rounded-full border border-white/15 bg-black/60 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur">
                     {article.content_type_label ?? getArticleContentTypeLabel(article.content_type)}
                 </span>
             </div>
@@ -142,22 +143,21 @@
     </div>
 
     <div class="space-y-4 p-6">
-        <div class="flex items-center gap-3 text-xs text-gray-400">
+        <div class="flex items-center gap-3 text-[0.72rem] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
             <time>{formattedDate}</time>
-            <span>👁 {article.views_count ?? 0}</span>
-            <span>⏱ {article.reading_time ?? 1}м</span>
+            <span>Подборка дня</span>
         </div>
 
         <a href={`/#/articles/${article.slug}`}>
             <h2
-                class="text-xl leading-tight font-bold text-gray-900 transition-colors hover:text-blue-600 dark:text-white"
+                class="text-[1.65rem] leading-tight font-bold text-slate-950 transition-colors hover:text-sky-700 dark:text-white dark:hover:text-sky-300"
             >
                 {article.title}
             </h2>
         </a>
 
         {#if article.short_description}
-            <p class="line-clamp-3 text-sm leading-6 text-gray-600 dark:text-gray-300">
+            <p class="line-clamp-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
                 {article.short_description}
             </p>
         {/if}
@@ -167,12 +167,17 @@
                 {#each article.tags.slice(0, 3) as tag (tag.id)}
                     <a
                         href={`/#/tag/${tag.slug}`}
-                        class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-blue-100 hover:text-blue-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/50 dark:hover:text-blue-200"
+                        class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[0.72rem] font-medium text-slate-500 transition-colors hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-sky-900/30 dark:hover:text-sky-200"
                     >
                         #{tag.name}
                     </a>
                 {/each}
             </div>
         {/if}
+
+        <div class="flex flex-wrap items-center gap-4 border-t border-slate-200/80 pt-4 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
+            <span>👁 {article.views_count ?? 0}</span>
+            <span>⏱ {article.reading_time ?? 1}м</span>
+        </div>
     </div>
 </article>

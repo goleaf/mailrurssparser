@@ -42,10 +42,10 @@ it('publishes selected articles from the bulk action', function () {
 it('imports an article from the header action', function () {
     $this->actingAs(User::factory()->create());
 
-    $article = Article::factory()->make([
+    $article = withoutExpandedFactoryRelationships(fn () => Article::factory()->make([
         'title' => 'Imported story',
         'status' => 'draft',
-    ]);
+    ]));
 
     $parser = \Mockery::mock(RssParserService::class);
     $parser->shouldReceive('importArticleFromUrl')
@@ -112,7 +112,7 @@ it('creates an article through the cms form tabs', function () {
                 'sub_category_id' => $subCategory->id,
                 'short_description' => 'Краткое описание статьи для карточки.',
                 'full_description' => '<p>Полное содержание статьи.</p>',
-                'source_name' => 'Новости Mail',
+                'source_name' => '',
                 'content_type' => 'analysis',
                 'importance' => 8,
                 'tags' => [$tag->id],

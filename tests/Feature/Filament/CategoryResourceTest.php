@@ -55,7 +55,7 @@ it('creates a category with the cms form fields', function () {
             'slug' => 'politics',
             'color' => '#DC2626',
             'icon' => '🏛️',
-            'rss_url' => 'https://news.mail.ru/rss/politics/',
+            'rss_url' => rtrim((string) config('rss.feed_origin'), '/').'/rss/politics/',
             'rss_key' => 'politics',
             'description' => 'Политические новости.',
             'meta_title' => 'Политика',

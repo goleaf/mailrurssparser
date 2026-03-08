@@ -17,7 +17,7 @@ it('renders the app shell with pwa meta tags', function () {
             false,
         )
         ->assertSee('rel="preconnect" href="https://fonts.googleapis.com"', false)
-        ->assertSee('rel="preconnect" href="https://news.mail.ru"', false)
+        ->assertSee('rel="preconnect" href="'.config('rss.feed_origin').'"', false)
         ->assertSee('type="application/ld+json"', false);
 });
 

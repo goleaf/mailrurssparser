@@ -9,9 +9,11 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ShareController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\TagController;
+use App\Services\ApiRateLimiter;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['api.context', 'throttle:api'])
+Route::middleware(['api.context', ThrottleRequests::using(ApiRateLimiter::Api)])
     ->prefix('v1')
     ->name('api.v1.')
     ->group(function (): void {
@@ -39,8 +41,8 @@ Route::middleware(['api.context', 'throttle:api'])
         Route::get('tags/{slug}', [TagController::class, 'show'])->name('tags.show');
         Route::get('tags/{slug}/articles', [TagController::class, 'articles'])->name('tags.articles');
 
-        Route::get('search', [SearchController::class, 'index'])->middleware('throttle:api-search')->name('search.index');
-        Route::get('search/suggest', [SearchController::class, 'suggest'])->middleware('throttle:api-search-suggest')->name('search.suggest');
+        Route::get('search', [SearchController::class, 'index'])->middleware(ThrottleRequests::using(ApiRateLimiter::Search))->name('search.index');
+        Route::get('search/suggest', [SearchController::class, 'suggest'])->middleware(ThrottleRequests::using(ApiRateLimiter::SearchSuggest))->name('search.suggest');
         Route::get('search/highlights', [SearchController::class, 'highlights'])->name('search.highlights');
 
         Route::get('stats/overview', [StatsController::class, 'overview'])->name('stats.overview');
@@ -52,7 +54,7 @@ Route::middleware(['api.context', 'throttle:api'])
         Route::get('stats/categories', [StatsController::class, 'categoryBreakdown'])->name('stats.categories');
 
         Route::prefix('rss')
-            ->middleware('throttle:api-rss')
+            ->middleware(ThrottleRequests::using(ApiRateLimiter::Rss))
             ->group(function (): void {
                 Route::get('status', [RssApiController::class, 'status'])->name('rss.status');
                 Route::post('parse', [RssApiController::class, 'parseAll'])->name('rss.parse-all');

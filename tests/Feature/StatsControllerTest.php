@@ -37,6 +37,23 @@ it('returns overview analytics with top categories and tags', function () {
 
     ArticleView::factory()->create([
         'article_id' => $article->id,
+        'country_code' => 'DE',
+        'ip_hash' => 'hash-de-1',
+        'timezone' => 'Europe/Berlin',
+        'viewed_at' => today(),
+    ]);
+    ArticleView::factory()->create([
+        'article_id' => $article->id,
+        'country_code' => 'DE',
+        'ip_hash' => 'hash-de-2',
+        'timezone' => 'Europe/Berlin',
+        'viewed_at' => today(),
+    ]);
+    ArticleView::factory()->create([
+        'article_id' => $article->id,
+        'country_code' => 'FR',
+        'ip_hash' => 'hash-fr-1',
+        'timezone' => 'Europe/Paris',
         'viewed_at' => today(),
     ]);
 
@@ -52,8 +69,12 @@ it('returns overview analytics with top categories and tags', function () {
         ->assertJsonPath('articles.breaking', 1)
         ->assertJsonPath('articles.featured', 1)
         ->assertJsonPath('views.total', 5)
-        ->assertJsonPath('views.today', 1)
-        ->assertJsonPath('views.unique_today', 1)
+        ->assertJsonPath('views.today', 3)
+        ->assertJsonPath('views.unique_today', 3)
+        ->assertJsonPath('top_countries.0.country_code', 'DE')
+        ->assertJsonPath('top_countries.0.view_count', 2)
+        ->assertJsonPath('top_timezones.0.timezone', 'Europe/Berlin')
+        ->assertJsonPath('top_timezones.0.view_count', 2)
         ->assertJsonPath('top_categories.0.slug', 'news')
         ->assertJsonPath('trending_tags.0.name', 'Politics')
         ->assertJsonPath('last_parse', $feed->last_parsed_at?->toIso8601String())

@@ -142,7 +142,7 @@ it('stores uploaded article images on the public disk and maps them to image_url
                 'slug' => 'uploaded-image-story',
                 'category_id' => $category->id,
                 'short_description' => 'Краткое описание статьи.',
-                'source_name' => 'Новости Mail',
+                'source_name' => '',
                 'content_type' => 'news',
                 'importance' => 6,
                 'status' => 'draft',

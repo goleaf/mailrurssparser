@@ -27,6 +27,9 @@ class NewsletterSubscriber extends Model
         'confirmed_at',
         'unsubscribed_at',
         'ip_address',
+        'country_code',
+        'timezone',
+        'locale',
     ];
 
     /**

@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\HerdWorktreeService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Symfony\Component\Console\Command\Command as SymfonyCommand;
@@ -43,6 +44,32 @@ it('renders a dry-run setup plan for a herd worktree', function () {
         ->assertExitCode(SymfonyCommand::SUCCESS);
 
     Process::assertDidntRun(fn ($process) => str_starts_with((string) $process->command, 'git worktree add '));
+});
+
+it('filters invalid configured bootstrap commands from worktree plans', function () {
+    config()->set('worktree.bootstrap_commands', [
+        ' composer install --no-interaction ',
+        null,
+        '',
+        42,
+        'php artisan config:clear',
+    ]);
+
+    Process::fake([
+        'git show-ref --verify --quiet *' => Process::result(exitCode: 1),
+    ]);
+
+    $plan = app(HerdWorktreeService::class)->buildSetupPlan(
+        branch: 'feature/login',
+        worktreeRoot: 'storage/framework/testing-worktrees',
+        linkWithHerd: false,
+        runMigrations: false,
+    );
+
+    expect($plan->commands)->toContain(
+        'composer install --no-interaction',
+        'php artisan config:clear',
+    )->not->toContain('', '42');
 });
 
 it('sets up an isolated herd worktree with its own env and sqlite database', function () {

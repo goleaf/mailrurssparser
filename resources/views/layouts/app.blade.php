@@ -24,7 +24,7 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://news.mail.ru">
+        <link rel="preconnect" href="{{ config('rss.feed_origin') }}">
 
         <link rel="icon" type="image/png" href="/favicon.png">
         <link rel="apple-touch-icon" href="/icons/icon-192.png">

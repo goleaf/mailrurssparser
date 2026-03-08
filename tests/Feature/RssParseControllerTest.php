@@ -90,25 +90,29 @@ it('parses a category and aggregates results', function () {
     $second = RssFeed::factory()->create(['category_id' => $category->id]);
 
     $parser = \Mockery::mock(RssParserService::class);
-    $parser->shouldReceive('parseFeed')
+    $parser->shouldReceive('parseFeeds')
         ->once()
-        ->with(\Mockery::on(fn (RssFeed $model): bool => $model->is($first)))
+        ->with(\Mockery::on(function ($feeds) use ($first, $second): bool {
+            return $feeds instanceof \Illuminate\Support\Collection
+                && $feeds->count() === 2
+                && $feeds->contains(fn (RssFeed $feed): bool => $feed->is($first))
+                && $feeds->contains(fn (RssFeed $feed): bool => $feed->is($second));
+        }), 'scheduler')
         ->andReturn([
-            'feed' => $first->title,
-            'new' => 1,
-            'skip' => 0,
-            'errors' => 0,
-            'error' => null,
-        ]);
-    $parser->shouldReceive('parseFeed')
-        ->once()
-        ->with(\Mockery::on(fn (RssFeed $model): bool => $model->is($second)))
-        ->andReturn([
-            'feed' => $second->title,
-            'new' => 0,
-            'skip' => 2,
-            'errors' => 0,
-            'error' => null,
+            $first->id => [
+                'feed' => $first->title,
+                'new' => 1,
+                'skip' => 0,
+                'errors' => 0,
+                'error' => null,
+            ],
+            $second->id => [
+                'feed' => $second->title,
+                'new' => 0,
+                'skip' => 2,
+                'errors' => 0,
+                'error' => null,
+            ],
         ]);
 
     app()->instance(RssParserService::class, $parser);

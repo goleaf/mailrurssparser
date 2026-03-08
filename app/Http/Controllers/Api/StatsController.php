@@ -125,8 +125,8 @@ class StatsController extends Controller
             ->get();
 
         $response = [
-            'labels' => $rows->pluck('label')->all(),
-            'data' => $rows->pluck('count')->map(fn ($count) => (int) $count)->all(),
+            'labels' => $rows->pluck(fn (object $row): string => (string) $row->label)->all(),
+            'data' => $rows->pluck(fn (object $row): int => (int) $row->count)->all(),
             'period' => $period,
         ];
 
@@ -190,7 +190,7 @@ class StatsController extends Controller
             ->whereNotNull('articles.published_at')
             ->where('articles.published_at', '<=', now())
             ->when($start !== null && $end !== null, function (Builder|QueryBuilder $query) use ($start, $end): void {
-                $query->whereBetween('article_views.viewed_at', [$start, $end]);
+                $query->viewedBetween($start, $end);
             })
             ->groupBy('article_id')
             ->orderByDesc('view_count')
@@ -211,8 +211,8 @@ class StatsController extends Controller
 
             if ($period !== 'all' && $previousStart !== null && $previousEnd !== null) {
                 $previousCount = ArticleView::query()
-                    ->where('article_id', $row->article_id)
-                    ->whereBetween('viewed_at', [$previousStart, $previousEnd])
+                    ->forArticle((int) $row->article_id)
+                    ->viewedBetween($previousStart, $previousEnd)
                     ->count();
             }
 
@@ -253,6 +253,9 @@ class StatsController extends Controller
 
     public function feedsPerformance(): JsonResponse
     {
+        $todayStart = today()->startOfDay();
+        $todayEnd = $todayStart->endOfDay();
+
         $latestStartedAt = RssParseLog::query()
             ->selectRaw('rss_feed_id, MAX(started_at) as latest_started_at')
             ->groupBy('rss_feed_id');
@@ -275,7 +278,7 @@ class StatsController extends Controller
             ->with('category')
             ->withCount([
                 'articles',
-                'articles as today_articles_count' => fn (Builder $query) => $query->whereDate('published_at', today()),
+                'articles as today_articles_count' => fn (Builder $query) => $query->whereBetween('published_at', [$todayStart, $todayEnd]),
             ])
             ->get()
             ->map(function (RssFeed $feed) use ($averageDurations, $lastLogs): array {

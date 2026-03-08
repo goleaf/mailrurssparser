@@ -21,7 +21,7 @@ class RssFeedFactory extends Factory
             'category_id' => Category::factory(),
             'title' => fake()->words(3, true),
             'url' => fake()->unique()->url(),
-            'source_name' => 'Новости Mail',
+            'source_name' => (string) config('rss.source_name', ''),
             'language' => 'ru',
             'is_active' => true,
             'auto_publish' => true,

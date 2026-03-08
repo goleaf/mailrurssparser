@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Contracts\Process\ProcessResult as ProcessResultContract;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -123,11 +124,7 @@ class HerdWorktreeService
         }
 
         if ($plan->installDependencies) {
-            foreach (config('worktree.bootstrap_commands', []) as $command) {
-                if (! is_string($command) || $command === '') {
-                    continue;
-                }
-
+            foreach ($this->bootstrapCommands() as $command) {
                 $this->runInWorktree($command, $plan);
             }
         }
@@ -199,10 +196,8 @@ class HerdWorktreeService
         }
 
         if ($installDependencies) {
-            foreach (config('worktree.bootstrap_commands', []) as $command) {
-                if (is_string($command) && $command !== '') {
-                    $commands[] = $command;
-                }
+            foreach ($this->bootstrapCommands() as $command) {
+                $commands[] = $command;
             }
         }
 
@@ -211,6 +206,18 @@ class HerdWorktreeService
         }
 
         return $commands;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function bootstrapCommands(): array
+    {
+        return Config::collection('worktree.bootstrap_commands', [])
+            ->map(fn (mixed $command): string => is_string($command) ? trim($command) : '')
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**

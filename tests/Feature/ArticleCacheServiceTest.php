@@ -69,6 +69,22 @@ test('article cache service stores overview analytics using the shared cache key
     ArticleView::factory()->create([
         'article_id' => $article->id,
         'ip_hash' => 'hash-1',
+        'country_code' => 'DE',
+        'timezone' => 'Europe/Berlin',
+        'viewed_at' => today(),
+    ]);
+    ArticleView::factory()->create([
+        'article_id' => $article->id,
+        'ip_hash' => 'hash-2',
+        'country_code' => 'DE',
+        'timezone' => 'Europe/Berlin',
+        'viewed_at' => today(),
+    ]);
+    ArticleView::factory()->create([
+        'article_id' => $article->id,
+        'ip_hash' => 'hash-3',
+        'country_code' => 'FR',
+        'timezone' => 'Europe/Paris',
         'viewed_at' => today(),
     ]);
 
@@ -78,6 +94,14 @@ test('article cache service stores overview analytics using the shared cache key
         ->and($overview['articles']['breaking'])->toBe(1)
         ->and($overview['views']['total'])->toBe(15)
         ->and($overview['feeds']['active'])->toBe(1)
+        ->and($overview['top_countries'])->toBe([
+            ['country_code' => 'DE', 'view_count' => 2],
+            ['country_code' => 'FR', 'view_count' => 1],
+        ])
+        ->and($overview['top_timezones'])->toBe([
+            ['timezone' => 'Europe/Berlin', 'view_count' => 2],
+            ['timezone' => 'Europe/Paris', 'view_count' => 1],
+        ])
         ->and($overview['top_categories'])->toHaveCount(1)
         ->and($overview['trending_tags'])->toHaveCount(1)
         ->and(Cache::has(ArticleCacheKey::StatsOverview))->toBeTrue()
@@ -147,6 +171,8 @@ test('article cache service serves stale stats while refreshing the cache in the
             'this_week' => 0,
             'unique_today' => 0,
         ],
+        'top_countries' => [],
+        'top_timezones' => [],
         'top_categories' => [],
         'trending_tags' => [],
         'last_parse' => null,

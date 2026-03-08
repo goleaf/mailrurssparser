@@ -3,14 +3,20 @@
 namespace App\Filament\Resources\RssFeeds\Schemas;
 
 use App\Models\RssFeed;
+use App\Services\ArticleContentType;
+use App\Services\ArticleStatus;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Alignment;
 
 class RssFeedForm
 {
@@ -35,7 +41,7 @@ class RssFeedForm
                             ->unique(ignoreRecord: true),
                         TextInput::make('source_name')
                             ->required()
-                            ->default('Новости Mail')
+                            ->default((string) config('rss.source_name', ''))
                             ->maxLength(255),
                         Grid::make(3)
                             ->schema([
@@ -53,6 +59,48 @@ class RssFeedForm
                             ->suffix('min'),
                     ])
                     ->columns(2),
+                Section::make('Feed overrides')
+                    ->description('Переопределите значения, которые RSS-парсер подставляет в импортируемые статьи.')
+                    ->schema([
+                        Repeater::make('extra_settings_rows')
+                            ->label('Structured overrides')
+                            ->default([])
+                            ->defaultItems(0)
+                            ->table([
+                                TableColumn::make('Override')
+                                    ->markAsRequired()
+                                    ->width('220px'),
+                                TableColumn::make('Value')
+                                    ->markAsRequired()
+                                    ->alignment(Alignment::Start),
+                            ])
+                            ->compact()
+                            ->schema([
+                                Select::make('key')
+                                    ->label('Override')
+                                    ->required()
+                                    ->searchable()
+                                    ->native(false)
+                                    ->live()
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->options(self::extraSettingOptions()),
+                                TextInput::make('value')
+                                    ->label('Value')
+                                    ->required()
+                                    ->live(onBlur: true)
+                                    ->placeholder(fn (Get $get): ?string => self::extraSettingPlaceholder($get('key')))
+                                    ->helperText(fn (Get $get): ?string => self::extraSettingHelperText($get('key'))),
+                            ])
+                            ->itemLabel(function (array $state): ?string {
+                                $key = $state['key'] ?? null;
+
+                                if (! is_string($key) || $key === '') {
+                                    return null;
+                                }
+
+                                return self::extraSettingOptions()[$key] ?? $key;
+                            }),
+                    ]),
                 Section::make('Status (readonly)')
                     ->schema([
                         Grid::make(3)
@@ -81,5 +129,150 @@ class RssFeedForm
                             ->extraInputAttributes(['class' => 'text-danger-600']),
                     ]),
             ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function extraSettingOptions(): array
+    {
+        return [
+            'status' => 'Article status',
+            'content_type' => 'Content type',
+            'source_name' => 'Source name',
+            'default_author' => 'Default author',
+            'sub_category_name' => 'Sub category name',
+            'sub_category_slug' => 'Sub category slug',
+            'short_description_length' => 'Short description length',
+            'source_page_enabled' => 'Source page enrichment',
+            'source_page_min_body_characters' => 'Source body minimum characters',
+            'source_page_title_selector' => 'Source title selectors',
+            'source_page_subtitle_selector' => 'Source subtitle selectors',
+            'source_page_article_selector' => 'Source article selectors',
+            'source_page_author_selector' => 'Source author selectors',
+            'source_page_image_selector' => 'Source image selectors',
+            'source_page_remove_selectors' => 'Source cleanup selectors',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $settings
+     * @return array<int, array{key: string, value: string}>
+     */
+    public static function rowsFromExtraSettings(?array $settings): array
+    {
+        return collect($settings ?? [])
+            ->map(function (mixed $value, mixed $key): ?array {
+                if (! is_string($key) || $key === '') {
+                    return null;
+                }
+
+                return [
+                    'key' => $key,
+                    'value' => is_bool($value) ? ($value ? '1' : '0') : (string) $value,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>|null  $rows
+     * @return array<string, mixed>
+     */
+    public static function extraSettingsFromRows(?array $rows): array
+    {
+        return collect($rows ?? [])
+            ->reduce(function (array $settings, array $row): array {
+                $key = $row['key'] ?? null;
+                $value = $row['value'] ?? null;
+
+                if (! is_string($key) || $key === '') {
+                    return $settings;
+                }
+
+                $normalizedValue = self::normalizeExtraSettingValue($key, $value);
+
+                if ($normalizedValue === null) {
+                    return $settings;
+                }
+
+                $settings[$key] = $normalizedValue;
+
+                return $settings;
+            }, []);
+    }
+
+    private static function extraSettingPlaceholder(?string $key): ?string
+    {
+        return match ($key) {
+            'status' => 'draft / pending / published',
+            'content_type' => 'news / analysis / opinion',
+            'source_name' => 'Custom source',
+            'default_author' => 'Feed Author',
+            'sub_category_name' => 'Отрасли',
+            'sub_category_slug' => 'otrasli',
+            'short_description_length' => '300',
+            'source_page_enabled' => '1',
+            'source_page_min_body_characters' => '180',
+            'source_page_title_selector' => 'h1, .article__title',
+            'source_page_subtitle_selector' => '.article__subtitle, .article__lead',
+            'source_page_article_selector' => '[article-item-type="html"], article, main',
+            'source_page_author_selector' => '[rel="author"], .article__author',
+            'source_page_image_selector' => 'meta[property="og:image"], article figure img',
+            'source_page_remove_selectors' => '.share, .related, .advert',
+            default => null,
+        };
+    }
+
+    private static function extraSettingHelperText(?string $key): ?string
+    {
+        return match ($key) {
+            'status' => 'Allowed: '.implode(', ', ArticleStatus::values()),
+            'content_type' => 'Allowed: '.implode(', ', ArticleContentType::values()),
+            'short_description_length' => 'Stores a positive integer character limit.',
+            'sub_category_name' => 'Assigns imported articles to a subcategory under the feed category.',
+            'sub_category_slug' => 'Uses the provided slug when matching or creating the subcategory.',
+            'source_page_enabled' => 'Use 1 or 0 to enable parsing the original article page linked from RSS.',
+            'source_page_min_body_characters' => 'Minimum cleaned body length before source HTML replaces RSS text.',
+            'source_page_title_selector',
+            'source_page_subtitle_selector',
+            'source_page_article_selector',
+            'source_page_author_selector',
+            'source_page_image_selector',
+            'source_page_remove_selectors' => 'Comma separated CSS selectors. Feed-level values are tried before global defaults.',
+            default => null,
+        };
+    }
+
+    private static function normalizeExtraSettingValue(string $key, mixed $value): string|int|null
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        return match ($key) {
+            'status' => in_array($value, ArticleStatus::values(), true) ? $value : null,
+            'content_type' => in_array($value, ArticleContentType::values(), true) ? $value : null,
+            'short_description_length' => max(1, (int) $value),
+            'source_page_enabled' => in_array(strtolower($value), ['1', '0', 'true', 'false', 'yes', 'no', 'on', 'off'], true)
+                ? (int) in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true)
+                : null,
+            'source_page_min_body_characters' => max(40, (int) $value),
+            'source_page_title_selector',
+            'source_page_subtitle_selector',
+            'source_page_article_selector',
+            'source_page_author_selector',
+            'source_page_image_selector',
+            'source_page_remove_selectors' => $value,
+            default => $value,
+        };
     }
 }

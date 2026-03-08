@@ -6,12 +6,20 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
+use App\Models\SubCategory;
 use App\Models\Tag;
 use Carbon\Carbon;
+use DOMDocument;
+use DOMElement;
+use DOMNode;
+use DOMXPath;
+use Illuminate\Http\Client\Batch;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Request as HttpClientRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -91,9 +99,44 @@ class RssParserService
         'Я' => 'Ya',
     ];
 
+    public function __construct(private ?SourceArticleParserService $sourceArticleParser = null)
+    {
+        $this->sourceArticleParser ??= app(SourceArticleParserService::class);
+    }
+
     private function logger(): \Illuminate\Log\Logger
     {
         return Log::channel('rss');
+    }
+
+    private function configureFeedRequest(
+        PendingRequest $request,
+        string $requestUrl,
+        string $originalUrl,
+        int $attempt,
+        int $maxRetries,
+    ): PendingRequest {
+        return $request
+            ->timeout((int) config('rss.parser.timeout', 30))
+            ->connectTimeout((int) config('rss.parser.connect_timeout', 10))
+            ->withoutVerifying()
+            ->withoutRedirecting()
+            ->withHeaders([
+                'User-Agent' => (string) config('rss.parser.user_agent'),
+                'Accept' => 'application/rss+xml, application/xml, text/xml, */*',
+                'Accept-Encoding' => 'gzip, deflate',
+                'Cache-Control' => 'no-cache',
+            ])
+            ->withUrlParameters(['query' => []])
+            ->withUrlParameters($this->feedRequestBaseUrlParameters($requestUrl))
+            ->withUrlParameters($this->feedRequestPathUrlParameters($requestUrl))
+            ->withAttributes($this->feedRequestAttributes($requestUrl, $originalUrl, $attempt, $maxRetries))
+            ->beforeSending(function (HttpClientRequest $request): void {
+                $context = $request->attributes();
+                $context['url'] = $request->url();
+
+                $this->logger()->debug('RSS request sending.', $context);
+            });
     }
 
     /**
@@ -112,50 +155,115 @@ class RssParserService
 
     private function newFeedRequest(string $requestUrl, string $originalUrl, int $attempt, int $maxRetries): PendingRequest
     {
-        return Http::timeout((int) config('rss.parser.timeout', 30))
-            ->connectTimeout((int) config('rss.parser.connect_timeout', 10))
-            ->withoutVerifying()
-            ->withoutRedirecting()
-            ->withHeaders([
-                'User-Agent' => (string) config('rss.parser.user_agent'),
-                'Accept' => 'application/rss+xml, application/xml, text/xml, */*',
-                'Accept-Encoding' => 'gzip, deflate',
-                'Cache-Control' => 'no-cache',
-            ])
-            ->withAttributes($this->feedRequestAttributes($requestUrl, $originalUrl, $attempt, $maxRetries))
-            ->beforeSending(function (HttpClientRequest $request): void {
-                $context = $request->attributes();
-                $context['url'] = $request->url();
+        return $this->configureFeedRequest(Http::withHeaders([]), $requestUrl, $originalUrl, $attempt, $maxRetries);
+    }
 
-                $this->logger()->debug('RSS request sending.', $context);
+    private function logFeedResponse(
+        Response $response,
+        string $requestUrl,
+        string $originalUrl,
+        int $attempt,
+        int $maxRetries,
+        array $extraContext = [],
+    ): void {
+        $context = array_merge(
+            $this->feedRequestAttributes($requestUrl, $originalUrl, $attempt, $maxRetries),
+            $extraContext,
+            ['status' => $response->status()],
+        );
+
+        $location = $response->redirectLocation();
+
+        if ($location !== null) {
+            $context['location'] = $location;
+        }
+
+        $this->logger()->debug('RSS response received.', $context);
+    }
+
+    private function resolveFeedResponse(
+        string $requestUrl,
+        string $originalUrl,
+        int $attempt,
+        int $maxRetries,
+        Response|ConnectionException|null $firstAttemptResult = null,
+    ): Response {
+        if ($attempt === 1 && $firstAttemptResult !== null) {
+            if ($firstAttemptResult instanceof ConnectionException) {
+                throw $firstAttemptResult;
+            }
+
+            $this->logFeedResponse($firstAttemptResult, $requestUrl, $originalUrl, $attempt, $maxRetries, [
+                'batched' => true,
+            ]);
+
+            return $firstAttemptResult;
+        }
+
+        return $this->newFeedRequest($requestUrl, $originalUrl, $attempt, $maxRetries)
+            ->get('{+endpoint}{?query*}')
+            ->tap(function (Response $response) use ($attempt, $requestUrl, $originalUrl, $maxRetries): void {
+                $this->logFeedResponse($response, $requestUrl, $originalUrl, $attempt, $maxRetries);
             });
+    }
+
+    /**
+     * @return array{endpoint: string}
+     */
+    private function feedRequestBaseUrlParameters(string $requestUrl): array
+    {
+        $parts = parse_url($requestUrl);
+        $scheme = is_string($parts['scheme'] ?? null) ? $parts['scheme'] : 'https';
+        $host = is_string($parts['host'] ?? null) ? $parts['host'] : '';
+        $user = is_string($parts['user'] ?? null) ? $parts['user'] : '';
+        $pass = is_string($parts['pass'] ?? null) ? $parts['pass'] : '';
+        $port = is_int($parts['port'] ?? null) ? $parts['port'] : null;
+        $authority = $host;
+
+        if ($user !== '') {
+            $authority = $user.($pass !== '' ? ':'.$pass : '').'@'.$authority;
+        }
+
+        if ($authority !== '' && $port !== null) {
+            $authority .= ':'.$port;
+        }
+
+        $path = is_string($parts['path'] ?? null) ? $parts['path'] : '';
+
+        return ['endpoint' => "{$scheme}://{$authority}{$path}"];
+    }
+
+    /**
+     * @return array{query: array<string, string>}
+     */
+    private function feedRequestPathUrlParameters(string $requestUrl): array
+    {
+        $parts = parse_url($requestUrl);
+        $query = [];
+
+        if (is_string($parts['query'] ?? null) && $parts['query'] !== '') {
+            parse_str($parts['query'], $query);
+        }
+
+        return ['query' => $query];
     }
 
     /**
      * @throws \RuntimeException
      */
-    private function fetchWithRetry(string $url, int $maxRetries = 3): string
-    {
+    private function fetchWithRetry(
+        string $url,
+        int $maxRetries = 3,
+        Response|ConnectionException|null $firstAttemptResult = null,
+    ): string {
         $currentUrl = $url;
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             $requestUrl = $currentUrl;
 
             try {
-                $response = $this->newFeedRequest($requestUrl, $url, $attempt, $maxRetries)
-                    ->get($requestUrl)
-                    ->tap(function (Response $response) use ($attempt, $requestUrl, $url, $maxRetries): void {
-                        $context = $this->feedRequestAttributes($requestUrl, $url, $attempt, $maxRetries);
-                        $context['status'] = $response->status();
-
-                        $location = $response->redirectLocation();
-
-                        if ($location !== null) {
-                            $context['location'] = $location;
-                        }
-
-                        $this->logger()->debug('RSS response received.', $context);
-                    });
+                $response = $this->resolveFeedResponse($requestUrl, $url, $attempt, $maxRetries, $firstAttemptResult);
+                $firstAttemptResult = null;
 
                 $status = $response->status();
 
@@ -201,6 +309,7 @@ class RssParserService
                 }
 
                 sleep(1);
+                $firstAttemptResult = null;
             }
         }
 
@@ -267,12 +376,1063 @@ class RssParserService
         return trim($text);
     }
 
+    private function sanitizeHtml(string $html): string
+    {
+        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim((string) preg_replace('/<(script|iframe|style|object|embed|form|noscript)\b[^>]*>.*?<\/\1>/is', '', $html));
+    }
+
+    private function fetchSourcePage(string $url, ?int $maxRetries = null): string
+    {
+        $maxRetries ??= (int) config('rss.page_parser.max_retries', 2);
+        $currentUrl = $url;
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $response = Http::timeout((int) config('rss.page_parser.timeout', config('rss.parser.timeout', 30)))
+                    ->connectTimeout((int) config('rss.page_parser.connect_timeout', config('rss.parser.connect_timeout', 10)))
+                    ->withoutVerifying()
+                    ->withoutRedirecting()
+                    ->withHeaders([
+                        'User-Agent' => (string) config('rss.parser.user_agent'),
+                        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Encoding' => 'gzip, deflate',
+                        'Cache-Control' => 'no-cache',
+                    ])
+                    ->get($currentUrl);
+
+                $status = $response->status();
+
+                if ($status === 200) {
+                    return $this->detectEncoding($response->body());
+                }
+
+                if ($response->isRedirectStatus() && $response->redirectLocation() !== null) {
+                    $currentUrl = $this->absolutizeUrl($currentUrl, $response->redirectLocation());
+
+                    continue;
+                }
+
+                if (in_array($status, [404, 410], true)) {
+                    throw new RuntimeException("Source page gone: HTTP {$status}");
+                }
+
+                if ($attempt === $maxRetries) {
+                    break;
+                }
+
+                sleep($status === 429 ? 2 ** $attempt : 1);
+            } catch (ConnectionException $exception) {
+                if ($attempt === $maxRetries) {
+                    throw new RuntimeException("Source page unreachable after {$maxRetries} attempts: {$url}", previous: $exception);
+                }
+
+                sleep(1);
+            }
+        }
+
+        throw new RuntimeException("Source page unreachable after {$maxRetries} attempts: {$url}");
+    }
+
+    private function parseHtml(string $html): DOMXPath
+    {
+        libxml_use_internal_errors(true);
+
+        $document = new DOMDocument('1.0', 'UTF-8');
+        $loaded = $document->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_COMPACT | LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
+
+        if ($loaded === false) {
+            $errors = libxml_get_errors();
+            $message = isset($errors[0]) ? trim($errors[0]->message) : 'Invalid HTML document.';
+            libxml_clear_errors();
+
+            throw new RuntimeException($message);
+        }
+
+        libxml_clear_errors();
+
+        return new DOMXPath($document);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function extractMetaTags(DOMXPath $xpath): array
+    {
+        $meta = [];
+        $nodes = $xpath->query('//meta[@content]');
+
+        if ($nodes === false) {
+            return $meta;
+        }
+
+        foreach ($nodes as $node) {
+            if (! $node instanceof DOMElement) {
+                continue;
+            }
+
+            $key = trim((string) ($node->getAttribute('property') ?: $node->getAttribute('name')));
+            $value = trim((string) $node->getAttribute('content'));
+
+            if ($key === '' || $value === '') {
+                continue;
+            }
+
+            $meta[Str::lower($key)] = $value;
+        }
+
+        return $meta;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function extractStructuredDataItems(DOMXPath $xpath): array
+    {
+        $items = [];
+        $nodes = $xpath->query('//script[@type="application/ld+json"]');
+
+        if ($nodes === false) {
+            return $items;
+        }
+
+        foreach ($nodes as $node) {
+            $payload = trim($node->textContent);
+
+            if ($payload === '') {
+                continue;
+            }
+
+            try {
+                $decoded = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+            } catch (Throwable) {
+                continue;
+            }
+
+            $items = [...$items, ...$this->flattenStructuredDataItems($decoded)];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function flattenStructuredDataItems(mixed $payload): array
+    {
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        if (array_is_list($payload)) {
+            return collect($payload)
+                ->flatMap(fn (mixed $item): array => $this->flattenStructuredDataItems($item))
+                ->values()
+                ->all();
+        }
+
+        $items = [$payload];
+
+        if (isset($payload['@graph'])) {
+            $items = [
+                ...$items,
+                ...$this->flattenStructuredDataItems($payload['@graph']),
+            ];
+        }
+
+        return collect($items)
+            ->filter(fn (mixed $item): bool => is_array($item))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return array<string, mixed>|null
+     */
+    private function extractPrimaryArticleStructuredData(array $items): ?array
+    {
+        foreach ($items as $item) {
+            $types = Arr::wrap($item['@type'] ?? []);
+            $normalizedTypes = collect($types)
+                ->map(fn (mixed $type): string => Str::lower((string) $type))
+                ->values()
+                ->all();
+
+            if (array_intersect($normalizedTypes, ['newsarticle', 'article', 'reportage'])) {
+                return $item;
+            }
+        }
+
+        return null;
+    }
+
+    private function firstNonEmptyString(mixed ...$values): ?string
+    {
+        foreach ($values as $value) {
+            if (! is_string($value)) {
+                continue;
+            }
+
+            $trimmed = trim($value);
+
+            if ($trimmed !== '') {
+                return $trimmed;
+            }
+        }
+
+        return null;
+    }
+
+    private function absolutizeUrl(string $baseUrl, string $url): string
+    {
+        $url = trim($url);
+
+        if ($url === '') {
+            return $baseUrl;
+        }
+
+        if (filter_var($url, FILTER_VALIDATE_URL)) {
+            return $url;
+        }
+
+        $parts = parse_url($baseUrl);
+        $scheme = is_string($parts['scheme'] ?? null) ? $parts['scheme'] : 'https';
+        $host = is_string($parts['host'] ?? null) ? $parts['host'] : '';
+        $port = is_int($parts['port'] ?? null) ? ':'.$parts['port'] : '';
+
+        if (str_starts_with($url, '//')) {
+            return "{$scheme}:{$url}";
+        }
+
+        if (str_starts_with($url, '/')) {
+            return "{$scheme}://{$host}{$port}{$url}";
+        }
+
+        $path = is_string($parts['path'] ?? null) ? $parts['path'] : '/';
+        $directory = rtrim(str_replace('\\', '/', dirname($path)), '/');
+        $directory = $directory === '.' ? '' : $directory;
+
+        return "{$scheme}://{$host}{$port}{$directory}/{$url}";
+    }
+
+    private function extractCanonicalUrl(DOMXPath $xpath, string $url): string
+    {
+        $nodes = $xpath->query('//link[@rel="canonical"]');
+
+        if ($nodes !== false && $nodes->length > 0 && $nodes->item(0) instanceof DOMElement) {
+            $href = trim($nodes->item(0)->getAttribute('href'));
+
+            if ($href !== '') {
+                return $this->absolutizeUrl($url, $href);
+            }
+        }
+
+        return $url;
+    }
+
+    private function extractDocumentTitle(DOMXPath $xpath): ?string
+    {
+        $nodes = $xpath->query('//title');
+
+        if ($nodes === false || $nodes->length === 0) {
+            return null;
+        }
+
+        $title = $this->sanitizeText($nodes->item(0)?->textContent ?? '');
+        $title = preg_replace('/\s+\|\s+.+$/u', '', $title) ?? $title;
+
+        return $title !== '' ? trim($title) : null;
+    }
+
+    private function extractImageCaption(DOMXPath $xpath): ?string
+    {
+        $nodes = $xpath->query('//figcaption');
+
+        if ($nodes === false || $nodes->length === 0) {
+            return null;
+        }
+
+        $caption = $this->sanitizeText($nodes->item(0)?->textContent ?? '');
+
+        return $caption !== '' ? $caption : null;
+    }
+
+    private function nodeHtml(DOMNode $node): string
+    {
+        $document = $node->ownerDocument;
+
+        if (! $document instanceof DOMDocument) {
+            return '';
+        }
+
+        return trim((string) $document->saveHTML($node));
+    }
+
+    private function extractArticleBodyHtml(DOMXPath $xpath): string
+    {
+        $queries = [
+            '//*[@article-item-type="html"]/*',
+            '//*[contains(@class, "article__body")]/*',
+            '//article//*[self::p or self::h2 or self::h3 or self::blockquote or self::ul or self::ol]',
+            '//main//*[self::p or self::h2 or self::h3 or self::blockquote or self::ul or self::ol]',
+        ];
+
+        foreach ($queries as $query) {
+            $nodes = $xpath->query($query);
+
+            if ($nodes === false || $nodes->length === 0) {
+                continue;
+            }
+
+            $html = collect(iterator_to_array($nodes))
+                ->map(fn (DOMNode $node): string => $this->nodeHtml($node))
+                ->filter()
+                ->implode("\n");
+
+            $html = $this->sanitizeHtml($html);
+
+            if ($html !== '') {
+                return $html;
+            }
+        }
+
+        return '';
+    }
+
+    private function textToHtmlParagraphs(string $text): string
+    {
+        $text = trim((string) preg_replace("/\r\n?/", "\n", $text));
+
+        if ($text === '') {
+            return '';
+        }
+
+        $paragraphs = preg_split("/\n{2,}/u", $text) ?: [$text];
+
+        return collect($paragraphs)
+            ->map(function (string $paragraph): string {
+                $paragraph = $this->sanitizeText($paragraph);
+
+                if ($paragraph === '') {
+                    return '';
+                }
+
+                return '<p>'.htmlspecialchars($paragraph, ENT_QUOTES | ENT_HTML5, 'UTF-8').'</p>';
+            })
+            ->filter()
+            ->implode("\n");
+    }
+
+    private function extractStructuredDataPersonName(mixed $value): ?string
+    {
+        if (is_string($value)) {
+            return $this->firstNonEmptyString($value);
+        }
+
+        if (is_array($value) && array_is_list($value)) {
+            foreach ($value as $item) {
+                $name = $this->extractStructuredDataPersonName($item);
+
+                if ($name !== null) {
+                    return $name;
+                }
+            }
+
+            return null;
+        }
+
+        if (is_array($value)) {
+            return $this->firstNonEmptyString((string) ($value['name'] ?? ''));
+        }
+
+        return null;
+    }
+
+    private function extractStructuredDataPersonUrl(mixed $value): ?string
+    {
+        if (is_array($value) && array_is_list($value)) {
+            foreach ($value as $item) {
+                $url = $this->extractStructuredDataPersonUrl($item);
+
+                if ($url !== null) {
+                    return $url;
+                }
+            }
+
+            return null;
+        }
+
+        if (is_array($value)) {
+            $candidate = trim((string) ($value['url'] ?? ''));
+
+            return filter_var($candidate, FILTER_VALIDATE_URL) ? $candidate : null;
+        }
+
+        return null;
+    }
+
+    private function extractStructuredDataImageUrl(mixed $value): ?string
+    {
+        if (is_string($value)) {
+            return filter_var($value, FILTER_VALIDATE_URL) ? $value : null;
+        }
+
+        if (is_array($value) && array_is_list($value)) {
+            foreach ($value as $item) {
+                $url = $this->extractStructuredDataImageUrl($item);
+
+                if ($url !== null) {
+                    return $url;
+                }
+            }
+
+            return null;
+        }
+
+        if (is_array($value)) {
+            return $this->extractStructuredDataImageUrl($value['url'] ?? null);
+        }
+
+        return null;
+    }
+
+    private function extractScriptContentById(DOMXPath $xpath, string $scriptId): ?string
+    {
+        $nodes = $xpath->query(sprintf('//script[@id="%s"]', $scriptId));
+
+        if ($nodes === false || $nodes->length === 0) {
+            return null;
+        }
+
+        $script = trim((string) $nodes->item(0)?->textContent);
+
+        return $script !== '' ? $script : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function extractMailPreloadedArticleState(DOMXPath $xpath): ?array
+    {
+        $script = $this->extractScriptContentById($xpath, 'preload_article');
+
+        if ($script !== null && preg_match('/window\.__PRELOADED_STATE__ARTICLE\s*=\s*(\{.*\})\s*;?\s*$/su', $script, $matches) === 1) {
+            try {
+                $decoded = json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR);
+            } catch (Throwable) {
+                $decoded = null;
+            }
+
+            $article = $decoded['article'] ?? null;
+
+            if (is_array($article)) {
+                return $article;
+            }
+        }
+
+        $nodes = $xpath->query('//script[contains(text(), "__PRELOADED_STATE__PAGE")]');
+
+        if ($nodes === false) {
+            return null;
+        }
+
+        foreach ($nodes as $node) {
+            $script = trim((string) $node->textContent);
+
+            if ($script === '') {
+                continue;
+            }
+
+            if (preg_match('/window\.__PRELOADED_STATE__PAGE\s*=\s*(\{.*\})\s*;?\s*$/su', $script, $matches) !== 1) {
+                continue;
+            }
+
+            try {
+                $decoded = json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR);
+            } catch (Throwable) {
+                continue;
+            }
+
+            $article = $decoded['article'] ?? null;
+
+            if (is_array($article)) {
+                return $article;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeSourceName(?string $sourceName): ?string
+    {
+        return Article::sanitizeSourceName($sourceName);
+    }
+
+    private function extractMailPreloadedImageUrl(array $article): ?string
+    {
+        foreach (Arr::wrap($article['content'] ?? []) as $block) {
+            if (! is_array($block) || ($block['type'] ?? null) !== 'picture') {
+                continue;
+            }
+
+            $url = $this->firstNonEmptyString(
+                is_string($block['attrs']['images']['large']['url'] ?? null) ? $block['attrs']['images']['large']['url'] : null,
+                is_string($block['attrs']['images']['base']['url'] ?? null) ? $block['attrs']['images']['base']['url'] : null,
+                is_string($block['data']['large']['url'] ?? null) ? $block['data']['large']['url'] : null,
+                is_string($block['data']['base']['url'] ?? null) ? $block['data']['base']['url'] : null,
+            );
+
+            if ($url !== null && filter_var($url, FILTER_VALIDATE_URL)) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
+    private function extractMailPreloadedImageCaption(array $article, ?string $title): ?string
+    {
+        foreach (Arr::wrap($article['content'] ?? []) as $block) {
+            if (! is_array($block) || ($block['type'] ?? null) !== 'picture') {
+                continue;
+            }
+
+            $caption = $this->sanitizeText((string) ($block['attrs']['description'] ?? ''));
+
+            if ($caption !== '' && $caption !== $title) {
+                return $caption;
+            }
+        }
+
+        return $this->normalizeSourceName((string) ($article['source']['title'] ?? ''));
+    }
+
+    private function extractMailPreloadedArticleBodyHtml(array $article): string
+    {
+        $descriptionHtml = $this->sanitizeHtml((string) ($article['description'] ?? ''));
+        $bodyHtml = collect(Arr::wrap($article['content'] ?? []))
+            ->filter(fn (mixed $block): bool => is_array($block) && ($block['type'] ?? null) === 'html')
+            ->map(fn (array $block): string => $this->sanitizeHtml((string) ($block['html'] ?? '')))
+            ->filter()
+            ->implode("\n");
+
+        return collect([$descriptionHtml, $bodyHtml])
+            ->filter()
+            ->implode("\n");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function extractMailPreloadedArticleData(array $article): array
+    {
+        $title = $this->firstNonEmptyString((string) ($article['title'] ?? ''));
+        $descriptionHtml = $this->sanitizeHtml((string) ($article['description'] ?? ''));
+        $description = $this->sanitizeText($descriptionHtml);
+        $bodyHtml = $this->extractMailPreloadedArticleBodyHtml($article);
+        $author = collect(Arr::wrap($article['authors'] ?? []))
+            ->map(function (mixed $author): ?string {
+                if (! is_array($author)) {
+                    return null;
+                }
+
+                return $this->firstNonEmptyString(
+                    is_string($author['name'] ?? null) ? $author['name'] : null,
+                    is_string($author['title'] ?? null) ? $author['title'] : null,
+                );
+            })
+            ->filter()
+            ->first();
+        $authorUrl = collect(Arr::wrap($article['authors'] ?? []))
+            ->map(function (mixed $author): ?string {
+                if (! is_array($author)) {
+                    return null;
+                }
+
+                $url = trim((string) ($author['href'] ?? $author['url'] ?? ''));
+
+                return filter_var($url, FILTER_VALIDATE_URL) ? $url : null;
+            })
+            ->filter()
+            ->first();
+
+        return [
+            'title' => $title,
+            'short_description' => $description !== ''
+                ? $this->makeShortDescription($description, (int) config('rss.article.short_description_length', 300))
+                : null,
+            'full_description' => $bodyHtml !== '' ? $bodyHtml : null,
+            'image_url' => $this->extractMailPreloadedImageUrl($article),
+            'image_caption' => $this->extractMailPreloadedImageCaption($article, $title),
+            'author' => $author,
+            'author_url' => $authorUrl,
+            'source_name' => $this->normalizeSourceName((string) ($article['source']['title'] ?? '')),
+            'meta_title' => $title,
+            'meta_description' => $description !== '' ? $description : null,
+            'canonical_url' => $this->firstNonEmptyString((string) ($article['href'] ?? '')),
+            'published_at' => $this->firstNonEmptyString((string) ($article['published']['rfc3339'] ?? '')),
+            'last_edited_at' => $this->firstNonEmptyString((string) ($article['modified']['rfc3339'] ?? '')),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function extractSourceArticleData(string $url, array $settings = []): array
+    {
+        $html = $this->fetchSourcePage($url);
+        $xpath = $this->parseHtml($html);
+        $meta = $this->extractMetaTags($xpath);
+        $preloadedArticle = $this->extractMailPreloadedArticleState($xpath);
+        $structuredDataItems = $this->extractStructuredDataItems($xpath);
+        $articleStructuredData = $this->extractPrimaryArticleStructuredData($structuredDataItems);
+        $structuredData = $articleStructuredData ?? [];
+        $sourceParserData = [];
+
+        if ($this->sourceArticleParser !== null) {
+            try {
+                $sourceParserData = $this->sourceArticleParser->parseHtml($html, $url, $settings);
+            } catch (Throwable $exception) {
+                $this->logger()->warning("Fallback source parser failed for {$url}: {$exception->getMessage()}");
+            }
+        }
+
+        $preloadedArticleData = is_array($preloadedArticle) ? $this->extractMailPreloadedArticleData($preloadedArticle) : [];
+        $title = $this->firstNonEmptyString(
+            is_string($preloadedArticleData['title'] ?? null) ? $preloadedArticleData['title'] : null,
+            $structuredData['headline'] ?? null,
+            $meta['og:title'] ?? null,
+            $meta['twitter:title'] ?? null,
+            $meta['yandex_recommendations_title'] ?? null,
+            $this->extractDocumentTitle($xpath),
+        );
+        $description = $this->firstNonEmptyString(
+            is_string($preloadedArticleData['meta_description'] ?? null) ? $preloadedArticleData['meta_description'] : null,
+            $structuredData['description'] ?? null,
+            $meta['widget:description'] ?? null,
+            $meta['og:description'] ?? null,
+            $meta['description'] ?? null,
+            $meta['twitter:description'] ?? null,
+        );
+        $bodyHtml = $this->firstNonEmptyString(
+            is_string($preloadedArticleData['full_description'] ?? null) ? $preloadedArticleData['full_description'] : null,
+        ) ?? '';
+        $bodyHtml = $bodyHtml !== '' ? $bodyHtml : $this->extractArticleBodyHtml($xpath);
+        $bodyHtml = $bodyHtml !== ''
+            ? $bodyHtml
+            : $this->textToHtmlParagraphs((string) ($structuredData['articleBody'] ?? ''));
+        $imageUrl = $this->firstNonEmptyString(
+            is_string($preloadedArticleData['image_url'] ?? null) ? $preloadedArticleData['image_url'] : null,
+            $this->extractStructuredDataImageUrl($structuredData['image'] ?? null),
+            $meta['og:image'] ?? null,
+            $meta['twitter:image'] ?? null,
+            $meta['yandex_recommendations_image'] ?? null,
+        );
+        $imageUrl = is_string($imageUrl) ? $this->absolutizeUrl($url, $imageUrl) : null;
+        $author = $this->firstNonEmptyString(
+            is_string($preloadedArticleData['author'] ?? null) ? $preloadedArticleData['author'] : null,
+            $this->extractStructuredDataPersonName($structuredData['author'] ?? null),
+            $meta['author'] ?? null,
+        );
+        $authorUrl = $this->firstNonEmptyString(
+            is_string($preloadedArticleData['author_url'] ?? null) ? $preloadedArticleData['author_url'] : null,
+            $this->extractStructuredDataPersonUrl($structuredData['author'] ?? null),
+        );
+        $publishedAt = $this->firstNonEmptyString(
+            is_string($preloadedArticleData['published_at'] ?? null) ? $preloadedArticleData['published_at'] : null,
+            $structuredData['datePublished'] ?? null,
+            $meta['article:published_time'] ?? null,
+        );
+        $sourceName = $this->normalizeSourceName($this->firstNonEmptyString(
+            $meta['marker:source'] ?? null,
+            is_string($preloadedArticleData['source_name'] ?? null) ? $preloadedArticleData['source_name'] : null,
+            $this->extractStructuredDataPersonName($structuredData['publisher'] ?? null),
+            $meta['og:site_name'] ?? null,
+        ));
+        $publishedAtCarbon = null;
+        $lastEditedAtCarbon = null;
+
+        if ($publishedAt !== null) {
+            try {
+                $publishedAtCarbon = Carbon::parse($publishedAt);
+            } catch (Throwable) {
+                $publishedAtCarbon = null;
+            }
+        }
+
+        if (is_string($preloadedArticleData['last_edited_at'] ?? null)) {
+            try {
+                $lastEditedAtCarbon = Carbon::parse($preloadedArticleData['last_edited_at']);
+            } catch (Throwable) {
+                $lastEditedAtCarbon = null;
+            }
+        }
+
+        $sourceData = [
+            'title' => $title,
+            'short_description' => $description !== null
+                ? $this->makeShortDescription($description, (int) config('rss.article.short_description_length', 300))
+                : null,
+            'full_description' => $bodyHtml !== '' ? $bodyHtml : null,
+            'image_url' => $imageUrl,
+            'image_caption' => $this->firstNonEmptyString(
+                is_string($preloadedArticleData['image_caption'] ?? null) ? $preloadedArticleData['image_caption'] : null,
+                $this->extractImageCaption($xpath),
+            ),
+            'author' => $author,
+            'author_url' => $authorUrl,
+            'source_name' => $sourceName,
+            'meta_title' => $title,
+            'meta_description' => $description,
+            'canonical_url' => $this->firstNonEmptyString(
+                is_string($preloadedArticleData['canonical_url'] ?? null) ? $preloadedArticleData['canonical_url'] : null,
+                $this->extractCanonicalUrl($xpath, $url),
+            ),
+            'structured_data' => $articleStructuredData,
+            'published_at' => $publishedAtCarbon,
+            'last_edited_at' => $lastEditedAtCarbon,
+        ];
+
+        return $this->mergeSourceArticleData($sourceData, $sourceParserData, $settings);
+    }
+
+    /**
+     * @param  array<string, mixed>  $articleData
+     * @return array<string, mixed>
+     */
+    private function enrichArticleDataFromSource(array $articleData, array $settings = []): array
+    {
+        $sourceUrl = is_string($articleData['source_url'] ?? null) ? trim($articleData['source_url']) : '';
+
+        if ($sourceUrl !== '' && $this->isSourcePageEnrichmentEnabled($settings)) {
+            try {
+                $sourceData = $this->extractSourceArticleData($sourceUrl, $settings);
+
+                foreach ($sourceData as $key => $value) {
+                    if ($value === null || $this->isBlankArticleAttribute($value)) {
+                        continue;
+                    }
+
+                    $articleData[$key] = $value;
+                }
+            } catch (Throwable $exception) {
+                $this->logger()->warning("Source page enrichment failed for {$sourceUrl}: {$exception->getMessage()}");
+            }
+        }
+
+        if (is_string($articleData['title'] ?? null) && $articleData['title'] !== '') {
+            $articleData['slug'] = $this->generateUniqueSlug($articleData['title']);
+        }
+
+        if (($articleData['short_description'] ?? '') === '' && ($articleData['full_description'] ?? '') !== '') {
+            $articleData['short_description'] = $this->makeShortDescription(
+                (string) $articleData['full_description'],
+                (int) config('rss.article.short_description_length', 300),
+            );
+        }
+
+        if (is_string($articleData['canonical_url'] ?? null) && $articleData['canonical_url'] !== '') {
+            $articleData['source_url'] = $articleData['canonical_url'];
+        }
+
+        if (($articleData['full_description'] ?? '') !== '') {
+            $articleData['rss_content'] = $this->sanitizeText((string) $articleData['full_description']);
+        }
+
+        $articleData['importance'] = $this->guessImportance(
+            (string) ($articleData['title'] ?? ''),
+            (string) ($articleData['short_description'] ?? ''),
+        );
+
+        $articleData['reading_time'] = $this->calculateReadingTime(
+            (string) ($articleData['full_description'] ?? $articleData['rss_content'] ?? ''),
+        );
+
+        return $articleData;
+    }
+
+    /**
+     * @param  array<string, mixed>  $primary
+     * @param  array<string, mixed>  $secondary
+     * @param  array<string, mixed>  $settings
+     * @return array<string, mixed>
+     */
+    private function mergeSourceArticleData(array $primary, array $secondary, array $settings = []): array
+    {
+        if ($secondary === []) {
+            return $primary;
+        }
+
+        $secondaryDescription = $this->firstNonEmptyString(
+            is_string($secondary['subtitle'] ?? null) ? $secondary['subtitle'] : null,
+            is_string($secondary['short_description'] ?? null) ? $secondary['short_description'] : null,
+            is_string($secondary['meta_description'] ?? null) ? $secondary['meta_description'] : null,
+        );
+        $preferSecondaryTitle = $this->hasSourcePageSelectorOverride($settings, 'source_page_title_selector');
+        $preferSecondarySubtitle = $this->hasSourcePageSelectorOverride($settings, 'source_page_subtitle_selector');
+        $preferSecondaryBody = $this->hasSourcePageSelectorOverride($settings, 'source_page_article_selector');
+        $preferSecondaryAuthor = $this->hasSourcePageSelectorOverride($settings, 'source_page_author_selector');
+        $preferSecondaryImage = $this->hasSourcePageSelectorOverride($settings, 'source_page_image_selector');
+
+        return [
+            'title' => $this->preferredSourceValue(
+                $primary['title'] ?? null,
+                $secondary['title'] ?? null,
+                $preferSecondaryTitle,
+            ),
+            'short_description' => $this->preferredSourceValue(
+                $primary['short_description'] ?? null,
+                $secondaryDescription,
+                $preferSecondarySubtitle,
+            ),
+            'full_description' => $this->preferredSourceValue(
+                $primary['full_description'] ?? null,
+                $secondary['full_description'] ?? null,
+                $preferSecondaryBody,
+            ),
+            'image_url' => $this->preferredSourceValue(
+                $primary['image_url'] ?? null,
+                $secondary['image_url'] ?? null,
+                $preferSecondaryImage,
+            ),
+            'image_caption' => $this->preferredSourceValue(
+                $primary['image_caption'] ?? null,
+                $secondary['image_caption'] ?? null,
+                $preferSecondaryImage,
+            ),
+            'author' => $this->preferredSourceValue(
+                $primary['author'] ?? null,
+                $secondary['author'] ?? null,
+                $preferSecondaryAuthor,
+            ),
+            'author_url' => $this->preferredSourceValue(
+                $primary['author_url'] ?? null,
+                $secondary['author_url'] ?? null,
+                $preferSecondaryAuthor,
+            ),
+            'source_name' => $this->preferredSourceValue(
+                $primary['source_name'] ?? null,
+                $secondary['source_name'] ?? null,
+                false,
+            ),
+            'meta_title' => $this->preferredSourceValue(
+                $primary['meta_title'] ?? null,
+                $secondary['meta_title'] ?? null,
+                $preferSecondaryTitle,
+            ),
+            'meta_description' => $this->preferredSourceValue(
+                $primary['meta_description'] ?? null,
+                $secondaryDescription,
+                $preferSecondarySubtitle,
+            ),
+            'canonical_url' => $this->preferredSourceValue(
+                $primary['canonical_url'] ?? null,
+                $secondary['canonical_url'] ?? null,
+                false,
+            ),
+            'structured_data' => $this->preferredSourceValue(
+                $primary['structured_data'] ?? null,
+                $secondary['structured_data'] ?? null,
+                false,
+            ),
+            'published_at' => $this->preferredSourceValue(
+                $primary['published_at'] ?? null,
+                $secondary['published_at'] ?? null,
+                false,
+            ),
+            'last_edited_at' => $primary['last_edited_at'] ?? null,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     */
+    private function hasSourcePageSelectorOverride(array $settings, string $key): bool
+    {
+        $value = $settings[$key] ?? null;
+
+        if (is_string($value)) {
+            return trim($value) !== '';
+        }
+
+        if (is_array($value)) {
+            return collect($value)
+                ->contains(fn (mixed $item): bool => is_string($item) && trim($item) !== '');
+        }
+
+        return false;
+    }
+
+    private function preferredSourceValue(mixed $primary, mixed $secondary, bool $preferSecondary): mixed
+    {
+        $primaryIsBlank = $this->isBlankArticleAttribute($primary);
+        $secondaryIsBlank = $this->isBlankArticleAttribute($secondary);
+
+        if ($preferSecondary && ! $secondaryIsBlank) {
+            return $secondary;
+        }
+
+        if (! $primaryIsBlank) {
+            return $primary;
+        }
+
+        return $secondaryIsBlank ? null : $secondary;
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     */
+    private function isSourcePageEnrichmentEnabled(array $settings): bool
+    {
+        $value = $settings['source_page_enabled']
+            ?? config('rss.source_pages.enabled', config('rss.page_parser.enabled', true));
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value)) {
+            return $value === 1;
+        }
+
+        if (is_string($value)) {
+            return in_array(Str::lower(trim($value)), ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return (bool) $value;
+    }
+
+    public function needsSourceEnrichment(Article $article): bool
+    {
+        if (! is_string($article->source_url) || trim($article->source_url) === '') {
+            return false;
+        }
+
+        return $this->isBlankArticleAttribute($article->full_description)
+            || $this->isBlankArticleAttribute($article->image_url)
+            || $this->isBlankArticleAttribute($article->canonical_url)
+            || $this->isBlankArticleAttribute($article->meta_description)
+            || $this->isBlankArticleAttribute($article->structured_data)
+            || $this->isBlankArticleAttribute($article->author)
+            || $this->isBlankArticleAttribute($article->source_name);
+    }
+
+    public function enrichExistingArticle(Article $article, bool $force = false): bool
+    {
+        $sourceUrl = is_string($article->source_url) ? trim($article->source_url) : '';
+
+        if ($sourceUrl === '' || (! $force && ! $this->needsSourceEnrichment($article))) {
+            return false;
+        }
+
+        /** @var array<string, mixed> $settings */
+        $settings = is_array($article->rssFeed?->extra_settings) ? $article->rssFeed->extra_settings : [];
+
+        if (! $this->isSourcePageEnrichmentEnabled($settings)) {
+            return false;
+        }
+
+        try {
+            $sourceData = $this->extractSourceArticleData($sourceUrl, $settings);
+        } catch (Throwable $exception) {
+            $this->logger()->warning("Stored article enrichment failed for {$sourceUrl}: {$exception->getMessage()}");
+
+            return false;
+        }
+
+        $updates = [];
+
+        foreach ($sourceData as $key => $value) {
+            if ($value === null || $this->isBlankArticleAttribute($value)) {
+                continue;
+            }
+
+            if (! $force && ! $this->shouldReplaceExistingArticleAttribute($article, $key)) {
+                continue;
+            }
+
+            $updates[$key] = $value;
+        }
+
+        if (isset($updates['canonical_url']) && is_string($updates['canonical_url']) && $updates['canonical_url'] !== '') {
+            if ($force || $this->isBlankArticleAttribute($article->source_url) || $this->isBlankArticleAttribute($article->canonical_url)) {
+                $updates['source_url'] = $updates['canonical_url'];
+            }
+        }
+
+        if (isset($updates['full_description']) && is_string($updates['full_description']) && $updates['full_description'] !== '') {
+            $updates['rss_content'] = $this->sanitizeText($updates['full_description']);
+        }
+
+        if ($updates === []) {
+            return false;
+        }
+
+        $sourceEditedAt = $updates['last_edited_at'] ?? null;
+        unset($updates['last_edited_at']);
+
+        $title = (string) ($updates['title'] ?? $article->title ?? '');
+        $description = (string) ($updates['short_description'] ?? $article->short_description ?? '');
+        $content = (string) ($updates['full_description'] ?? $updates['rss_content'] ?? $article->full_description ?? $article->rss_content ?? '');
+
+        if ($title !== '' || $description !== '') {
+            $updates['importance'] = $this->guessImportance($title, $description);
+        }
+
+        if ($content !== '') {
+            $updates['reading_time'] = $this->calculateReadingTime($content);
+        }
+
+        if ($updates !== []) {
+            $article->forceFill($updates)->save();
+        }
+
+        if ($sourceEditedAt instanceof Carbon) {
+            $article->forceFill([
+                'last_edited_at' => $sourceEditedAt->copy()->setTimezone((string) config('app.timezone', 'UTC')),
+            ])->saveQuietly();
+        }
+
+        return true;
+    }
+
+    private function shouldReplaceExistingArticleAttribute(Article $article, string $key): bool
+    {
+        return match ($key) {
+            'title' => $this->isBlankArticleAttribute($article->title)
+                || $this->isBlankArticleAttribute($article->full_description),
+            'short_description', 'meta_title', 'meta_description' => $this->isBlankArticleAttribute($article->{$key})
+                || $this->isBlankArticleAttribute($article->full_description),
+            'author' => $this->isBlankArticleAttribute($article->author)
+                || $article->author === config('rss.article.default_author')
+                || $article->author === $article->source_name,
+            'source_name' => $this->isBlankArticleAttribute($article->source_name)
+                || $article->source_name === config('rss.source_name'),
+            default => $this->isBlankArticleAttribute($article->getAttribute($key)),
+        };
+    }
+
+    private function isBlankArticleAttribute(mixed $value): bool
+    {
+        if (is_string($value)) {
+            return trim($value) === '';
+        }
+
+        if (is_array($value)) {
+            return $value === [];
+        }
+
+        return $value === null;
+    }
+
     /**
      * @throws \RuntimeException
      */
-    public function fetchFeedXml(string $url): SimpleXMLElement
+    public function fetchFeedXml(string $url, Response|ConnectionException|null $firstAttemptResult = null): SimpleXMLElement
     {
-        $body = $this->fetchWithRetry($url);
+        $body = $this->fetchWithRetry($url, firstAttemptResult: $firstAttemptResult);
         $body = $this->detectEncoding($body);
 
         try {
@@ -305,7 +1465,7 @@ class RssParserService
     private function extractTitle(SimpleXMLElement $item): string
     {
         $title = $this->sanitizeText((string) $item->title);
-        $title = preg_replace('/\s+(?:[-—|]\s*(?:Mail\.ru|Новости Mail))$/u', '', $title) ?? $title;
+        $title = preg_replace('/\s+(?:[-—|]\s*(?:Mail\.ru|[^|—-]*\bMail\b))$/u', '', $title) ?? $title;
 
         return trim(html_entity_decode($title, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
@@ -565,8 +1725,13 @@ class RssParserService
 
     private function isDuplicate(string $guid, string $url): bool
     {
+        return $this->findDuplicateArticle($guid, $url) instanceof Article;
+    }
+
+    private function findDuplicateArticle(string $guid, string $url): ?Article
+    {
         if ($guid === '' && $url === '') {
-            return false;
+            return null;
         }
 
         return Article::withTrashed()
@@ -580,7 +1745,72 @@ class RssParserService
                     $query->{$method}('source_url', $url);
                 }
             })
-            ->exists();
+            ->latest('id')
+            ->first();
+    }
+
+    private function refreshDuplicateArticle(Article $article, SimpleXMLElement $item, RssFeed $feed): bool
+    {
+        if ($article->trashed()) {
+            return false;
+        }
+
+        $updates = [];
+        $subCategory = $this->resolveFeedSubCategory($feed);
+        $link = $this->extractLink($item);
+        $guid = $this->extractGuid($item);
+        $description = $this->extractDescription($item);
+        $imageUrl = $this->extractImage($item);
+        $author = $this->extractAuthor($item);
+        $sourceName = $this->normalizeSourceName($feed->source_name ?: (string) config('rss.source_name', ''));
+
+        if ($this->isBlankArticleAttribute($article->source_url) && $link !== '') {
+            $updates['source_url'] = $link;
+        }
+
+        if ($this->isBlankArticleAttribute($article->source_guid) && $guid !== '') {
+            $updates['source_guid'] = $guid;
+        }
+
+        if ($this->isBlankArticleAttribute($article->rss_feed_id) && $feed->exists) {
+            $updates['rss_feed_id'] = $feed->id;
+        }
+
+        if ($this->isBlankArticleAttribute($article->sub_category_id) && $subCategory?->id !== null) {
+            $updates['sub_category_id'] = $subCategory->id;
+        }
+
+        if ($this->isBlankArticleAttribute($article->short_description) && $description !== '') {
+            $updates['short_description'] = $this->makeShortDescription(
+                $description,
+                (int) config('rss.article.short_description_length', 300),
+            );
+        }
+
+        if ($this->isBlankArticleAttribute($article->image_url) && $imageUrl !== null) {
+            $updates['image_url'] = $imageUrl;
+        }
+
+        if ($this->isBlankArticleAttribute($article->author) && $author !== null) {
+            $updates['author'] = $author;
+        }
+
+        if ($this->isBlankArticleAttribute($article->source_name) && $sourceName !== null) {
+            $updates['source_name'] = $sourceName;
+        }
+
+        if ($this->isBlankArticleAttribute($article->published_at)) {
+            $updates['published_at'] = $this->extractPubDate($item);
+        }
+
+        $updates['rss_parsed_at'] = now();
+
+        if ($updates !== []) {
+            $article->forceFill($updates)->saveQuietly();
+            $article->refresh();
+        }
+
+        return $this->enrichExistingArticle($article) || $updates !== [];
     }
 
     /**
@@ -594,7 +1824,7 @@ class RssParserService
         $description = $this->extractDescription($item);
         $fullHtml = $this->extractFullHtml($item);
         $content = $fullHtml !== '' ? $fullHtml : $description;
-        $isFeatured = $feed->auto_featured && ! Article::query()->where('rss_feed_id', $rssFeedId)->exists();
+        $isFeatured = $feed->auto_featured && ! Article::query()->fromFeed($rssFeedId)->exists();
         $shortDescriptionLength = (int) ($extraSettings['short_description_length'] ?? config('rss.article.short_description_length', 300));
         $status = ArticleStatus::fromValue(
             $extraSettings['status'] ?? null,
@@ -604,16 +1834,21 @@ class RssParserService
             $extraSettings['content_type'] ?? null,
             ArticleContentType::News,
         );
-        $sourceName = is_string($extraSettings['source_name'] ?? null) && $extraSettings['source_name'] !== ''
-            ? (string) $extraSettings['source_name']
-            : $feed->source_name;
+        $sourceName = $this->normalizeSourceName(
+            is_string($extraSettings['source_name'] ?? null) && $extraSettings['source_name'] !== ''
+                ? (string) $extraSettings['source_name']
+                : ($feed->source_name ?: (string) config('rss.source_name', '')),
+        );
+        $defaultAuthor = is_string($extraSettings['default_author'] ?? null) && $extraSettings['default_author'] !== ''
+            ? (string) $extraSettings['default_author']
+            : (string) config('rss.article.default_author', 'Редакция');
         $author = $this->extractAuthor($item)
-            ?? (is_string($extraSettings['default_author'] ?? null) && $extraSettings['default_author'] !== ''
-                ? (string) $extraSettings['default_author']
-                : $sourceName);
+            ?? ($defaultAuthor !== '' ? $defaultAuthor : $sourceName);
+        $subCategory = $this->resolveFeedSubCategory($feed);
 
-        return [
+        $articleData = [
             'category_id' => $categoryId,
+            'sub_category_id' => $subCategory?->id,
             'rss_feed_id' => $rssFeedId,
             'title' => $title,
             'slug' => $this->generateUniqueSlug($title),
@@ -636,6 +1871,68 @@ class RssParserService
             'published_at' => $this->extractPubDate($item),
             'rss_parsed_at' => now(),
         ];
+
+        return $this->enrichArticleDataFromSource($articleData, $extraSettings);
+    }
+
+    private function resolveFeedSubCategory(RssFeed $feed): ?SubCategory
+    {
+        /** @var array<string, mixed> $extraSettings */
+        $extraSettings = is_array($feed->extra_settings) ? $feed->extra_settings : [];
+        $subCategoryName = trim((string) ($extraSettings['sub_category_name'] ?? ''));
+        $subCategorySlug = trim((string) ($extraSettings['sub_category_slug'] ?? ''));
+
+        if ($subCategoryName === '' && str_contains($feed->title, ':')) {
+            [$feedCategoryName, $feedSubCategoryName] = array_map('trim', explode(':', $feed->title, 2));
+            $categoryName = $feed->relationLoaded('category')
+                ? ($feed->category?->name ?? '')
+                : (string) Category::query()->whereKey($feed->category_id)->value('name');
+
+            if (
+                $feedSubCategoryName !== ''
+                && $categoryName !== ''
+                && Str::lower($feedCategoryName) === Str::lower($categoryName)
+            ) {
+                $subCategoryName = $feedSubCategoryName;
+            }
+        }
+
+        if ($subCategorySlug === '' && $subCategoryName !== '') {
+            $subCategorySlug = Str::slug(strtr($subCategoryName, self::RU_TRANSLIT));
+        }
+
+        if ($subCategoryName === '' && $subCategorySlug === '') {
+            return null;
+        }
+
+        $query = SubCategory::query()->where('category_id', $feed->category_id);
+
+        if ($subCategorySlug !== '') {
+            $existingSubCategory = (clone $query)->where('slug', $subCategorySlug)->first();
+
+            if ($existingSubCategory instanceof SubCategory) {
+                return $existingSubCategory;
+            }
+        }
+
+        if ($subCategoryName !== '') {
+            $existingSubCategory = (clone $query)->where('name', $subCategoryName)->first();
+
+            if ($existingSubCategory instanceof SubCategory) {
+                return $existingSubCategory;
+            }
+
+            return SubCategory::query()->create([
+                'category_id' => $feed->category_id,
+                'name' => $subCategoryName,
+                'slug' => $subCategorySlug !== '' ? $subCategorySlug : null,
+                'description' => null,
+                'is_active' => true,
+                'order' => 0,
+            ]);
+        }
+
+        return null;
     }
 
     private function guessImportance(string $title, string $desc): int
@@ -716,8 +2013,11 @@ class RssParserService
                 return null;
             }
 
-            if ($this->isDuplicate($guid, $link)) {
+            $existingArticle = $this->findDuplicateArticle($guid, $link);
+
+            if ($existingArticle instanceof Article) {
                 $this->logger()->warning("Duplicate found: {$guid}");
+                $this->refreshDuplicateArticle($existingArticle, $item, $feed);
 
                 return null;
             }
@@ -748,6 +2048,36 @@ class RssParserService
      */
     public function parseFeed(RssFeed $feed, string $triggeredBy = 'scheduler'): array
     {
+        return $this->parseFeedWithPrefetchedAttempt($feed, $triggeredBy);
+    }
+
+    /**
+     * @param  iterable<int, \App\Models\RssFeed>  $feeds
+     * @return array<int, array<string, int|string|null>>
+     */
+    public function parseFeeds(iterable $feeds, string $triggeredBy = 'scheduler'): array
+    {
+        $feeds = collect($feeds)->values();
+        $prefetchedAttempts = $this->prefetchFeedAttemptResults($feeds);
+
+        return $feeds
+            ->mapWithKeys(function (RssFeed $feed) use ($triggeredBy, $prefetchedAttempts): array {
+                return [
+                    $feed->id => $this->parseFeedWithPrefetchedAttempt(
+                        $feed,
+                        $triggeredBy,
+                        $prefetchedAttempts[$feed->id] ?? null,
+                    ),
+                ];
+            })
+            ->all();
+    }
+
+    private function parseFeedWithPrefetchedAttempt(
+        RssFeed $feed,
+        string $triggeredBy = 'scheduler',
+        Response|ConnectionException|null $firstAttemptResult = null,
+    ): array {
         $this->logger()->info("Starting parse of feed: {$feed->title} ({$feed->url})");
 
         $log = RssParseLog::query()->create([
@@ -765,7 +2095,7 @@ class RssParserService
         $itemErrors = [];
 
         try {
-            $xml = $this->fetchFeedXml($feed->url);
+            $xml = $this->fetchFeedXml($feed->url, $firstAttemptResult);
             $items = $this->getFeedItems($xml);
             $total = count($items);
 
@@ -845,18 +2175,72 @@ class RssParserService
     }
 
     /**
+     * @param  iterable<int, \App\Models\RssFeed>  $feeds
+     * @return array<int, \Illuminate\Http\Client\Response|\Illuminate\Http\Client\ConnectionException>
+     */
+    private function prefetchFeedAttemptResults(iterable $feeds, int $maxRetries = 3): array
+    {
+        $feeds = collect($feeds)->values();
+
+        if ($feeds->count() < 2) {
+            return [];
+        }
+
+        $feedIds = $feeds->map(fn (RssFeed $feed): int => $feed->id)->all();
+        $concurrency = max(1, min((int) config('rss.parser.batch_concurrency', 5), $feeds->count()));
+        $attemptResults = [];
+
+        $batch = Http::batch(function (Batch $batch) use ($feeds, $maxRetries): void {
+            foreach ($feeds as $feed) {
+                $this->configureFeedRequest($batch->as((string) $feed->id), $feed->url, $feed->url, 1, $maxRetries)
+                    ->get('{+endpoint}{?query*}');
+            }
+        })
+            ->concurrency($concurrency)
+            ->before(function (Batch $batch) use ($feedIds, $concurrency): void {
+                $this->logger()->debug('RSS batch sending.', [
+                    'feed_ids' => $feedIds,
+                    'concurrency' => $concurrency,
+                    'total' => $batch->totalRequests,
+                ]);
+            })
+            ->catch(function (Batch $batch, string|int $key, Response|RequestException|ConnectionException $result) use (&$attemptResults): void {
+                unset($batch);
+
+                if ($result instanceof Response || $result instanceof ConnectionException) {
+                    $attemptResults[(int) $key] = $result;
+                }
+            })
+            ->finally(function (Batch $batch) use ($feedIds): void {
+                $this->logger()->debug('RSS batch finished.', [
+                    'feed_ids' => $feedIds,
+                    'processed' => $batch->processedRequests(),
+                    'failed' => $batch->failedRequests,
+                    'finished' => $batch->finished(),
+                ]);
+            });
+
+        foreach ($batch->send() as $key => $response) {
+            if ($response instanceof Response) {
+                $attemptResults[(int) $key] = $response;
+            }
+        }
+
+        return $attemptResults;
+    }
+
+    /**
      * @return array<int, array<string, int|string|null>>
      */
     public function parseAllFeeds(string $triggeredBy = 'scheduler'): array
     {
-        return RssFeed::query()
-            ->active()
-            ->with('category')
-            ->get()
-            ->mapWithKeys(function (RssFeed $feed) use ($triggeredBy): array {
-                return [$feed->id => $this->parseFeed($feed, $triggeredBy)];
-            })
-            ->all();
+        return $this->parseFeeds(
+            RssFeed::query()
+                ->active()
+                ->with('category')
+                ->get(),
+            $triggeredBy,
+        );
     }
 
     /**
@@ -864,14 +2248,13 @@ class RssParserService
      */
     public function parseDueFeeds(string $triggeredBy = 'scheduler'): array
     {
-        return RssFeed::query()
-            ->dueForParsing()
-            ->with('category')
-            ->get()
-            ->mapWithKeys(function (RssFeed $feed) use ($triggeredBy): array {
-                return [$feed->id => $this->parseFeed($feed, $triggeredBy)];
-            })
-            ->all();
+        return $this->parseFeeds(
+            RssFeed::query()
+                ->dueForParsing()
+                ->with('category')
+                ->get(),
+            $triggeredBy,
+        );
     }
 
     /**
@@ -961,7 +2344,7 @@ class RssParserService
                 'category_id' => $category->id,
                 'title' => 'Imported Feed',
                 'url' => $url,
-                'source_name' => 'Новости Mail',
+                'source_name' => (string) config('rss.source_name', ''),
                 'auto_publish' => false,
                 'auto_featured' => false,
                 'fetch_interval' => 15,

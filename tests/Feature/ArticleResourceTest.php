@@ -37,6 +37,7 @@ it('builds the article show resource payload', function () {
         'category_id' => $category->id,
         'sub_category_id' => $subCategory->id,
         'title' => 'Test Article',
+        'source_name' => '',
         'short_description' => 'Short',
         'full_description' => 'Full',
         'rss_content' => 'Fallback',
@@ -81,6 +82,7 @@ it('builds the article show resource payload', function () {
 
     expect($resource['id'])->toBe($article->id)
         ->and($resource['title'])->toBe('Test Article')
+        ->and($resource['source_name'])->toBeNull()
         ->and($resource['status'])->toBe(ArticleStatus::Published->value)
         ->and($resource['status_label'])->toBe('Опубликовано')
         ->and($resource['content_type'])->toBe(ArticleContentType::News->value)
@@ -108,12 +110,15 @@ it('builds the article list resource without show-only fields', function () {
     $category = Category::factory()->create();
     $article = Article::factory()->create([
         'category_id' => $category->id,
+        'source_name' => '',
         'status' => 'published',
         'published_at' => now()->subHour(),
     ]);
 
     $resource = (new ArticleListResource($article->load('category')))
         ->toArray(Request::create('/articles', 'GET'));
+
+    expect($resource['source_name'])->toBeNull();
 
     expect($resource)
         ->toHaveKey('reading_time_text')

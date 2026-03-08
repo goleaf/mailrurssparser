@@ -10,6 +10,7 @@ use App\Http\Resources\ArticleResource;
 use App\Models\Article;
 use App\Models\Category;
 use App\Services\RelatedArticlesService;
+use App\Services\RequestLocationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class ArticleController extends Controller
 {
     public function __construct(
         private readonly RelatedArticlesService $relatedArticles,
+        private readonly RequestLocationService $requestLocation,
     ) {}
 
     public function index(ArticleIndexRequest $request): ArticleCollection
@@ -39,17 +41,16 @@ class ArticleController extends Controller
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        $article = Article::query()
-            ->published()
-            ->with(['category', 'tags', 'subCategory', 'rssFeed'])
-            ->where('slug', $slug)
-            ->firstOrFail();
+        $article = $this->resolvePublishedArticle($slug, ['category', 'tags', 'subCategory', 'rssFeed']);
 
         if ($request->boolean('track', true)) {
+            $location = $this->requestLocation->resolve($request);
+
             $article->incrementViews(
                 $this->hashIp($request),
                 $this->hashSession($request),
                 [
+                    ...$location,
                     'device_type' => $this->detectDeviceType($request),
                     'referrer_type' => $this->detectReferrerType($request),
                     'referrer_domain' => $this->extractUriHost($request->headers->get('referer')),
@@ -125,7 +126,7 @@ class ArticleController extends Controller
         return new ArticleCollection(
             Article::query()
                 ->published()
-                ->where('category_id', $category->id)
+                ->inCategory($category)
                 ->pinned()
                 ->with(['category', 'tags'])
                 ->orderByDesc('published_at')
@@ -135,7 +136,7 @@ class ArticleController extends Controller
 
     public function related(string $slug): ArticleCollection
     {
-        $article = Article::query()->published()->where('slug', $slug)->firstOrFail();
+        $article = $this->resolvePublishedArticle($slug);
 
         return new ArticleCollection($this->relatedArticles->getRelated($article, 6));
     }
@@ -154,9 +155,27 @@ class ArticleController extends Controller
 
     public function similar(string $slug): ArticleCollection
     {
-        $article = Article::query()->published()->where('slug', $slug)->firstOrFail();
+        $article = $this->resolvePublishedArticle($slug);
 
         return new ArticleCollection($this->relatedArticles->getSimilar($article, 5));
+    }
+
+    /**
+     * @param  array<int, string>  $relations
+     */
+    private function resolvePublishedArticle(string $identifier, array $relations = []): Article
+    {
+        return Article::query()
+            ->published()
+            ->with($relations)
+            ->where(function (Builder $query) use ($identifier): void {
+                $query->where('slug', $identifier);
+
+                if (ctype_digit($identifier)) {
+                    $query->orWhere((new Article)->getQualifiedKeyName(), (int) $identifier);
+                }
+            })
+            ->firstOrFail();
     }
 
     /**
@@ -239,20 +258,24 @@ class ArticleController extends Controller
 
     private function detectReferrerType(Request $request): string
     {
-        $referer = Str::lower((string) $request->headers->get('referer'));
-        $refererAuthority = Str::lower($this->extractUriAuthority($request->headers->get('referer')) ?? '');
+        $referer = str((string) $request->headers->get('referer'))->trim()->lower();
+        $refererAuthority = Str::lower($this->extractUriAuthority((string) $referer) ?? '');
         $appAuthority = Str::lower($this->extractUriAuthority((string) config('app.url')) ?? '');
 
-        if ($referer === '') {
+        if ($referer->isEmpty()) {
             return 'direct';
         }
 
-        if (Str::contains($referer, ['google.', 'yandex.', 'bing.'])) {
+        if ($referer->contains(['google.', 'yandex.', 'bing.'])) {
             return 'search';
         }
 
-        if (Str::contains($referer, ['vk.com', 't.me', 'telegram', 'facebook.com', 'twitter.com', 'x.com'])) {
+        if ($referer->contains(['vk.com', 't.me', 'telegram', 'facebook.com', 'twitter.com', 'x.com'])) {
             return 'social';
+        }
+
+        if ($referer->doesntContain(['http://', 'https://'])) {
+            return 'other';
         }
 
         if ($refererAuthority !== '' && $appAuthority !== '' && $refererAuthority === $appAuthority) {

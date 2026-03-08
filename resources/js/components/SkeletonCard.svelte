@@ -13,7 +13,7 @@
 <div class="rounded-3xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900">
     <Skeleton class={`${imageClass} w-full rounded-2xl`} />
     <div class="mt-4 space-y-3">
-        {#each lineWidths as width (`skeleton-line-${width}`)}
+        {#each lineWidths as width, index (`skeleton-line-${index}`)}
             <Skeleton class={`h-4 ${width}`} />
         {/each}
     </div>

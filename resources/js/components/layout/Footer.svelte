@@ -71,13 +71,32 @@
     });
 </script>
 
-<footer class="border-t border-slate-200 bg-slate-950 text-slate-100 dark:border-white/10 dark:bg-black">
+<footer class="relative overflow-hidden border-t border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.12),transparent_26%),linear-gradient(180deg,#020617,#000000)] text-slate-100 dark:border-white/10">
+    <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"></div>
     <div class="mx-auto max-w-7xl px-4 py-14 lg:px-6">
+        <div class="mb-10 grid gap-4 rounded-[2.25rem] border border-white/10 bg-white/6 p-5 backdrop-blur sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-6">
+            <div>
+                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
+                    Редакционная подписка
+                </div>
+                <div class="mt-2 text-2xl font-semibold text-white">
+                    Ежедневный обзор важных тем, без перегруза и случайного шума.
+                </div>
+            </div>
+            <a
+                href="/#/search"
+                class="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-100"
+            >
+                Открыть поиск
+                <ArrowUpRight class="size-4" />
+            </a>
+        </div>
+
         <div class="grid gap-10 lg:grid-cols-[1.1fr_1fr_0.8fr_1.1fr]">
             <section class="space-y-5">
                 <div class="flex items-center gap-3">
                     <span
-                        class="flex size-12 items-center justify-center rounded-2xl bg-white text-xl text-slate-900"
+                        class="flex size-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ffffff,#bae6fd)] text-xl text-slate-900"
                     >
                         🗞️
                     </span>
@@ -180,7 +199,7 @@
                 </a>
             </section>
 
-            <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+            <section class="rounded-[2rem] border border-white/10 bg-white/7 p-6 backdrop-blur">
                 <div class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300">
                     Рассылка
                 </div>

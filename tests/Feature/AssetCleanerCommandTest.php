@@ -41,6 +41,21 @@ it('fails when the requested asset type is unknown', function () {
         ->assertExitCode(SymfonyCommand::FAILURE);
 });
 
+it('skips stale assets protected by config', function () {
+    assetCleanerPutFile('build/assets/legacy-protected.js', 'console.log("protected");');
+
+    config([
+        'asset-cleaner.protected_files' => array_merge(
+            config('asset-cleaner.protected_files', []),
+            ['build/assets/legacy-protected.js'],
+        ),
+    ]);
+
+    $this->artisan('assets:scan')
+        ->doesntExpectOutputToContain('build/assets/legacy-protected.js')
+        ->assertExitCode(SymfonyCommand::SUCCESS);
+});
+
 it('deletes stale assets and creates a backup by default', function () {
     $this->travelTo(now()->setTime(12, 0, 0));
 
@@ -86,6 +101,7 @@ function assetCleanerDeleteArtifacts(): void
         public_path('build/assets/legacy-dry-run.css'),
         public_path('build/assets/legacy-filter.css'),
         public_path('build/assets/legacy-filter.js'),
+        public_path('build/assets/legacy-protected.js'),
         public_path('build/assets/legacy-unused-scan.js'),
         public_path('icons/legacy-unused-scan.png'),
     ] as $path) {

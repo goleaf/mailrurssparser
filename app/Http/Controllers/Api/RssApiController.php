@@ -69,7 +69,7 @@ class RssApiController extends Controller
         $parser = app(RssParserService::class);
         $feeds = RssFeed::query()
             ->active()
-            ->where('category_id', $category->id)
+            ->inCategory($category)
             ->get();
 
         if ($feeds->isEmpty()) {
@@ -85,8 +85,7 @@ class RssApiController extends Controller
             ], 424);
         }
 
-        $results = $feeds->map(fn (RssFeed $feed): array => $parser->parseFeed($feed, 'api'))
-            ->values();
+        $results = collect($parser->parseFeeds($feeds, 'api'))->values();
 
         return response()->json([
             'success' => $results->every(fn (array $result): bool => ! isset($result['error'])),

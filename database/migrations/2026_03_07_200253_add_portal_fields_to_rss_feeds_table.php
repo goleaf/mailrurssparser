@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('rss_feeds', function (Blueprint $table) {
-            $table->string('source_name')->default('Новости Mail')->after('url');
+            $table->string('source_name')->default('')->after('url');
             $table->string('language', 5)->default('ru')->after('source_name');
             $table->boolean('auto_publish')->default(true)->after('is_active');
             $table->boolean('auto_featured')->default(false)->after('auto_publish');

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\Eloquent\Factories\Factory as EloquentFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithCachedConfig;
 use Illuminate\Foundation\Testing\WithCachedRoutes;
@@ -47,13 +48,23 @@ expect()->extend('toBeOne', function () {
 | Functions
 |--------------------------------------------------------------------------
 |
-| While Pest is very powerful out-of-the-box, you may have some testing code specific to your
-| project that you don't want to repeat in every file. Here you can also expose helpers as
-| global functions to help you to reduce the number of lines of code in your test files.
+| While Pest is very powerful out-of-the-box, you may have some testing code specific to
+| your project that you don't want to repeat in every file. Here you can also expose
+| helpers as global functions to help you to reduce the number of lines of code in your
+| test files.
 |
 */
 
-function something()
+/**
+ * Execute a callback while transient factories avoid expanding belongs-to parents.
+ */
+function withoutExpandedFactoryRelationships(callable $callback): mixed
 {
-    // ..
+    EloquentFactory::dontExpandRelationshipsByDefault();
+
+    try {
+        return $callback();
+    } finally {
+        EloquentFactory::expandRelationshipsByDefault();
+    }
 }

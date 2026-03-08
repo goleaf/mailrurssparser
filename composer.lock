@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "787d858b342c312868a0aec27850c9e8",
+    "content-hash": "f0cb29c615ccb41a9a8ab5e79aac1543",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -971,6 +971,89 @@
             "time": "2025-09-16T12:23:56+00:00"
         },
         {
+            "name": "devrabiul/laravel-geo-genius",
+            "version": "v1.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/devrabiul/laravel-geo-genius.git",
+                "reference": "3884460d3af7e36af7c7ae301714e687e45cdbf6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/devrabiul/laravel-geo-genius/zipball/3884460d3af7e36af7c7ae301714e687e45cdbf6",
+                "reference": "3884460d3af7e36af7c7ae301714e687e45cdbf6",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "LaravelGeoGenius": "Devrabiul\\LaravelGeoGenius\\Facades\\LaravelGeoGenius"
+                    },
+                    "providers": [
+                        "Devrabiul\\LaravelGeoGenius\\LaravelGeoGeniusServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/utils/GeniusTranslate.php",
+                    "src/utils/GeniusHelpers.php"
+                ],
+                "psr-4": {
+                    "Devrabiul\\LaravelGeoGenius\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Muhammad Rabiul",
+                    "email": "devrabiul@gmail.com"
+                }
+            ],
+            "description": "Laravel GeoGenius — A powerful, intelligent toolkit for geo-location, timezone, and locale-based features in Laravel applications.",
+            "homepage": "https://github.com/devrabiul/laravel-geo-genius",
+            "keywords": [
+                "IP Location",
+                "context-aware",
+                "country detection",
+                "datetime",
+                "geo",
+                "geo genius",
+                "geolocation",
+                "internationalization",
+                "laravel",
+                "laravel timezone",
+                "locale",
+                "region detection",
+                "timezone",
+                "timezone conversion",
+                "timezone detection",
+                "user timezone"
+            ],
+            "support": {
+                "issues": "https://github.com/devrabiul/laravel-geo-genius/issues",
+                "source": "https://github.com/devrabiul/laravel-geo-genius/tree/v1.5"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/devrabiul",
+                    "type": "github"
+                },
+                {
+                    "url": "https://ko-fi.com/devrabiul",
+                    "type": "ko_fi"
+                }
+            ],
+            "time": "2025-12-17T09:49:46+00:00"
+        },
+        {
             "name": "dflydev/dot-access-data",
             "version": "v3.0.3",
             "source": {
@@ -1902,6 +1985,64 @@
             "time": "2025-12-03T09:33:47+00:00"
         },
         {
+            "name": "geoip2/geoip2",
+            "version": "v3.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/maxmind/GeoIP2-php.git",
+                "reference": "49fceddd694295e76e970a32848e03bb19e56b42"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/maxmind/GeoIP2-php/zipball/49fceddd694295e76e970a32848e03bb19e56b42",
+                "reference": "49fceddd694295e76e970a32848e03bb19e56b42",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "maxmind-db/reader": "^1.13.0",
+                "maxmind/web-service-common": "~0.11",
+                "php": ">=8.1"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "3.*",
+                "phpstan/phpstan": "*",
+                "phpunit/phpunit": "^10.0",
+                "squizlabs/php_codesniffer": "4.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "GeoIp2\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Gregory J. Oschwald",
+                    "email": "goschwald@maxmind.com",
+                    "homepage": "https://www.maxmind.com/"
+                }
+            ],
+            "description": "MaxMind GeoIP2 PHP API",
+            "homepage": "https://github.com/maxmind/GeoIP2-php",
+            "keywords": [
+                "IP",
+                "geoip",
+                "geoip2",
+                "geolocation",
+                "maxmind"
+            ],
+            "support": {
+                "issues": "https://github.com/maxmind/GeoIP2-php/issues",
+                "source": "https://github.com/maxmind/GeoIP2-php/tree/v3.3.0"
+            },
+            "time": "2025-11-20T18:50:15+00:00"
+        },
+        {
             "name": "graham-campbell/result-type",
             "version": "v1.1.4",
             "source": {
@@ -2518,6 +2659,83 @@
                 "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.21"
             },
             "time": "2026-02-24T20:21:28+00:00"
+        },
+        {
+            "name": "jayanta/laravel-threat-detection",
+            "version": "v1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jay123anta/laravel-threat-detection.git",
+                "reference": "93e70b67126e5f5c98843635c1b53c5ed3a4e9b7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jay123anta/laravel-threat-detection/zipball/93e70b67126e5f5c98843635c1b53c5ed3a4e9b7",
+                "reference": "93e70b67126e5f5c98843635c1b53c5ed3a4e9b7",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/cache": "^10.0|^11.0|^12.0",
+                "illuminate/database": "^10.0|^11.0|^12.0",
+                "illuminate/http": "^10.0|^11.0|^12.0",
+                "illuminate/notifications": "^10.0|^11.0|^12.0",
+                "illuminate/routing": "^10.0|^11.0|^12.0",
+                "illuminate/support": "^10.0|^11.0|^12.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8.0|^9.0|^10.0",
+                "phpunit/phpunit": "^10.0|^11.0"
+            },
+            "suggest": {
+                "laravel/sanctum": "Recommended for API route authentication (^3.0|^4.0)",
+                "laravel/slack-notification-channel": "Required for Slack notifications on Laravel 11+ (^3.0)"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "ThreatDetection": "JayAnta\\ThreatDetection\\Facades\\ThreatDetection"
+                    },
+                    "providers": [
+                        "JayAnta\\ThreatDetection\\ThreatDetectionServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "JayAnta\\ThreatDetection\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jay Anta",
+                    "email": "jay123anta@gmail.com",
+                    "homepage": "https://github.com/jay123anta"
+                }
+            ],
+            "description": "Real-time threat detection and security logging for Laravel applications. Detects SQL injection, XSS, DDoS, scanner bots, and more.",
+            "homepage": "https://github.com/jay123anta/laravel-honeypot",
+            "keywords": [
+                "Honeypot",
+                "ddos",
+                "firewall",
+                "laravel",
+                "security",
+                "sql-injection",
+                "threat-detection",
+                "waf",
+                "xss"
+            ],
+            "support": {
+                "issues": "https://github.com/jay123anta/laravel-threat-detection/issues",
+                "source": "https://github.com/jay123anta/laravel-threat-detection/tree/v1.1.0"
+            },
+            "time": "2026-03-07T19:06:12+00:00"
         },
         {
             "name": "jaybizzle/crawler-detect",
@@ -4182,6 +4400,121 @@
                 "wiki": "https://dev.matomo.org/"
             },
             "time": "2026-01-21T07:53:39+00:00"
+        },
+        {
+            "name": "maxmind-db/reader",
+            "version": "v1.13.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/maxmind/MaxMind-DB-Reader-php.git",
+                "reference": "2194f58d0f024ce923e685cdf92af3daf9951908"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/maxmind/MaxMind-DB-Reader-php/zipball/2194f58d0f024ce923e685cdf92af3daf9951908",
+                "reference": "2194f58d0f024ce923e685cdf92af3daf9951908",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.2"
+            },
+            "conflict": {
+                "ext-maxminddb": "<1.11.1 || >=2.0.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "3.*",
+                "phpstan/phpstan": "*",
+                "phpunit/phpunit": ">=8.0.0,<10.0.0",
+                "squizlabs/php_codesniffer": "4.*"
+            },
+            "suggest": {
+                "ext-bcmath": "bcmath or gmp is required for decoding larger integers with the pure PHP decoder",
+                "ext-gmp": "bcmath or gmp is required for decoding larger integers with the pure PHP decoder",
+                "ext-maxminddb": "A C-based database decoder that provides significantly faster lookups",
+                "maxmind-db/reader-ext": "C extension for significantly faster IP lookups (install via PIE: pie install maxmind-db/reader-ext)"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MaxMind\\Db\\": "src/MaxMind/Db"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Gregory J. Oschwald",
+                    "email": "goschwald@maxmind.com",
+                    "homepage": "https://www.maxmind.com/"
+                }
+            ],
+            "description": "MaxMind DB Reader API",
+            "homepage": "https://github.com/maxmind/MaxMind-DB-Reader-php",
+            "keywords": [
+                "database",
+                "geoip",
+                "geoip2",
+                "geolocation",
+                "maxmind"
+            ],
+            "support": {
+                "issues": "https://github.com/maxmind/MaxMind-DB-Reader-php/issues",
+                "source": "https://github.com/maxmind/MaxMind-DB-Reader-php/tree/v1.13.1"
+            },
+            "time": "2025-11-21T22:24:26+00:00"
+        },
+        {
+            "name": "maxmind/web-service-common",
+            "version": "v0.11.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/maxmind/web-service-common-php.git",
+                "reference": "c309236b5a5555b96cf560089ec3cead12d845d2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/maxmind/web-service-common-php/zipball/c309236b5a5555b96cf560089ec3cead12d845d2",
+                "reference": "c309236b5a5555b96cf560089ec3cead12d845d2",
+                "shasum": ""
+            },
+            "require": {
+                "composer/ca-bundle": "^1.0.3",
+                "ext-curl": "*",
+                "ext-json": "*",
+                "php": ">=8.1"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "3.*",
+                "phpstan/phpstan": "*",
+                "phpunit/phpunit": "^10.0",
+                "squizlabs/php_codesniffer": "4.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MaxMind\\Exception\\": "src/Exception",
+                    "MaxMind\\WebService\\": "src/WebService"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Gregory Oschwald",
+                    "email": "goschwald@maxmind.com"
+                }
+            ],
+            "description": "Internal MaxMind Web Service API",
+            "homepage": "https://github.com/maxmind/web-service-common-php",
+            "support": {
+                "issues": "https://github.com/maxmind/web-service-common-php/issues",
+                "source": "https://github.com/maxmind/web-service-common-php/tree/v0.11.1"
+            },
+            "time": "2026-01-13T17:56:03+00:00"
         },
         {
             "name": "mobiledetect/mobiledetectlib",
@@ -6193,6 +6526,180 @@
                 }
             ],
             "time": "2022-12-17T21:53:22+00:00"
+        },
+        {
+            "name": "skywalker-labs/location",
+            "version": "v2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/skywalker-labs/omniLocate.git",
+                "reference": "c6e6eabfd81fa6103268a802524f3acdad679b6d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/skywalker-labs/omniLocate/zipball/c6e6eabfd81fa6103268a802524f3acdad679b6d",
+                "reference": "c6e6eabfd81fa6103268a802524f3acdad679b6d",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*",
+                "geoip2/geoip2": "^2.0|^3.0",
+                "php": ">=7.0",
+                "skywalker-labs/toolkit": "^1.0|^2.0"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.0",
+                "orchestra/testbench": "^5.0|^6.0|^7.0|^8.0|^9.0|^10.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Location": "Skywalker\\Location\\Facades\\Location"
+                    },
+                    "providers": [
+                        "Skywalker\\Location\\LocationServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Skywalker\\Location\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Skywalker Labs Team",
+                    "email": "skywalkerlknw@gmail.com",
+                    "homepage": "https://skywalker-labs.com/",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Mradul Sharma",
+                    "email": "skywalkerlknw@gmail.com",
+                    "homepage": "https://mradulsharma.vercel.app/",
+                    "role": "Lead Developer"
+                }
+            ],
+            "description": "OmniLocate: Advanced user location detection for Laravel with persistence, caching, and distance utilities.",
+            "homepage": "https://github.com/skywalker-labs/location",
+            "keywords": [
+                "geo-location",
+                "geoip",
+                "laravel",
+                "location",
+                "omnilocate",
+                "persistence",
+                "php",
+                "skywalker"
+            ],
+            "support": {
+                "issues": "https://github.com/skywalker-labs/location/issues",
+                "source": "https://github.com/skywalker-labs/location",
+                "wiki": "https://github.com/skywalker-labs/location/wiki"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/ermradulsharma",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-02-15T11:31:54+00:00"
+        },
+        {
+            "name": "skywalker-labs/toolkit",
+            "version": "v1.4.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/skywalker-labs/toolkit.git",
+                "reference": "ff9330e0a508c63d94ab6ec1d751195264df8dd2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/skywalker-labs/toolkit/zipball/ff9330e0a508c63d94ab6ec1d751195264df8dd2",
+                "reference": "ff9330e0a508c63d94ab6ec1d751195264df8dd2",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/cache": "^5.5|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/console": "^5.5|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/contracts": "^5.5|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/database": "^5.5|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/filesystem": "^5.5|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/support": "^5.5|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/validation": "^5.5|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "php": "^7.0|^8.0|^9.0",
+                "symfony/console": "^3.0|^4.0|^5.0|^6.0|^7.0"
+            },
+            "require-dev": {
+                "laravel/framework": "^5.5|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "laravel/pint": "^1.27",
+                "orchestra/testbench": "^3.5|^4.0|^5.0|^6.0|^7.0|^8.0|^9.0|^10.0",
+                "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^7.0|^8.0|^9.0|^10.0|^11.0|^12.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Health": "Skywalker\\Support\\Health"
+                    },
+                    "providers": [
+                        "Skywalker\\Support\\ToolkitServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "helpers.php"
+                ],
+                "psr-4": {
+                    "Skywalker\\Support\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Skywalker Labs Team",
+                    "email": "skywalkerlknw@gmail.com",
+                    "homepage": "https://skywalker-labs.com/",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Mradul Sharma",
+                    "email": "ermradulsharma0@gmail.com",
+                    "homepage": "https://mradulsharma.vercel.app/",
+                    "role": "Lead Developer"
+                }
+            ],
+            "description": "A comprehensive toolkit for Laravel package and application development.",
+            "homepage": "https://github.com/skywalker-labs/toolkit",
+            "keywords": [
+                "helpers",
+                "laravel",
+                "mradul",
+                "package-development",
+                "toolkit"
+            ],
+            "support": {
+                "issues": "https://github.com/skywalker-labs/toolkit/issues",
+                "source": "https://github.com/skywalker-labs/toolkit"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/ermradulsharma",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-03-06T05:00:52+00:00"
         },
         {
             "name": "spatie/invade",

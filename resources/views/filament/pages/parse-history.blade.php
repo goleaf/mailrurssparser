@@ -5,10 +5,15 @@
     @endphp
 
     <div class="space-y-6">
-        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-white/10">
                 <div class="text-sm text-gray-500 dark:text-gray-400">Runs Today</div>
                 <div class="mt-2 text-2xl font-semibold text-gray-950 dark:text-white">{{ number_format($summary['runs_today']) }}</div>
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-white/10">
+                <div class="text-sm text-gray-500 dark:text-gray-400">Running Now</div>
+                <div class="mt-2 text-2xl font-semibold text-gray-950 dark:text-white">{{ number_format($summary['runs_in_progress']) }}</div>
             </div>
 
             <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-white/10">

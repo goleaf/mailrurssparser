@@ -119,6 +119,21 @@
     );
     const currentPage = $derived(Number(pagination?.current_page ?? 1));
     const lastPage = $derived(Number(pagination?.last_page ?? 1));
+    const heroStats = $derived([
+        {
+            label: 'Использований',
+            value: tag?.usage_count ?? 0,
+        },
+        {
+            label: 'Материалов',
+            value: totalResults,
+        },
+        {
+            label: 'Связанных тегов',
+            value: relatedTags.length,
+        },
+    ]);
+
     function navigateToTag(nextSlug: string): void {
         if (typeof window === 'undefined') {
             return;
@@ -201,11 +216,13 @@
 
 <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(107,114,128,0.16),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#eef2ff)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.16),_transparent_30%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl">
-        <section class="rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8">
+        <section class="relative overflow-hidden rounded-[2.35rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94),rgba(241,245,249,0.96))] p-6 shadow-[0_36px_110px_-60px_rgba(15,23,42,0.4)] backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,41,59,0.88),rgba(15,23,42,0.92))] sm:p-8">
+            <div class="absolute right-0 top-0 h-44 w-44 rounded-full bg-slate-300/55 blur-3xl dark:bg-slate-400/10"></div>
+            <div class="absolute bottom-0 left-0 h-36 w-36 rounded-full blur-3xl dark:opacity-40" style={`background-color: ${(tag?.color ?? '#6B7280')}33`}></div>
             <div class="flex flex-wrap items-start justify-between gap-6">
-                <div class="max-w-3xl">
+                <div class="relative max-w-3xl">
                     <div
-                        class="inline-flex items-center gap-3 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm"
+                        class="inline-flex items-center gap-3 rounded-full border border-black/5 px-4 py-2 text-sm font-semibold text-white shadow-sm"
                         style={`background-color: ${tag?.color ?? '#6B7280'}`}
                     >
                         #{tag?.name ?? 'tag'}
@@ -218,22 +235,42 @@
                             {tag.description}
                         </p>
                     {/if}
+
+                    {#if relatedTags.length > 0}
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            {#each relatedTags.slice(0, 4) as relatedTag (relatedTag.slug)}
+                                <button
+                                    type="button"
+                                    class="rounded-full border border-slate-200/80 bg-white/80 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                                    onclick={() => {
+                                        navigateToTag(relatedTag.slug);
+                                    }}
+                                >
+                                    #{relatedTag.name}
+                                </button>
+                            {/each}
+                        </div>
+                    {/if}
                 </div>
 
-                <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 px-5 py-4 dark:border-white/10 dark:bg-white/5">
-                    <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Использование
-                    </div>
-                    <div class="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">
-                        {tag?.usage_count ?? 0}
-                    </div>
+                <div class="grid gap-3 sm:grid-cols-3">
+                    {#each heroStats as stat (stat.label)}
+                        <div class="rounded-[1.6rem] border border-slate-200/80 bg-white/75 px-5 py-4 dark:border-white/10 dark:bg-white/5">
+                            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                {stat.label}
+                            </div>
+                            <div class="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">
+                                {stat.value}
+                            </div>
+                        </div>
+                    {/each}
                 </div>
             </div>
         </section>
 
         <div class="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
             <section class="space-y-6">
-                <div class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
+                <div class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
                     <div class="flex flex-wrap items-center justify-between gap-4">
                         <div>
                             <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -332,7 +369,7 @@
             </section>
 
             <aside class="space-y-5">
-                <section class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
+                <section class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                         Похожие теги
                     </div>
@@ -341,7 +378,7 @@
                             {#each relatedTags as relatedTag (relatedTag.slug)}
                                 <button
                                     type="button"
-                                    class="rounded-full px-3 py-2 text-sm text-white transition hover:opacity-90"
+                                    class="rounded-full px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:opacity-90"
                                     style={`background-color: ${relatedTag.color ?? '#6B7280'}`}
                                     onclick={() => {
                                         navigateToTag(relatedTag.slug);

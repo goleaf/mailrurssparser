@@ -17,6 +17,7 @@ use Illuminate\Http\Client\Response as HttpClientResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Events\QueueFailedOver;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -246,16 +247,29 @@ class AppServiceProvider extends ServiceProvider
         }
 
         if (config('cache.default') === 'failover') {
-            $stores = config('cache.stores.failover.stores');
+            $stores = Config::collection('cache.stores.failover.stores', [])
+                ->map(function (mixed $store): string {
+                    if (! is_string($store)) {
+                        return '';
+                    }
 
-            if (is_array($stores)) {
-                config([
-                    'cache.stores.failover.stores' => array_values(array_unique(array_map(
-                        fn (mixed $store): mixed => $store === 'database' ? 'file' : $store,
-                        $stores,
-                    ))),
-                ]);
-            }
+                    $normalizedStore = trim($store);
+
+                    if ($normalizedStore === '') {
+                        return '';
+                    }
+
+                    return $normalizedStore === 'database' ? 'file' : $normalizedStore;
+                })
+                ->filter()
+                ->unique()
+                ->values();
+
+            config([
+                'cache.stores.failover.stores' => $stores->isNotEmpty()
+                    ? $stores->all()
+                    : ['file', 'array'],
+            ]);
         }
 
         if (config('session.driver') === 'database') {

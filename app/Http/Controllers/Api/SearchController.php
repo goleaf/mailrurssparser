@@ -170,15 +170,33 @@ class SearchController extends Controller
      */
     private function articleSuggestions(string $term): array
     {
-        $articles = Article::query()
-            ->published()
-            ->select('id', 'title', 'slug', 'published_at')
-            ->latest('published_at')
-            ->get()
-            ->filter(fn (Article $article): bool => $this->containsTerm($article->title, $term))
-            ->take(5);
+        try {
+            $articles = Article::search($term)
+                ->query(function (Builder $query): void {
+                    $query->published()->select('id', 'title', 'slug', 'published_at');
+                })
+                ->take(12)
+                ->get();
+
+            if ($articles->isEmpty()) {
+                throw new \RuntimeException('Scout returned no autocomplete suggestions.');
+            }
+        } catch (\Throwable) {
+            $articles = Article::query()
+                ->published()
+                ->select('id', 'title', 'slug', 'published_at')
+                ->latest('published_at')
+                ->limit(60)
+                ->get();
+        }
 
         return $articles
+            ->filter(fn (Article $article): bool => $this->containsTerm($article->title, $term))
+            ->sortBy(fn (Article $article): array => [
+                $this->autocompleteRank($article->title, $term),
+                -($article->published_at?->getTimestamp() ?? 0),
+            ])
+            ->take(5)
             ->map(fn (Article $article): array => [
                 'id' => $article->id,
                 'title' => $this->normalizeUtf8((string) $article->title),
@@ -198,6 +216,11 @@ class SearchController extends Controller
             ->active()
             ->get(['id', 'name', 'slug', 'color'])
             ->filter(fn (Category $category): bool => $this->containsTerm($category->name, $term))
+            ->sortBy(fn (Category $category): array => [
+                $this->autocompleteRank($category->name, $term),
+                (int) $category->order,
+                $this->normalizeUtf8((string) $category->name),
+            ])
             ->take($limit)
             ->map(fn (Category $category): array => [
                 'id' => $category->id,
@@ -218,6 +241,11 @@ class SearchController extends Controller
             ->orderByDesc('usage_count')
             ->get(['id', 'name', 'slug', 'color'])
             ->filter(fn (Tag $tag): bool => $this->containsTerm($tag->name, $term))
+            ->sortBy(fn (Tag $tag): array => [
+                $this->autocompleteRank($tag->name, $term),
+                -((int) $tag->usage_count),
+                $this->normalizeUtf8((string) $tag->name),
+            ])
             ->take($limit)
             ->map(fn (Tag $tag): array => [
                 'id' => $tag->id,
@@ -239,6 +267,29 @@ class SearchController extends Controller
         }
 
         return mb_stripos($value, $term, 0, 'UTF-8') !== false;
+    }
+
+    private function autocompleteRank(?string $value, string $term): int
+    {
+        $value = $this->normalizeUtf8($value);
+        $term = $this->normalizeUtf8($term);
+
+        if ($value === '' || $term === '') {
+            return 3;
+        }
+
+        $normalizedValue = mb_strtolower($value, 'UTF-8');
+        $normalizedTerm = mb_strtolower($term, 'UTF-8');
+
+        if ($normalizedValue === $normalizedTerm) {
+            return 0;
+        }
+
+        if (str_starts_with($normalizedValue, $normalizedTerm)) {
+            return 1;
+        }
+
+        return 2;
     }
 
     private function normalizeUtf8(?string $value): string

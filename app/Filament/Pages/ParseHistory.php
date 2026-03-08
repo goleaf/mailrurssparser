@@ -6,6 +6,7 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -82,16 +83,19 @@ class ParseHistory extends Page
     }
 
     /**
-     * @return array{runs_today: int, average_duration_ms: int, total_new_today: int, error_rate: float}
+     * @return array{runs_today: int, runs_in_progress: int, average_duration_ms: int, total_new_today: int, error_rate: float}
      */
     public function getSummaryProperty(): array
     {
-        $todayLogs = RssParseLog::query()->whereDate('started_at', today());
+        $todayStart = today()->startOfDay();
+        $todayEnd = $todayStart->endOfDay();
+        $todayLogs = RssParseLog::query()->whereBetween('started_at', [$todayStart, $todayEnd]);
         $runsToday = (clone $todayLogs)->count();
         $failedRuns = (clone $todayLogs)->where('success', false)->count();
 
         return [
             'runs_today' => $runsToday,
+            'runs_in_progress' => RssParseLog::query()->runningAt()->count(),
             'average_duration_ms' => (int) round((float) ((clone $todayLogs)->avg('duration_ms') ?? 0)),
             'total_new_today' => (int) ((clone $todayLogs)->sum('new_count') ?? 0),
             'error_rate' => $runsToday > 0 ? round(($failedRuns / $runsToday) * 100, 1) : 0.0,
@@ -104,8 +108,28 @@ class ParseHistory extends Page
             ->with('rssFeed')
             ->when($this->feed !== '', fn (Builder $query): Builder => $query->where('rss_feed_id', (int) $this->feed))
             ->when($this->status !== '', fn (Builder $query): Builder => $query->where('success', $this->status === 'success'))
-            ->when($this->dateFrom !== '', fn (Builder $query): Builder => $query->whereDate('started_at', '>=', $this->dateFrom))
-            ->when($this->dateTo !== '', fn (Builder $query): Builder => $query->whereDate('started_at', '<=', $this->dateTo))
+            ->when(
+                $this->dateFrom !== '' && $this->dateTo !== '',
+                fn (Builder $query): Builder => $query->overlappingWindow(
+                    CarbonImmutable::parse($this->dateFrom)->startOfDay(),
+                    CarbonImmutable::parse($this->dateTo)->endOfDay(),
+                ),
+            )
+            ->when(
+                $this->dateFrom !== '' && $this->dateTo === '',
+                fn (Builder $query): Builder => $query->where(function (Builder $query): void {
+                    $from = CarbonImmutable::parse($this->dateFrom)->startOfDay();
+
+                    $query->where('started_at', '>=', $from)
+                        ->orWhere(function (Builder $query) use ($from): void {
+                            $query->runningAt($from);
+                        });
+                }),
+            )
+            ->when(
+                $this->dateFrom === '' && $this->dateTo !== '',
+                fn (Builder $query): Builder => $query->where('started_at', '<=', CarbonImmutable::parse($this->dateTo)->endOfDay()),
+            )
             ->latest('started_at')
             ->paginate(15);
     }

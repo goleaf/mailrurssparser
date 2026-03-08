@@ -10,11 +10,11 @@
 
 > Screenshot placeholder: add a homepage or admin dashboard screenshot here.
 
-Новостной портал на Laravel 12, Filament 5 и Inertia + Svelte с RSS-агрегацией из `news.mail.ru`, API для публичного фронтенда, админкой для редакторов и автоматическим парсингом по расписанию.
+Новостной портал на Laravel 12, Filament 5 и Inertia + Svelte с RSS-агрегацией из внешних RSS-источников, API для публичного фронтенда, админкой для редакторов и автоматическим парсингом по расписанию.
 
 ## ✅ Features
 
-- 8 RSS feeds auto-parsed from `news.mail.ru`
+- 8 RSS feeds auto-parsed from configured upstream sources
 - Artisan commands: `rss:parse`, `rss:status`, `rss:clean`, `rss:reindex`
 - Auto-parse every 15 minutes, plus `main` every 5 minutes
 - Duplicate detection by GUID + URL
@@ -42,7 +42,7 @@
 php artisan rss:parse
 php artisan rss:parse --category=politics
 php artisan rss:parse --feed=3
-php artisan rss:parse --url="https://news.mail.ru/rss/sport/"
+php artisan rss:parse --url="https://example.com/rss/sport.xml"
 php artisan rss:parse --due
 php artisan rss:parse --all
 php artisan rss:parse --dry-run

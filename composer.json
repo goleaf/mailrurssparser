@@ -11,15 +11,18 @@
         "attla/encoded-attributes": "dev-main",
         "attla/pincryp": "dev-main",
         "attla/support": "dev-main",
+        "devrabiul/laravel-geo-genius": "^1.5",
         "filament/filament": "^5.0",
         "guzzlehttp/guzzle": "^7.0",
         "hisorange/browser-detect": "^4.5",
         "inertiajs/inertia-laravel": "^2.0",
+        "jayanta/laravel-threat-detection": "^1.1",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
         "laravel/scout": "^10.0",
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
+        "skywalker-labs/location": "^2.0",
         "teamtnt/laravel-scout-tntsearch-driver": "^15.0"
     },
     "require-dev": {
@@ -137,6 +140,12 @@
         ],
         "lint:check": [
             "pint --parallel --test"
+        ],
+        "format:pretty-php": [
+            "@php artisan format:pretty-php"
+        ],
+        "format:pretty-php:check": [
+            "@php artisan format:pretty-php --check"
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",

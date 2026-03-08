@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RssFeeds\Tables;
 
+use App\Filament\Resources\RssFeeds\RssFeedResource;
 use App\Models\RssFeed;
 use App\Services\RssParserService;
 use Filament\Actions\Action;
@@ -9,6 +10,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -64,6 +66,15 @@ class RssFeedsTable
                     ->icon(Heroicon::AdjustmentsHorizontal)
                     ->modalHeading('Вид таблицы RSS-лент'),
             )
+            ->emptyStateIcon(Heroicon::OutlinedRss)
+            ->emptyStateHeading('RSS-ленты ещё не настроены')
+            ->emptyStateDescription('Добавьте первую ленту, чтобы запустить парсинг и наполнить портал новостями.')
+            ->emptyStateActions([
+                Action::make('createFeed')
+                    ->label('Добавить RSS-ленту')
+                    ->icon(Heroicon::OutlinedPlus)
+                    ->url(RssFeedResource::getUrl('create')),
+            ])
             ->recordActions([
                 Action::make('parseNow')
                     ->label('Parse Now')
@@ -88,6 +99,7 @@ class RssFeedsTable
                             ->success()
                             ->send();
                     }),
+                ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ])

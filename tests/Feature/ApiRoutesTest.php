@@ -1,5 +1,7 @@
 <?php
 
+use App\Services\ApiRateLimiter;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Route;
 
 it('registers api routes', function () {
@@ -48,4 +50,22 @@ it('registers seo and spa web routes', function () {
         ->and(Route::has('robots'))->toBeTrue()
         ->and(Route::has('offline'))->toBeTrue()
         ->and(Route::has('spa'))->toBeTrue();
+});
+
+it('keeps the vendor omni locate dashboard routes disabled', function () {
+    expect(Route::has('omni-locate.verify'))->toBeFalse()
+        ->and(Route::has('omni-locate.dashboard.index'))->toBeFalse()
+        ->and(Route::has('omni-locate.dashboard.stats'))->toBeFalse();
+});
+
+it('uses enum-backed throttle middleware on api routes', function () {
+    $articleRoute = Route::getRoutes()->getByName('api.v1.articles.index');
+    $searchRoute = Route::getRoutes()->getByName('api.v1.search.index');
+    $suggestRoute = Route::getRoutes()->getByName('api.v1.search.suggest');
+    $rssRoute = Route::getRoutes()->getByName('api.v1.rss.parse-feed');
+
+    expect($articleRoute?->gatherMiddleware())->toContain(ThrottleRequests::using(ApiRateLimiter::Api))
+        ->and($searchRoute?->gatherMiddleware())->toContain(ThrottleRequests::using(ApiRateLimiter::Search))
+        ->and($suggestRoute?->gatherMiddleware())->toContain(ThrottleRequests::using(ApiRateLimiter::SearchSuggest))
+        ->and($rssRoute?->gatherMiddleware())->toContain(ThrottleRequests::using(ApiRateLimiter::Rss));
 });

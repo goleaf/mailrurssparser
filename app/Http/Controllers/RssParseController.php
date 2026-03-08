@@ -15,6 +15,9 @@ class RssParseController extends Controller
 {
     public function index(): View
     {
+        $todayStart = today()->startOfDay();
+        $todayEnd = $todayStart->endOfDay();
+
         $feeds = RssFeed::query()
             ->with(['category'])
             ->withCount('articles')
@@ -24,8 +27,8 @@ class RssParseController extends Controller
 
         $stats = [
             'total_articles' => Article::query()->count(),
-            'today_articles' => Article::published()->whereDate('published_at', today())->count(),
-            'last_system_parse' => RssFeed::query()->whereNotNull('last_parsed_at')->max('last_parsed_at'),
+            'today_articles' => Article::query()->publishedBetween($todayStart, $todayEnd)->count(),
+            'last_system_parse' => RssFeed::query()->parsed()->max('last_parsed_at'),
         ];
 
         return view('rss.index', compact('feeds', 'stats'));
@@ -87,7 +90,7 @@ class RssParseController extends Controller
         ]);
 
         $category = Category::query()->where('slug', $slug)->firstOrFail();
-        $feeds = RssFeed::active()->where('category_id', $category->id)->get();
+        $feeds = RssFeed::query()->active()->inCategory($category)->get();
 
         if ($feeds->isEmpty()) {
             return response()->json([
@@ -99,7 +102,7 @@ class RssParseController extends Controller
             ], 424);
         }
 
-        $results = $feeds->map(fn (RssFeed $feed): array => $parser->parseFeed($feed));
+        $results = collect($parser->parseFeeds($feeds, 'scheduler'));
 
         $summary = $results->reduce(function (array $carry, array $result): array {
             $carry['new'] += (int) ($result['new'] ?? 0);

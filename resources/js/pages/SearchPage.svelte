@@ -4,30 +4,27 @@
     import X from 'lucide-svelte/icons/x';
     import { onMount } from 'svelte';
     import AppHead from '@/components/AppHead.svelte';
+    import SearchAutocompletePanel from '@/components/SearchAutocompletePanel.svelte';
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import Pagination from '@/components/Pagination.svelte';
     import SkeletonCard from '@/components/SkeletonCard.svelte';
     import { setSeoMeta } from '@/composables/useSeo.js';
-    import { searchArticleContentTypeOptions } from '@/lib/articleEnums';
     import * as api from '@/lib/api';
+    import { searchArticleContentTypeOptions } from '@/lib/articleEnums';
+    import {
+        buildSearchAutocompleteItems,
+        emptySearchSuggestions,
+        type SearchAutocompleteItem,
+        type SearchSuggestionCategory,
+        type SearchSuggestionTag,
+        type SearchSuggestions,
+    } from '@/lib/searchAutocomplete';
     import { cn } from '@/lib/utils';
     import { appState, initApp } from '@/stores/app.svelte.js';
     import { filters } from '@/stores/articles.svelte.js';
 
-    type Category = {
-        id: number | string;
-        name: string;
-        slug: string;
-        color?: string | null;
-        icon?: string | null;
-    };
-
-    type Tag = {
-        id: number | string;
-        name: string;
-        slug: string;
-        color?: string | null;
-    };
+    type Category = SearchSuggestionCategory;
+    type Tag = SearchSuggestionTag;
 
     type Article = {
         id: number | string;
@@ -43,17 +40,6 @@
         published_at?: string | null;
         category: Category;
         tags?: Tag[];
-    };
-
-    type SearchSuggestions = {
-        articles: Array<{
-            id: number | string;
-            title: string;
-            slug: string;
-            published_at?: string | null;
-        }>;
-        categories: Category[];
-        tags: Tag[];
     };
 
     type SearchSuggestionItem = {
@@ -92,11 +78,6 @@
     };
 
     const RECENT_SEARCHES_KEY = 'news-portal-recent-searches';
-    const emptySuggestions = {
-        articles: [],
-        categories: [],
-        tags: [],
-    } satisfies SearchSuggestions;
 
     const sortTabs = [
         { key: 'relevance', label: 'Релевантность' },
@@ -111,10 +92,14 @@
     let results = $state<Article[]>([]);
     let pagination = $state<PaginationMeta | null>(null);
     let loading = $state(false);
-    let suggestions = $state<SearchSuggestions>({ ...emptySuggestions });
+    let suggestionsLoading = $state(false);
+    let suggestions = $state<SearchSuggestions>({ ...emptySearchSuggestions });
     let emptyStateSuggestions = $state<SearchSuggestionItem[]>([]);
     let highlights = $state<HighlightItem[]>([]);
     let hashListenerAttached = false;
+    let activeSuggestionIndex = $state(-1);
+    let autocompleteAbortController: AbortController | null = null;
+    let autocompleteRequestVersion = 0;
     const searchFilters = filters as SearchFilters;
 
     const categories = $derived((appState.categories ?? []) as Category[]);
@@ -127,6 +112,27 @@
     );
     const currentPage = $derived(Number(pagination?.current_page ?? 1));
     const lastPage = $derived(Number(pagination?.last_page ?? 1));
+    const searchSnapshots = $derived([
+        {
+            label: 'Рубрик в навигации',
+            value: categories.length,
+            caption: 'доступно для фильтрации',
+        },
+        {
+            label: 'Подсказок',
+            value:
+                suggestions.articles.length +
+                suggestions.categories.length +
+                suggestions.tags.length,
+            caption: activeQuery ? 'по текущему запросу' : 'до запуска поиска',
+        },
+        {
+            label: 'Результатов',
+            value: activeQuery ? totalResults : '—',
+            caption: activeQuery ? 'в выдаче сейчас' : 'появятся после запроса',
+        },
+    ]);
+
     function readRecentSearches(): string[] {
         if (typeof localStorage === 'undefined') {
             return [];
@@ -199,6 +205,7 @@
         pagination = null;
         highlights = [];
         emptyStateSuggestions = [];
+        activeSuggestionIndex = -1;
     }
 
     function buildHighlightSegments(
@@ -284,6 +291,8 @@
             clearResults();
             updateSearchHash('');
             loading = false;
+            suggestionsLoading = false;
+            suggestions = { ...emptySearchSuggestions };
 
             return;
         }
@@ -308,6 +317,8 @@
             query = normalized;
             rememberSearch(normalized);
             updateSearchHash(normalized);
+            suggestions = { ...emptySearchSuggestions };
+            activeSuggestionIndex = -1;
             await loadHighlights(normalized, results);
         } catch (error) {
             clearResults();
@@ -329,8 +340,11 @@
     }
 
     function clearSearch(): void {
+        autocompleteAbortController?.abort();
+        autocompleteAbortController = null;
         query = '';
-        suggestions = { ...emptySuggestions };
+        suggestionsLoading = false;
+        suggestions = { ...emptySearchSuggestions };
         clearResults();
         updateSearchHash('');
     }
@@ -427,9 +441,72 @@
         window.location.hash = `/tag/${slug}`;
     }
 
+    function openArticle(slug: string): void {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        window.location.hash = `/articles/${slug}`;
+    }
+
+    function selectAutocompleteItem(item: SearchAutocompleteItem): void {
+        switch (item.kind) {
+            case 'search':
+                submitSearch();
+
+                return;
+            case 'article':
+                openArticle(item.article.slug);
+
+                return;
+            case 'category':
+                navigateToCategory(item.category.slug);
+
+                return;
+            case 'tag':
+                navigateToTag(item.tag.slug);
+
+                return;
+        }
+    }
+
     function handleQueryKeydown(event: KeyboardEvent): void {
+        const items = buildSearchAutocompleteItems(query, suggestions);
+
+        if (event.key === 'ArrowDown') {
+            if (items.length === 0) {
+                return;
+            }
+
+            event.preventDefault();
+            activeSuggestionIndex = (activeSuggestionIndex + 1 + items.length) % items.length;
+
+            return;
+        }
+
+        if (event.key === 'ArrowUp') {
+            if (items.length === 0) {
+                return;
+            }
+
+            event.preventDefault();
+            activeSuggestionIndex =
+                activeSuggestionIndex <= 0
+                    ? items.length - 1
+                    : activeSuggestionIndex - 1;
+
+            return;
+        }
+
         if (event.key === 'Enter') {
             event.preventDefault();
+
+            if (activeSuggestionIndex >= 0 && items[activeSuggestionIndex]) {
+                selectAutocompleteItem(items[activeSuggestionIndex]);
+
+                return;
+            }
+
             submitSearch();
         }
     }
@@ -441,25 +518,55 @@
 
         const normalized = query.trim();
 
-        if (!normalized || normalized === activeQuery) {
-            if (!normalized) {
-                suggestions = { ...emptySuggestions };
-            }
+        if (normalized.length < 2 || normalized === activeQuery) {
+            autocompleteAbortController?.abort();
+            autocompleteAbortController = null;
+            suggestionsLoading = false;
+            suggestions = { ...emptySearchSuggestions };
+            activeSuggestionIndex = -1;
 
             return;
         }
 
+        suggestionsLoading = true;
+        const requestVersion = ++autocompleteRequestVersion;
         const timeoutId = window.setTimeout(async () => {
+            autocompleteAbortController?.abort();
+            autocompleteAbortController = new AbortController();
+
             try {
-                const response = await api.suggestSearch(normalized);
+                const response = await api.suggestSearch(normalized, {
+                    signal: autocompleteAbortController.signal,
+                });
+
+                if (requestVersion !== autocompleteRequestVersion) {
+                    return;
+                }
 
                 suggestions = {
                     articles: response.data?.articles ?? [],
                     categories: response.data?.categories ?? [],
                     tags: response.data?.tags ?? [],
                 };
-            } catch {
-                suggestions = { ...emptySuggestions };
+                activeSuggestionIndex = -1;
+            } catch (error) {
+                if (
+                    error instanceof DOMException &&
+                    error.name === 'AbortError'
+                ) {
+                    return;
+                }
+
+                if (requestVersion !== autocompleteRequestVersion) {
+                    return;
+                }
+
+                suggestions = { ...emptySearchSuggestions };
+                activeSuggestionIndex = -1;
+            } finally {
+                if (requestVersion === autocompleteRequestVersion) {
+                    suggestionsLoading = false;
+                }
             }
         }, 500);
 
@@ -511,52 +618,92 @@
 
 <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.12),_transparent_35%),linear-gradient(to_bottom,_#f8fbff,_#f1f5f9)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_35%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl">
-        <section class="rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.4)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8">
-            <div class="max-w-3xl">
-                <div class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold tracking-[0.24em] text-sky-700 uppercase dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
-                    <Sparkles class="size-4" />
-                    Поиск по порталу
+        <section class="relative overflow-hidden rounded-[2.35rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94),rgba(239,246,255,0.96))] p-6 shadow-[0_36px_110px_-60px_rgba(15,23,42,0.44)] backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(15,23,42,0.88),rgba(8,47,73,0.88))] sm:p-8">
+            <div class="absolute right-0 top-0 h-48 w-48 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-500/20"></div>
+            <div class="absolute bottom-0 left-0 h-36 w-36 rounded-full bg-cyan-200/55 blur-3xl dark:bg-cyan-500/10"></div>
+            <div class="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_19rem] lg:items-start">
+                <div class="max-w-3xl">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold tracking-[0.24em] text-sky-700 uppercase dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
+                        <Sparkles class="size-4" />
+                        Поиск по порталу
+                    </div>
+
+                    <h1 class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                        Найдите новости, рубрики и темы за секунды
+                    </h1>
+
+                    <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
+                        Ищите по заголовкам, описаниям, авторам и полному тексту.
+                        Фильтруйте выдачу по рубрике, формату и датам, не выходя
+                        из страницы.
+                    </p>
                 </div>
 
-                <h1 class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
-                    Найдите новости, рубрики и темы за секунды
-                </h1>
-
-                <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
-                    Ищите по заголовкам, описаниям, авторам и полному тексту.
-                    Фильтруйте выдачу по рубрике, формату и датам, не выходя
-                    из страницы.
-                </p>
+                <div class="rounded-[1.9rem] border border-slate-200/80 bg-white/75 p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Search pulse
+                    </div>
+                    <div class="mt-4 space-y-3">
+                        {#each searchSnapshots as snapshot (snapshot.label)}
+                            <div class="rounded-[1.35rem] border border-slate-200/80 bg-slate-50/80 px-4 py-3 dark:border-white/10 dark:bg-black/10">
+                                <div class="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                                    {snapshot.label}
+                                </div>
+                                <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                                    {snapshot.value}
+                                </div>
+                                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                    {snapshot.caption}
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
             </div>
 
             <div class="mt-8 space-y-5">
                 <div class="rounded-[1.75rem] bg-slate-100 p-2 dark:bg-white/5">
-                    <div class="flex flex-col gap-3 rounded-[1.25rem] bg-white px-4 py-3 shadow-sm dark:bg-slate-900 md:flex-row md:items-center">
-                        <Search class="size-5 shrink-0 text-slate-400" />
-                        <input
-                            bind:value={query}
-                            type="text"
-                            class="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
-                            placeholder="Например: санкции, спорт, интервью"
-                            onkeydown={handleQueryKeydown}
-                        />
-                        {#if query}
+                    <div class="rounded-[1.25rem] bg-white px-4 py-3 shadow-sm dark:bg-slate-900">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center">
+                            <Search class="size-5 shrink-0 text-slate-400" />
+                            <input
+                                bind:value={query}
+                                type="text"
+                                class="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
+                                placeholder="Например: санкции, спорт, интервью"
+                                onkeydown={handleQueryKeydown}
+                            />
+                            {#if query}
+                                <button
+                                    type="button"
+                                    class="inline-flex size-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
+                                    onclick={clearSearch}
+                                    aria-label="Очистить поиск"
+                                >
+                                    <X class="size-4" />
+                                </button>
+                            {/if}
                             <button
                                 type="button"
-                                class="inline-flex size-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
-                                onclick={clearSearch}
-                                aria-label="Очистить поиск"
+                                class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                                onclick={submitSearch}
                             >
-                                <X class="size-4" />
+                                Искать
                             </button>
-                        {/if}
-                        <button
-                            type="button"
-                            class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-                            onclick={submitSearch}
-                        >
-                            Искать
-                        </button>
+                        </div>
+
+                        <SearchAutocompletePanel
+                            {query}
+                            {suggestions}
+                            loading={suggestionsLoading}
+                            activeIndex={activeSuggestionIndex}
+                            onSearchSubmit={() => {
+                                submitSearch();
+                            }}
+                            onArticleSelect={openArticle}
+                            onCategorySelect={navigateToCategory}
+                            onTagSelect={navigateToTag}
+                        />
                     </div>
                 </div>
 
@@ -645,7 +792,8 @@
         <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <section class="space-y-6">
                 {#if activeQuery}
-                    <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                                 Результаты поиска
@@ -657,6 +805,7 @@
                         <div class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
                             Запрос: <span class="font-semibold text-slate-900 dark:text-white">{activeQuery}</span>
                         </div>
+                    </div>
                     </div>
                 {/if}
 
@@ -721,7 +870,7 @@
             </section>
 
             <aside class="space-y-5">
-                <section class="rounded-[1.75rem] border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-slate-900">
+                <section class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                         Подсветка совпадений
                     </div>
@@ -757,7 +906,7 @@
                     </div>
                 </section>
 
-                <section class="rounded-[1.75rem] border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-slate-900">
+                <section class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                         Похожие запросы
                     </div>

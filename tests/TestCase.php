@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Illuminate\Database\Eloquent\Factories\Factory as EloquentFactory;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -10,6 +11,7 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        EloquentFactory::expandRelationshipsByDefault();
         \App\Models\Article::disableSearchSyncing();
     }
 }

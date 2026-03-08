@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Metric;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class MetricReportService
@@ -22,7 +21,7 @@ class MetricReportService
     public function totals(array $metrics, int $hours = 24): array
     {
         $names = collect($metrics)
-            ->map(fn (TrackedMetric|string $metric): string => $this->metricName($metric))
+            ->pluck(fn (TrackedMetric|string $metric): string => $this->metricName($metric))
             ->values();
         $totals = Metric::query()
             ->selectRaw('name, SUM(value) as aggregate')
@@ -32,7 +31,10 @@ class MetricReportService
             ->pluck('aggregate', 'name');
 
         return $names
-            ->mapWithKeys(fn (string $name): array => [$name => (int) ($totals[$name] ?? 0)])
+            ->pluck(
+                fn (string $name): int => (int) ($totals[$name] ?? 0),
+                fn (string $name): string => $name,
+            )
             ->all();
     }
 
@@ -59,7 +61,7 @@ class MetricReportService
         $buckets = collect(range(0, $hours - 1))
             ->map(fn (int $offset): CarbonImmutable => $start->addHours($offset));
         $names = collect($metrics)
-            ->map(fn (TrackedMetric|string $metric): string => $this->metricName($metric))
+            ->pluck(fn (TrackedMetric|string $metric): string => $this->metricName($metric))
             ->values();
         $rows = Metric::query()
             ->selectRaw('name, bucket_start, SUM(value) as aggregate')
@@ -82,9 +84,10 @@ class MetricReportService
                     $trackedMetric = $metric instanceof TrackedMetric ? $metric : null;
                     $name = $this->metricName($metric);
                     $points = collect($rows->get($name, []))
-                        ->mapWithKeys(fn (Metric $row): array => [
-                            CarbonImmutable::parse($row->bucket_start)->format('Y-m-d H:00') => (int) ($row->aggregate ?? $row->value),
-                        ]);
+                        ->pluck(
+                            fn (Metric $row): int => (int) ($row->aggregate ?? $row->value),
+                            fn (Metric $row): string => CarbonImmutable::parse($row->bucket_start)->format('Y-m-d H:00'),
+                        );
 
                     return [
                         'key' => $name,
@@ -103,6 +106,7 @@ class MetricReportService
 
     /**
      * @template TModel of Model
+     *
      * @param  class-string<TModel>  $modelClass
      * @return array<int, array{model: TModel, total: int}>
      */

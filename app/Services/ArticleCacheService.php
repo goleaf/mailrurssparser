@@ -70,25 +70,57 @@ class ArticleCacheService
     public function getStatsOverview(): array
     {
         return $this->memoizedCache()->flexible(ArticleCacheKey::StatsOverview, [minutes(2), minutes(10)], function (): array {
+            $todayStart = today()->startOfDay();
+            $todayEnd = $todayStart->endOfDay();
             $lastParse = RssFeed::query()
                 ->active()
+                ->parsed()
                 ->orderByDesc('last_parsed_at')
                 ->value('last_parsed_at');
 
             return [
                 'articles' => [
                     'total' => Article::query()->published()->count(),
-                    'today' => Article::query()->published()->whereDate('published_at', today())->count(),
-                    'this_week' => Article::query()->published()->where('published_at', '>=', now()->minus(days: 7))->count(),
+                    'today' => Article::query()->publishedBetween($todayStart, $todayEnd)->count(),
+                    'this_week' => Article::query()->publishedSince(now()->minus(days: 7))->count(),
                     'breaking' => Article::query()->published()->breaking()->count(),
                     'featured' => Article::query()->published()->featured()->count(),
                 ],
                 'views' => [
                     'total' => Article::query()->published()->sum('views_count'),
-                    'today' => ArticleView::query()->whereDate('viewed_at', today())->count(),
-                    'this_week' => ArticleView::query()->where('viewed_at', '>=', now()->minus(days: 7))->count(),
-                    'unique_today' => ArticleView::query()->whereDate('viewed_at', today())->distinct('ip_hash')->count('ip_hash'),
+                    'today' => ArticleView::query()->viewedBetween($todayStart, $todayEnd)->count(),
+                    'this_week' => ArticleView::query()->viewedSince(now()->minus(days: 7))->count(),
+                    'unique_today' => ArticleView::query()
+                        ->viewedBetween($todayStart, $todayEnd)
+                        ->distinct('ip_hash')
+                        ->count('ip_hash'),
                 ],
+                'top_countries' => ArticleView::query()
+                    ->viewedSince(now()->minus(days: 7))
+                    ->withCountryCode()
+                    ->selectRaw('UPPER(country_code) as country_code, COUNT(*) as view_count')
+                    ->groupByRaw('UPPER(country_code)')
+                    ->orderByDesc('view_count')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn (object $row): array => [
+                        'country_code' => (string) $row->country_code,
+                        'view_count' => (int) $row->view_count,
+                    ])
+                    ->all(),
+                'top_timezones' => ArticleView::query()
+                    ->viewedSince(now()->minus(days: 7))
+                    ->withTimezone()
+                    ->selectRaw('timezone, COUNT(*) as view_count')
+                    ->groupBy('timezone')
+                    ->orderByDesc('view_count')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn (object $row): array => [
+                        'timezone' => (string) $row->timezone,
+                        'view_count' => (int) $row->view_count,
+                    ])
+                    ->all(),
                 'top_categories' => Category::query()
                     ->active()
                     ->withCount(['articles as article_count' => fn (Builder $query) => $query->published()])
@@ -111,7 +143,7 @@ class ArticleCacheService
                 'feeds' => [
                     'total' => RssFeed::query()->count(),
                     'active' => RssFeed::query()->active()->count(),
-                    'errors' => RssFeed::query()->whereNotNull('last_error')->where('last_error', '!=', '')->count(),
+                    'errors' => RssFeed::query()->withErrors()->count(),
                 ],
             ];
         });

@@ -242,14 +242,24 @@
 <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(to_bottom,_#f8fbff,_#f1f5f9)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_30%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl">
         <section
-            class="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/90 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80"
+            class="overflow-hidden rounded-[2.3rem] border border-slate-200/80 bg-white/90 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80"
         >
             <div
-                class="px-6 py-8 sm:px-8"
+                class="relative px-6 py-8 sm:px-8"
                 style={`background: linear-gradient(135deg, ${category?.color ?? '#2563EB'} 0%, rgba(15, 23, 42, 0.92) 100%);`}
             >
+                <div class="absolute right-0 top-0 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
                 <div class="flex flex-wrap items-end justify-between gap-6">
                     <div class="max-w-3xl">
+                        <div class="mb-4 flex flex-wrap items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-white/65">
+                            <a href="/#/" class="transition hover:text-white">Главная</a>
+                            <span>/</span>
+                            <span>{category?.name ?? 'Раздел'}</span>
+                            {#if pageFilters.sub}
+                                <span>/</span>
+                                <span>{pageFilters.sub}</span>
+                            {/if}
+                        </div>
                         <div class="text-sm font-semibold tracking-[0.24em] text-white/70 uppercase">
                             Раздел портала
                         </div>
@@ -274,6 +284,7 @@
                             Материалов в разделе
                         </div>
                         <div class="mt-2 text-3xl font-semibold">{totalResults}</div>
+                        <div class="mt-2 text-sm text-white/70">Текущий ритм публикаций по рубрике</div>
                     </div>
                 </div>
             </div>
@@ -318,7 +329,7 @@
         </section>
 
         {#if pinnedArticles.length > 0}
-            <section class="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
+            <section class="mt-8 rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
                 <div class="flex items-center justify-between gap-3">
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
@@ -335,7 +346,7 @@
 
                 <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {#each pinnedArticles as article (article.id)}
-                        <div class="rounded-3xl bg-slate-50 p-2 dark:bg-white/5">
+                        <div class="rounded-[1.7rem] border border-slate-200/70 bg-white/70 p-2 dark:border-white/10 dark:bg-white/5">
                             <ArticleCardCompact {article} />
                         </div>
                     {/each}
@@ -353,6 +364,25 @@
             </aside>
 
             <section class="space-y-6">
+                <div class="rounded-[1.8rem] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Поток раздела
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-2xl font-semibold text-slate-950 dark:text-white">
+                                {category?.name ?? 'Раздел'}: оперативная лента
+                            </h2>
+                            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                                Фильтруйте поток по тегам, датам, важности и подрубрикам.
+                            </p>
+                        </div>
+                        <div class="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-slate-950">
+                            {totalResults} материалов
+                        </div>
+                    </div>
+                </div>
+
                 <FilterBar pagination={pagination} />
 
                 {#if loading}

@@ -11,6 +11,9 @@
 /resources/js/wayfinder
 /vendor
 /.worktrees
+/tools/pretty-php
+/tools/pretty-php.phar
+/pretty-php.phar
 .DS_Store
 .env
 .env.backup

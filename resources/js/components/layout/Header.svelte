@@ -127,29 +127,30 @@
 
 <header
     class={cn(
-        'sticky top-0 z-40 border-b border-black/5 bg-white/88 backdrop-blur-xl transition-shadow duration-300 dark:border-white/10 dark:bg-neutral-950/88',
+        'sticky top-0 z-40 border-b border-black/5 bg-white/78 backdrop-blur-xl transition-shadow duration-300 dark:border-white/10 dark:bg-neutral-950/80',
         hasShadow && 'shadow-[0_18px_50px_-30px_rgba(15,23,42,0.45)]',
     )}
 >
-    <div class="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 lg:px-6">
+    <div class="mx-auto max-w-7xl px-4 py-3 lg:px-6">
+        <div class="flex items-center gap-4 rounded-[2rem] border border-slate-200/80 bg-white/85 px-3 py-3 shadow-[0_18px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/72">
         <a
             href="/#/"
             onclick={goHome}
-            class="group flex shrink-0 items-center gap-3 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-slate-900 transition hover:border-sky-300 hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-slate-50 dark:hover:border-sky-800 dark:hover:bg-sky-950"
+            class="group flex shrink-0 items-center gap-3 rounded-[1.6rem] border border-slate-200 bg-[linear-gradient(135deg,rgba(240,249,255,0.95),rgba(255,255,255,0.92))] px-3 py-2.5 text-slate-900 transition hover:border-sky-300 hover:shadow-md dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.94))] dark:text-slate-50"
         >
             <span
-                class="flex size-10 items-center justify-center rounded-full bg-slate-900 text-lg text-white shadow-sm dark:bg-white dark:text-slate-900"
+                class="flex size-11 items-center justify-center rounded-[1.15rem] bg-[linear-gradient(135deg,#0f172a,#0369a1)] text-lg text-white shadow-sm dark:bg-[linear-gradient(135deg,#e2e8f0,#7dd3fc)] dark:text-slate-950"
             >
                 🗞️
             </span>
             <div class="min-w-0">
-                <div class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
-                    News Portal
+                <div class="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-sky-700 dark:text-sky-300">
+                    Editorial Desk
                 </div>
-                <div class="flex items-center gap-2 font-semibold">
+                <div class="flex items-center gap-2 text-[0.95rem] font-semibold">
                     <span>Новости</span>
                     {#if newArticleDelta > 0}
-                        <span class="rounded-full bg-emerald-500 px-2 py-0.5 text-[0.65rem] font-semibold text-white">
+                        <span class="rounded-full bg-emerald-500 px-2 py-0.5 text-[0.65rem] font-semibold text-white shadow-sm">
                             +{newArticleDelta}
                         </span>
                     {/if}
@@ -164,7 +165,7 @@
                 class={cn(
                     'rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white',
                     currentHash === '#/' &&
-                        'bg-slate-900 text-white dark:bg-white dark:text-slate-950',
+                        'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-950',
                 )}
             >
                 Все новости
@@ -176,7 +177,7 @@
                     class={cn(
                         'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white',
                         isCategoryActive(category.slug) &&
-                            'bg-slate-900 text-white dark:bg-white dark:text-slate-950',
+                            'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-950',
                     )}
                 >
                     <span
@@ -213,7 +214,7 @@
 
                     {#if moreMenuOpen}
                         <div
-                            class="absolute left-0 top-full mt-3 w-80 rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/15 dark:border-white/10 dark:bg-neutral-900 dark:shadow-black/50"
+                            class="absolute left-0 top-full mt-3 w-84 rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] p-4 shadow-2xl shadow-slate-900/15 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.96))] dark:shadow-black/50"
                         >
                             <div class="mb-3 flex items-center justify-between">
                                 <div>
@@ -302,6 +303,7 @@
                 <Menu class="size-5" />
             </button>
         </div>
+        </div>
     </div>
 
     {#if appState.sidebarOpen}
@@ -321,12 +323,12 @@
         ></div>
 
         <aside
-            class="fixed inset-y-0 right-0 z-50 w-full max-w-sm overflow-y-auto border-l border-white/10 bg-white px-5 py-5 shadow-2xl shadow-black/20 dark:bg-neutral-950 lg:hidden"
+            class="fixed inset-y-0 right-0 z-50 w-full max-w-sm overflow-y-auto border-l border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(248,250,252,0.98))] px-5 py-5 shadow-2xl shadow-black/20 dark:bg-[linear-gradient(180deg,rgba(2,6,23,0.98),rgba(15,23,42,0.98))] lg:hidden"
         >
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <span
-                        class="flex size-10 items-center justify-center rounded-full bg-slate-900 text-lg text-white dark:bg-white dark:text-slate-900"
+                        class="flex size-10 items-center justify-center rounded-[1rem] bg-[linear-gradient(135deg,#0f172a,#0369a1)] text-lg text-white dark:bg-[linear-gradient(135deg,#e2e8f0,#7dd3fc)] dark:text-slate-900"
                     >
                         🗞️
                     </span>

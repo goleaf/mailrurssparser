@@ -50,7 +50,7 @@ class CategoryForm
                                 TextInput::make('rss_url')
                                     ->url()
                                     ->nullable()
-                                    ->placeholder('https://news.mail.ru/rss/politics/'),
+                                    ->placeholder(rtrim((string) config('rss.feed_origin', 'https://example.com'), '/').'/rss/politics/'),
                                 TextInput::make('rss_key')
                                     ->nullable()
                                     ->maxLength(50),

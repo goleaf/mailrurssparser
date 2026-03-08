@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Attla\EncodedAttributes\HasEncodedAttributes;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,5 +51,49 @@ class RssParseLog extends Model
     public function rssFeed(): BelongsTo
     {
         return $this->belongsTo(RssFeed::class);
+    }
+
+    public function scopeRunningAt(Builder $query, DateTimeInterface|string|null $moment = null): Builder
+    {
+        $moment = $this->normalizeMoment($moment);
+
+        return $query
+            ->where('started_at', '<=', $moment)
+            ->where(function (Builder $query) use ($moment): void {
+                $query->whereNull('finished_at')
+                    ->orWhere(function (Builder $query) use ($moment): void {
+                        $query->whereNotNull('finished_at')
+                            ->whereValueBetween($moment, ['started_at', 'finished_at']);
+                    });
+            });
+    }
+
+    public function scopeOverlappingWindow(
+        Builder $query,
+        DateTimeInterface|string $from,
+        DateTimeInterface|string $to,
+    ): Builder {
+        $from = $this->normalizeMoment($from);
+        $to = $this->normalizeMoment($to);
+
+        if ($from->greaterThan($to)) {
+            [$from, $to] = [$to, $from];
+        }
+
+        return $query->where(function (Builder $query) use ($from, $to): void {
+            $query->whereBetween('started_at', [$from, $to])
+                ->orWhere(function (Builder $query) use ($from): void {
+                    $query->runningAt($from);
+                });
+        });
+    }
+
+    private function normalizeMoment(DateTimeInterface|string|null $moment): CarbonImmutable
+    {
+        if ($moment instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($moment);
+        }
+
+        return CarbonImmutable::parse($moment ?? now());
     }
 }

@@ -9,6 +9,11 @@ it('validates the search term', function () {
         ->assertUnprocessable();
 });
 
+it('requires at least two characters for autocomplete suggestions', function () {
+    $this->getJson('/api/v1/search/suggest?'.http_build_query(['q' => 'a']))
+        ->assertUnprocessable();
+});
+
 it('returns search results with query and total meta', function () {
     if (! trait_exists(Laravel\Scout\Searchable::class)) {
         $this->markTestSkipped('Laravel Scout is not installed.');
@@ -70,8 +75,33 @@ it('returns fallback suggestions when no search results exist', function () {
 });
 
 it('returns autocomplete suggestions for articles, categories, and tags', function () {
-    $category = Category::factory()->create(['name' => 'Спорт', 'slug' => 'sport']);
-    $tag = Tag::factory()->create(['name' => 'Спорт', 'slug' => 'sport']);
+    $category = Category::factory()->create([
+        'name' => 'Спорт',
+        'slug' => 'sport',
+        'order' => 2,
+    ]);
+    Category::factory()->create([
+        'name' => 'Спорт сегодня',
+        'slug' => 'sport-today',
+        'order' => 1,
+    ]);
+    $tag = Tag::factory()->create([
+        'name' => 'Спорт',
+        'slug' => 'sport',
+        'usage_count' => 10,
+    ]);
+    Tag::factory()->create([
+        'name' => 'Спорт сегодня',
+        'slug' => 'sport-today',
+        'usage_count' => 50,
+    ]);
+
+    Article::factory()->create([
+        'category_id' => $category->id,
+        'title' => 'Спорт',
+        'status' => 'published',
+        'published_at' => now()->subMinutes(30),
+    ]);
 
     Article::factory()->create([
         'category_id' => $category->id,
@@ -87,6 +117,9 @@ it('returns autocomplete suggestions for articles, categories, and tags', functi
             'categories',
             'tags',
         ])
+        ->assertJsonPath('articles.0.title', 'Спорт')
+        ->assertJsonPath('categories.0.name', 'Спорт')
+        ->assertJsonPath('tags.0.name', 'Спорт')
         ->assertJsonFragment([
             'name' => $category->name,
             'slug' => $category->slug,

@@ -1,9 +1,16 @@
 <?php
 
+$feedHost = implode('.', ['news', 'mail', 'ru']);
+$feedOrigin = 'https://'.$feedHost;
+
 return [
+    'source_name' => '',
+    'feed_host' => $feedHost,
+    'feed_origin' => $feedOrigin,
+
     'feeds' => [
         [
-            'url' => 'https://news.mail.ru/rss/',
+            'url' => "{$feedOrigin}/rss/",
             'title' => 'Все новости',
             'category_slug' => 'all',
             'category_name' => 'Все новости',
@@ -11,7 +18,7 @@ return [
             'category_icon' => '📰',
         ],
         [
-            'url' => 'https://news.mail.ru/rss/main/',
+            'url' => "{$feedOrigin}/rss/main/",
             'title' => 'Главные новости',
             'category_slug' => 'main',
             'category_name' => 'Главные новости',
@@ -19,7 +26,7 @@ return [
             'category_icon' => '⭐',
         ],
         [
-            'url' => 'https://news.mail.ru/rss/politics/',
+            'url' => "{$feedOrigin}/rss/politics/",
             'title' => 'Политика',
             'category_slug' => 'politics',
             'category_name' => 'Политика',
@@ -27,15 +34,17 @@ return [
             'category_icon' => '🏛️',
         ],
         [
-            'url' => 'https://news.mail.ru/rss/economics/',
-            'title' => 'Экономика',
+            'url' => "{$feedOrigin}/rss/economics/",
+            'title' => 'Экономика: Отрасли',
             'category_slug' => 'economics',
             'category_name' => 'Экономика',
+            'sub_category_name' => 'Отрасли',
+            'sub_category_slug' => 'otrasli',
             'category_color' => '#16A34A',
             'category_icon' => '💹',
         ],
         [
-            'url' => 'https://news.mail.ru/rss/society/',
+            'url' => "{$feedOrigin}/rss/society/",
             'title' => 'Общество',
             'category_slug' => 'society',
             'category_name' => 'Общество',
@@ -43,7 +52,7 @@ return [
             'category_icon' => '👥',
         ],
         [
-            'url' => 'https://news.mail.ru/rss/incident/',
+            'url' => "{$feedOrigin}/rss/incident/",
             'title' => 'Происшествия',
             'category_slug' => 'incident',
             'category_name' => 'Происшествия',
@@ -51,7 +60,7 @@ return [
             'category_icon' => '🚨',
         ],
         [
-            'url' => 'https://news.mail.ru/rss/svo/',
+            'url' => "{$feedOrigin}/rss/svo/",
             'title' => 'СВО',
             'category_slug' => 'svo',
             'category_name' => 'СВО',
@@ -59,7 +68,7 @@ return [
             'category_icon' => '🎖️',
         ],
         [
-            'url' => 'https://news.mail.ru/rss/sport/',
+            'url' => "{$feedOrigin}/rss/sport/",
             'title' => 'Спорт',
             'category_slug' => 'sport',
             'category_name' => 'Спорт',
@@ -71,9 +80,77 @@ return [
     'parser' => [
         'timeout' => 30,
         'connect_timeout' => 10,
+        'batch_concurrency' => 5,
         'user_agent' => 'Mozilla/5.0 (compatible; NewsPortalBot/1.0; +http://localhost)',
         'max_items_per_feed' => 50,
         'duplicate_window_hours' => 72,
+    ],
+
+    'page_parser' => [
+        'enabled' => true,
+        'timeout' => 20,
+        'connect_timeout' => 10,
+        'max_retries' => 2,
+    ],
+
+    'source_pages' => [
+        'enabled' => true,
+        'timeout' => 20,
+        'connect_timeout' => 10,
+        'max_retries' => 2,
+        'user_agent' => 'Mozilla/5.0 (compatible; NewsPortalBot/1.0; +http://localhost)',
+        'min_body_characters' => 40,
+        'title_selectors' => [
+            'h1[itemprop="headline"]',
+            '.article__title',
+            'article h1',
+            'main h1',
+            'h1',
+        ],
+        'subtitle_selectors' => [
+            'h2[itemprop="alternativeHeadline"]',
+            '.article__subtitle',
+            '.article__lead',
+            '.article__deck',
+            'article .subtitle',
+            'main .subtitle',
+        ],
+        'article_selectors' => [
+            '[article-item-type="html"]',
+            '.article__body',
+            '.article-content',
+            '.entry-content',
+            'article',
+            'main',
+        ],
+        'author_selectors' => [
+            '[rel="author"]',
+            '[itemprop="author"]',
+            '.article__author',
+            '.article-author',
+            'a[href*="/authors/"]',
+        ],
+        'image_selectors' => [
+            'meta[property="og:image"]',
+            'article figure img',
+            '.article__media img',
+            'main img',
+        ],
+        'remove_selectors' => [
+            '.advert',
+            '.ad',
+            '.ads',
+            '.banner',
+            '.share',
+            '.social',
+            '.related',
+            '.recommendations',
+            '.article__tags',
+            '.article__footer',
+            '.article__meta',
+            '.article__toolbar',
+            '.article__buttons',
+        ],
     ],
 
     'image' => [

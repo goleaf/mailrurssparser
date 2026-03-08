@@ -31,7 +31,7 @@ class ListArticles extends ListRecords
                         ->label('RSS URL')
                         ->url()
                         ->required()
-                        ->placeholder('https://news.mail.ru/rss/main/'),
+                        ->placeholder(rtrim((string) config('rss.feed_origin', 'https://example.com'), '/').'/rss/main/'),
                 ])
                 ->action(function (array $data, RssParserService $parser): void {
                     try {

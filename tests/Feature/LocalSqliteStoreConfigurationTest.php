@@ -1,5 +1,6 @@
 <?php
 
+use App\Providers\AppServiceProvider;
 use Symfony\Component\Process\Process;
 
 function localStoreConfiguration(): array
@@ -78,4 +79,43 @@ it('prefers file-backed failover cache stores for local sqlite environments', fu
         'cache_failover_stores' => ['file', 'array'],
         'session' => 'file',
     ]);
+});
+
+it('normalizes mixed failover stores through config collections for local sqlite', function () {
+    $originalEnvironment = app()['env'];
+    $originalDatabaseDefault = config('database.default');
+    $originalCacheDefault = config('cache.default');
+    $originalStores = config('cache.stores.failover.stores');
+    $originalSessionDriver = config('session.driver');
+
+    try {
+        app()['env'] = 'local';
+        config([
+            'database.default' => 'sqlite',
+            'cache.default' => 'failover',
+            'cache.stores.failover.stores' => ['database', null, '', 'array', 'database', 12],
+            'session.driver' => 'database',
+        ]);
+
+        $provider = new class(app()) extends AppServiceProvider
+        {
+            public function normalizeForTest(): void
+            {
+                $this->preferFileBackedStoresForLocalSqlite();
+            }
+        };
+
+        $provider->normalizeForTest();
+
+        expect(config('cache.stores.failover.stores'))->toBe(['file', 'array'])
+            ->and(config('session.driver'))->toBe('file');
+    } finally {
+        config([
+            'database.default' => $originalDatabaseDefault,
+            'cache.default' => $originalCacheDefault,
+            'cache.stores.failover.stores' => $originalStores,
+            'session.driver' => $originalSessionDriver,
+        ]);
+        app()['env'] = $originalEnvironment;
+    }
 });

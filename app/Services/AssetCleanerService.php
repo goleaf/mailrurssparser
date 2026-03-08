@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Fluent;
 use RuntimeException;
 use Symfony\Component\Finder\SplFileInfo;
@@ -201,9 +202,9 @@ class AssetCleanerService
      */
     private function typeDefinitions(): array
     {
-        $definitions = config('asset-cleaner.types', []);
-
-        return is_array($definitions) ? $definitions : [];
+        return Config::collection('asset-cleaner.types', [])
+            ->filter(fn (mixed $definition, mixed $type): bool => is_string($type) && is_array($definition))
+            ->all();
     }
 
     /**
@@ -342,20 +343,17 @@ class AssetCleanerService
      */
     private function projectReferenceContents(): array
     {
-        $referencePaths = config('asset-cleaner.reference_paths', []);
-        $referenceExtensions = array_map(
-            fn (mixed $extension): string => strtolower(ltrim((string) $extension, '.')),
-            is_array(config('asset-cleaner.reference_extensions', []))
-                ? config('asset-cleaner.reference_extensions', [])
-                : [],
-        );
+        $referencePaths = Config::collection('asset-cleaner.reference_paths', [])
+            ->filter(fn (mixed $path): bool => is_string($path) && $path !== '')
+            ->all();
+        $referenceExtensions = Config::collection('asset-cleaner.reference_extensions', [])
+            ->map(fn (mixed $extension): string => strtolower(ltrim((string) $extension, '.')))
+            ->filter()
+            ->values()
+            ->all();
         $contents = [];
 
-        foreach (is_array($referencePaths) ? $referencePaths : [] as $path) {
-            if (! is_string($path) || $path === '') {
-                continue;
-            }
-
+        foreach ($referencePaths as $path) {
             if ($this->files->isFile($path)) {
                 $contents[] = (string) $this->files->get($path);
 
@@ -413,16 +411,12 @@ class AssetCleanerService
      */
     private function protectedFiles(): array
     {
-        $files = config('asset-cleaner.protected_files', []);
-
-        if (! is_array($files)) {
-            return [];
-        }
-
-        $normalized = array_values(array_unique(array_map(
-            fn (mixed $file): string => $this->normalizePath((string) $file),
-            array_filter($files, fn (mixed $file): bool => is_string($file) && $file !== ''),
-        )));
+        $normalized = Config::collection('asset-cleaner.protected_files', [])
+            ->filter(fn (mixed $file): bool => is_string($file) && $file !== '')
+            ->map(fn (string $file): string => $this->normalizePath($file))
+            ->unique()
+            ->values()
+            ->all();
 
         sort($normalized);
 

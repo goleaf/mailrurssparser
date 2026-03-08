@@ -2,6 +2,7 @@
 
 use App\Mail\ConfirmSubscriptionMail;
 use App\Models\Article;
+use App\Models\ArticleView;
 use App\Models\Bookmark;
 use App\Models\Category;
 use App\Models\NewsletterSubscriber;
@@ -33,7 +34,12 @@ it('shows a single article and records a hashed view', function () {
         'published_at' => now()->subHour(),
     ]);
 
-    $this->withHeader('User-Agent', 'Pest Browser')
+    $this->withHeaders([
+        'User-Agent' => 'Pest Browser',
+        'CF-IPCountry' => 'DE',
+        'X-Timezone' => 'Europe/Berlin',
+        'X-Locale' => 'de-DE',
+    ])
         ->getJson('/api/v1/articles/'.$article->slug)
         ->assertSuccessful()
         ->assertJsonPath('data.slug', $article->slug)
@@ -47,7 +53,10 @@ it('shows a single article and records a hashed view', function () {
         ]);
 
     expect($article->views()->count())->toBe(1)
-        ->and($article->views()->first()?->ip_hash)->not->toBeNull();
+        ->and($article->views()->first()?->ip_hash)->not->toBeNull()
+        ->and($article->views()->first()?->country_code)->toBe('DE')
+        ->and($article->views()->first()?->timezone)->toBe('Europe/Berlin')
+        ->and($article->views()->first()?->locale)->toBe('de');
 });
 
 it('classifies internal referrers using URI authority parsing', function () {
@@ -68,6 +77,24 @@ it('classifies internal referrers using URI authority parsing', function () {
 
     expect($view?->referrer_type)->toBe('internal')
         ->and($view?->referrer_domain)->toBe('news.test');
+});
+
+it('classifies malformed referrers as other when they do not contain a scheme', function () {
+    $article = Article::factory()->create([
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $this->withHeaders([
+        'User-Agent' => 'Pest Browser',
+        'Referer' => 'news.test/#/articles/source-story',
+    ])->getJson('/api/v1/articles/'.$article->slug)
+        ->assertSuccessful();
+
+    $view = $article->fresh()->views()->latest('id')->first();
+
+    expect($view?->referrer_type)->toBe('other')
+        ->and($view?->referrer_domain)->toBeNull();
 });
 
 it('supports bookmark toggling for the current session fingerprint', function () {
@@ -113,14 +140,38 @@ it('returns overview stats and feed performance data', function () {
         'status' => 'published',
         'published_at' => now()->subHour(),
     ]);
+    $article = Article::query()->firstOrFail();
+
+    ArticleView::factory()->count(2)->create([
+        'article_id' => $article->id,
+        'country_code' => 'DE',
+        'timezone' => 'Europe/Berlin',
+        'viewed_at' => now()->subHour(),
+    ]);
+    ArticleView::factory()->create([
+        'article_id' => $article->id,
+        'country_code' => 'FR',
+        'timezone' => 'Europe/Paris',
+        'viewed_at' => now()->subHour(),
+    ]);
 
     $this->getJson('/api/v1/stats/overview')
         ->assertSuccessful()
         ->assertJsonStructure([
             'articles' => ['total', 'today', 'this_week', 'breaking', 'featured'],
             'views' => ['total', 'today', 'this_week', 'unique_today'],
+            'top_countries' => [
+                '*' => ['country_code', 'view_count'],
+            ],
+            'top_timezones' => [
+                '*' => ['timezone', 'view_count'],
+            ],
             'feeds' => ['total', 'active', 'errors'],
-        ]);
+        ])
+        ->assertJsonPath('top_countries.0.country_code', 'DE')
+        ->assertJsonPath('top_countries.0.view_count', 2)
+        ->assertJsonPath('top_timezones.0.timezone', 'Europe/Berlin')
+        ->assertJsonPath('top_timezones.0.view_count', 2);
 
     $this->getJson('/api/v1/stats/feeds')
         ->assertSuccessful()
@@ -135,14 +186,23 @@ it('subscribes a newsletter recipient and sends confirmation mail', function () 
     Mail::fake();
     $category = Category::factory()->create();
 
-    $this->postJson('/api/v1/newsletter/subscribe', [
+    $this->withHeaders([
+        'CF-IPCountry' => 'PL',
+        'X-Timezone' => 'Europe/Warsaw',
+        'X-Locale' => 'pl-PL',
+    ])->postJson('/api/v1/newsletter/subscribe', [
         'email' => 'reader@example.com',
         'name' => 'Reader',
         'category_ids' => [$category->id],
     ])->assertSuccessful()
         ->assertJson(['success' => true]);
 
-    expect(NewsletterSubscriber::query()->where('email', 'reader@example.com')->exists())->toBeTrue();
+    $subscriber = NewsletterSubscriber::query()->where('email', 'reader@example.com')->first();
+
+    expect($subscriber)->not->toBeNull()
+        ->and($subscriber?->country_code)->toBe('PL')
+        ->and($subscriber?->timezone)->toBe('Europe/Warsaw')
+        ->and($subscriber?->locale)->toBe('pl');
 
     Mail::assertSent(ConfirmSubscriptionMail::class);
 });

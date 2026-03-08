@@ -94,7 +94,11 @@ it('tracks shares and returns a share url', function () {
 it('subscribes and resends confirmation emails based on subscriber state', function () {
     Mail::fake();
 
-    $this->postJson('/api/v1/newsletter/subscribe', [
+    $this->withHeaders([
+        'CF-IPCountry' => 'FR',
+        'X-Timezone' => 'Europe/Paris',
+        'X-Locale' => 'fr-FR',
+    ])->postJson('/api/v1/newsletter/subscribe', [
         'email' => 'reader@example.com',
         'name' => 'Reader',
     ])->assertSuccessful()
@@ -106,6 +110,9 @@ it('subscribes and resends confirmation emails based on subscriber state', funct
     $subscriber = NewsletterSubscriber::query()->where('email', 'reader@example.com')->firstOrFail();
 
     Mail::assertSent(ConfirmSubscriptionMail::class, 1);
+    expect($subscriber->country_code)->toBe('FR')
+        ->and($subscriber->timezone)->toBe('Europe/Paris')
+        ->and($subscriber->locale)->toBe('fr');
 
     $this->postJson('/api/v1/newsletter/subscribe', [
         'email' => 'reader@example.com',

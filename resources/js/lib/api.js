@@ -47,21 +47,49 @@ function getCsrfToken() {
     );
 }
 
+function getClientTimezone() {
+    if (typeof Intl === 'undefined') {
+        return '';
+    }
+
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone ?? '';
+    } catch {
+        return '';
+    }
+}
+
+function getClientLocale() {
+    if (typeof navigator !== 'undefined') {
+        return navigator.languages?.[0] ?? navigator.language ?? '';
+    }
+
+    if (typeof document !== 'undefined') {
+        return document.documentElement?.lang ?? '';
+    }
+
+    return '';
+}
+
 async function request(path, options = {}) {
     const {
         method = 'GET',
         params = {},
         data,
         headers = {},
+        signal,
     } = options;
 
     const response = await fetch(buildUrl(path, params), {
         method,
+        signal,
         credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
             ...(data !== undefined ? { 'Content-Type': 'application/json' } : {}),
             ...(getCsrfToken() ? { 'X-CSRF-TOKEN': getCsrfToken() } : {}),
+            ...(getClientTimezone() ? { 'X-Timezone': getClientTimezone() } : {}),
+            ...(getClientLocale() ? { 'X-Locale': getClientLocale() } : {}),
             ...headers,
         },
         body: data !== undefined ? JSON.stringify(data) : undefined,
@@ -143,11 +171,12 @@ export const search = (query, params = {}) =>
         },
     });
 
-export const suggestSearch = (query) =>
+export const suggestSearch = (query, options = {}) =>
     request(`${API_PREFIX}/search/suggest`, {
         params: {
             q: query,
         },
+        signal: options.signal,
     });
 
 export const searchHighlights = (query, articleId) =>

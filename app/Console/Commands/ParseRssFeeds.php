@@ -24,7 +24,7 @@ class ParseRssFeeds extends Command
         {--reparse= : Re-parse last N articles from each feed (re-checks duplicates)}
         {--stat : Show detailed statistics after parsing}';
 
-    protected $description = 'Parse RSS feeds from news.mail.ru — supports filtering, scheduling, dry runs';
+    protected $description = 'Parse configured RSS feeds — supports filtering, scheduling, dry runs';
 
     public function handle(RssParserService $parser): int
     {
@@ -240,10 +240,12 @@ class ParseRssFeeds extends Command
     {
         $this->newLine();
         $this->info('Additional Statistics');
+        $todayStart = today()->startOfDay();
+        $todayEnd = $todayStart->endOfDay();
 
         $topFeeds = RssParseLog::query()
             ->selectRaw('rss_feed_id, SUM(new_count) as new_total')
-            ->whereDate('started_at', today())
+            ->whereBetween('started_at', [$todayStart, $todayEnd])
             ->groupBy('rss_feed_id')
             ->orderByDesc('new_total')
             ->with('rssFeed')

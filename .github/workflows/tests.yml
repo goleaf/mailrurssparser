@@ -49,6 +49,9 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate
 
+      - name: Audit RefreshDatabase Coverage
+        run: php artisan test:audit-refresh-database
+
       - name: Build Assets
         run: npm run build
 

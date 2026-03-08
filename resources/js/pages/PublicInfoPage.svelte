@@ -75,23 +75,32 @@
 
 <div class="bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.16),_transparent_28%),linear-gradient(to_bottom,_#f8fbff,_#eef2ff)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_28%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8">
     <div class="mx-auto max-w-7xl">
-        <section class="rounded-[2.25rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-60px_rgba(15,23,42,0.45)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8">
-            <div class="inline-flex rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
-                {content.badge}
+        <section class="relative overflow-hidden rounded-[2.4rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-60px_rgba(15,23,42,0.45)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8">
+            <div class="absolute right-0 top-0 h-40 w-40 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-500/20"></div>
+            <div class="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-amber-200/70 blur-3xl dark:bg-amber-500/10"></div>
+            <div class="relative">
+                <div class="inline-flex rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
+                    {content.badge}
+                </div>
+                <h1 class="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
+                    {content.title}
+                </h1>
+                <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
+                    {content.description}
+                </p>
             </div>
-            <h1 class="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-                {content.title}
-            </h1>
-            <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
-                {content.description}
-            </p>
         </section>
 
         <section class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {#each content.cards as card (card.title)}
-                <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
-                    <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Раздел
+            {#each content.cards as card, index (card.title)}
+                <article class="rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                            Раздел
+                        </div>
+                        <div class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white dark:bg-white dark:text-slate-950">
+                            0{index + 1}
+                        </div>
                     </div>
                     <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-white">
                         {card.title}

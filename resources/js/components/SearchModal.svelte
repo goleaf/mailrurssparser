@@ -1,46 +1,28 @@
 <script lang="ts">
     import Search from 'lucide-svelte/icons/search';
     import X from 'lucide-svelte/icons/x';
+    import SearchAutocompletePanel from '@/components/SearchAutocompletePanel.svelte';
     import * as api from '@/lib/api';
+    import {
+        buildSearchAutocompleteItems,
+        emptySearchSuggestions,
+        type SearchAutocompleteItem,
+        type SearchSuggestions,
+    } from '@/lib/searchAutocomplete';
     import { resetFilters, setCategory, toggleTag } from '@/stores/articles.svelte.js';
 
-    type Category = {
-        id: number | string;
-        name: string;
-        slug: string;
-        color?: string | null;
-    };
-
-    type SearchSuggestions = {
-        articles: Array<{
-            id: number | string;
-            title: string;
-            slug: string;
-            published_at?: string | null;
-        }>;
-        categories: Category[];
-        tags: Array<{
-            id: number | string;
-            name: string;
-            slug: string;
-            color?: string | null;
-        }>;
-    };
-
     const RECENT_SEARCHES_KEY = 'news-portal-recent-searches';
-    const emptySuggestions = {
-        articles: [],
-        categories: [],
-        tags: [],
-    } satisfies SearchSuggestions;
 
     let { open = $bindable(false) }: { open?: boolean } = $props();
 
     let query = $state('');
-    let suggestions = $state<SearchSuggestions>({ ...emptySuggestions });
+    let suggestions = $state<SearchSuggestions>({ ...emptySearchSuggestions });
     let loading = $state(false);
     let recentSearches = $state<string[]>([]);
     let searchInput = $state<HTMLInputElement | null>(null);
+    let activeSuggestionIndex = $state(-1);
+    let autocompleteAbortController: AbortController | null = null;
+    let autocompleteRequestVersion = 0;
 
     function readRecentSearches(): string[] {
         if (typeof localStorage === 'undefined') {
@@ -89,10 +71,13 @@
     }
 
     function close(): void {
+        autocompleteAbortController?.abort();
+        autocompleteAbortController = null;
         open = false;
         query = '';
         loading = false;
-        suggestions = { ...emptySuggestions };
+        activeSuggestionIndex = -1;
+        suggestions = { ...emptySearchSuggestions };
     }
 
     function submitSearch(nextQuery = query): void {
@@ -137,9 +122,64 @@
         }).format(new Date(value));
     }
 
+    function selectAutocompleteItem(item: SearchAutocompleteItem): void {
+        switch (item.kind) {
+            case 'search':
+                submitSearch(item.query);
+
+                return;
+            case 'article':
+                openArticle(item.article.slug);
+
+                return;
+            case 'category':
+                applyCategory(item.category.slug);
+
+                return;
+            case 'tag':
+                applyTag(item.tag.slug);
+
+                return;
+        }
+    }
+
     function handleSearchKeydown(event: KeyboardEvent): void {
+        const items = buildSearchAutocompleteItems(query, suggestions);
+
+        if (event.key === 'ArrowDown') {
+            if (items.length === 0) {
+                return;
+            }
+
+            event.preventDefault();
+            activeSuggestionIndex = (activeSuggestionIndex + 1 + items.length) % items.length;
+
+            return;
+        }
+
+        if (event.key === 'ArrowUp') {
+            if (items.length === 0) {
+                return;
+            }
+
+            event.preventDefault();
+            activeSuggestionIndex =
+                activeSuggestionIndex <= 0
+                    ? items.length - 1
+                    : activeSuggestionIndex - 1;
+
+            return;
+        }
+
         if (event.key === 'Enter') {
             event.preventDefault();
+
+            if (activeSuggestionIndex >= 0 && items[activeSuggestionIndex]) {
+                selectAutocompleteItem(items[activeSuggestionIndex]);
+
+                return;
+            }
+
             submitSearch();
         }
     }
@@ -176,28 +216,56 @@
 
         const normalized = query.trim();
 
-        if (!normalized) {
-            suggestions = { ...emptySuggestions };
+        if (normalized.length < 2) {
+            autocompleteAbortController?.abort();
+            autocompleteAbortController = null;
+            suggestions = { ...emptySearchSuggestions };
+            activeSuggestionIndex = -1;
             loading = false;
 
             return;
         }
 
         loading = true;
+        const requestVersion = ++autocompleteRequestVersion;
 
         const timeoutId = window.setTimeout(async () => {
+            autocompleteAbortController?.abort();
+            autocompleteAbortController = new AbortController();
+
             try {
-                const response = await api.suggestSearch(normalized);
+                const response = await api.suggestSearch(normalized, {
+                    signal: autocompleteAbortController.signal,
+                });
+
+                if (requestVersion !== autocompleteRequestVersion) {
+                    return;
+                }
 
                 suggestions = {
                     articles: response.data?.articles ?? [],
                     categories: response.data?.categories ?? [],
                     tags: response.data?.tags ?? [],
                 };
-            } catch {
-                suggestions = { ...emptySuggestions };
+                activeSuggestionIndex = -1;
+            } catch (error) {
+                if (
+                    error instanceof DOMException &&
+                    error.name === 'AbortError'
+                ) {
+                    return;
+                }
+
+                if (requestVersion !== autocompleteRequestVersion) {
+                    return;
+                }
+
+                suggestions = { ...emptySearchSuggestions };
+                activeSuggestionIndex = -1;
             } finally {
-                loading = false;
+                if (requestVersion === autocompleteRequestVersion) {
+                    loading = false;
+                }
             }
         }, 300);
 
@@ -239,25 +307,38 @@
                 </div>
 
                 <div class="rounded-[1.75rem] bg-slate-100 p-2 dark:bg-white/5">
-                    <div class="flex flex-col gap-3 rounded-[1.25rem] bg-white px-4 py-3 shadow-sm dark:bg-neutral-900 sm:flex-row sm:items-center">
-                        <Search class="size-5 shrink-0 text-slate-400" />
-                        <input
-                            bind:this={searchInput}
-                            bind:value={query}
-                            type="text"
-                            class="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
-                            placeholder="Поиск по новостям..."
-                            onkeydown={handleSearchKeydown}
+                    <div class="rounded-[1.25rem] bg-white px-4 py-3 shadow-sm dark:bg-neutral-900">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <Search class="size-5 shrink-0 text-slate-400" />
+                            <input
+                                bind:this={searchInput}
+                                bind:value={query}
+                                type="text"
+                                class="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
+                                placeholder="Поиск по новостям..."
+                                onkeydown={handleSearchKeydown}
+                            />
+                            <button
+                                type="button"
+                                class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                                onclick={() => {
+                                    submitSearch();
+                                }}
+                            >
+                                Искать
+                            </button>
+                        </div>
+
+                        <SearchAutocompletePanel
+                            {query}
+                            {suggestions}
+                            {loading}
+                            activeIndex={activeSuggestionIndex}
+                            onSearchSubmit={submitSearch}
+                            onArticleSelect={openArticle}
+                            onCategorySelect={applyCategory}
+                            onTagSelect={applyTag}
                         />
-                        <button
-                            type="button"
-                            class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-                            onclick={() => {
-                                submitSearch();
-                            }}
-                        >
-                            Искать
-                        </button>
                     </div>
                 </div>
 

@@ -137,25 +137,38 @@ it('defines the requested rss feed model contract', function () {
 it('supports the requested rss feed scopes and lifecycle helpers', function () {
     Carbon::setTestNow('2026-03-07 12:00:00');
 
+    $category = Category::factory()->create();
+    $otherCategory = Category::factory()->create();
     $dueFeed = RssFeed::factory()->create([
+        'category_id' => $category->id,
         'is_active' => true,
         'next_parse_at' => now()->subMinute(),
         'fetch_interval' => 15,
         'articles_parsed_total' => 8,
         'consecutive_failures' => 2,
         'last_error' => 'old error',
+        'last_parsed_at' => now()->subMinutes(30),
     ]);
     $futureFeed = RssFeed::factory()->create([
+        'category_id' => $category->id,
         'is_active' => true,
         'next_parse_at' => now()->addMinute(),
+        'last_parsed_at' => null,
     ]);
     $inactiveFeed = RssFeed::factory()->create([
+        'category_id' => $otherCategory->id,
         'is_active' => false,
         'next_parse_at' => now()->subMinute(),
+        'last_error' => 'disabled error',
+        'last_parsed_at' => null,
     ]);
 
     expect(RssFeed::active()->pluck('id')->all())->toContain($dueFeed->id, $futureFeed->id)
         ->not->toContain($inactiveFeed->id)
+        ->and(RssFeed::query()->inCategory($category)->pluck('id')->all())->toContain($dueFeed->id, $futureFeed->id)
+        ->not->toContain($inactiveFeed->id)
+        ->and(RssFeed::query()->parsed()->pluck('id')->all())->toBe([$dueFeed->id])
+        ->and(RssFeed::query()->withErrors()->pluck('id')->all())->toContain($dueFeed->id, $inactiveFeed->id)
         ->and(RssFeed::dueForParsing()->pluck('id')->all())->toBe([$dueFeed->id]);
 
     $dueFeed->markParsed(3, 1, 2);
@@ -211,6 +224,43 @@ it('defines the requested rss parse log model contract', function () {
         ->and($rssParseLog->rssFeed())->toBeInstanceOf(BelongsTo::class);
 });
 
+it('supports rss parse log time window scopes', function () {
+    Carbon::setTestNow('2026-03-08 12:00:00');
+
+    $runningCompletedLog = RssParseLog::factory()->create([
+        'started_at' => Carbon::parse('2026-03-08 11:45:00'),
+        'finished_at' => Carbon::parse('2026-03-08 12:15:00'),
+    ]);
+    $runningOpenLog = RssParseLog::factory()->create([
+        'started_at' => Carbon::parse('2026-03-08 11:55:00'),
+        'finished_at' => null,
+    ]);
+    $finishedLog = RssParseLog::factory()->create([
+        'started_at' => Carbon::parse('2026-03-08 10:00:00'),
+        'finished_at' => Carbon::parse('2026-03-08 10:30:00'),
+    ]);
+    $futureLog = RssParseLog::factory()->create([
+        'started_at' => Carbon::parse('2026-03-08 12:30:00'),
+        'finished_at' => null,
+    ]);
+
+    expect(RssParseLog::query()->runningAt(now())->pluck('id')->all())
+        ->toContain($runningCompletedLog->id, $runningOpenLog->id)
+        ->not->toContain($finishedLog->id)
+        ->not->toContain($futureLog->id)
+        ->and(
+            RssParseLog::query()
+                ->overlappingWindow('2026-03-08 11:50:00', '2026-03-08 12:05:00')
+                ->pluck('id')
+                ->all(),
+        )
+        ->toContain($runningCompletedLog->id, $runningOpenLog->id)
+        ->not->toContain($finishedLog->id)
+        ->not->toContain($futureLog->id);
+
+    Carbon::setTestNow();
+});
+
 it('defines the requested bookmark model contract', function () {
     $bookmark = new Bookmark;
 
@@ -235,6 +285,9 @@ it('defines the requested newsletter subscriber model contract', function () {
         'confirmed_at',
         'unsubscribed_at',
         'ip_address',
+        'country_code',
+        'timezone',
+        'locale',
     ])
         ->and($subscriber->getCasts())->toMatchArray([
             'category_ids' => 'array',

@@ -76,6 +76,25 @@ class RssFeed extends Model
         return $query->where('is_active', true);
     }
 
+    public function scopeInCategory(Builder $query, Category|int $category): Builder
+    {
+        $categoryId = $category instanceof Category ? $category->getKey() : $category;
+
+        return $query->where('category_id', $categoryId);
+    }
+
+    public function scopeParsed(Builder $query): Builder
+    {
+        return $query->whereNotNull('last_parsed_at');
+    }
+
+    public function scopeWithErrors(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('last_error')
+            ->where('last_error', '!=', '');
+    }
+
     public function scopeDueForParsing(Builder $query): Builder
     {
         return $query
@@ -102,6 +121,47 @@ class RssFeed extends Model
                 default => 'OK',
             };
         });
+    }
+
+    public static function sanitizeSourceName(?string $value): string
+    {
+        $value = html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $value = trim((string) preg_replace('/^[©\s]+/u', '', (string) $value));
+        $value = trim($value, " \t\n\r\0\x0B\"'`«»„“”‚‘’");
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s*-\s*Новости$/u', '', $value) ?? $value;
+        $value = preg_replace('/\s+-\s+.+$/u', '', $value) ?? $value;
+        $value = trim($value, " \t\n\r\0\x0B\"'`«»„“”‚‘’");
+
+        if ($value === '') {
+            return '';
+        }
+
+        return in_array(strtolower($value), self::genericSourceNames(), true)
+            ? ''
+            : $value;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function genericSourceNames(): array
+    {
+        return [
+            strtolower((string) config('rss.feed_host', implode('.', ['news', 'mail', 'ru']))),
+            strtolower(implode('.', ['mail', 'ru'])),
+            'новости mail',
+            'спорт mail',
+            'погода mail',
+        ];
+    }
+
+    protected function sourceName(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): string => static::sanitizeSourceName($value),
+            set: fn (?string $value): string => static::sanitizeSourceName($value),
+        );
     }
 
     public function markParsed(int $new, int $skip, int $errors): void

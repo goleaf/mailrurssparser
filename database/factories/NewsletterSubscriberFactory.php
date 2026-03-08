@@ -26,6 +26,9 @@ class NewsletterSubscriberFactory extends Factory
             'confirmed_at' => fake()->boolean(70) ? fake()->dateTimeBetween('-1 month', 'now') : null,
             'unsubscribed_at' => null,
             'ip_address' => fake()->ipv4(),
+            'country_code' => fake()->optional()->countryCode(),
+            'timezone' => fake()->optional()->timezone(),
+            'locale' => fake()->optional()->randomElement(['en', 'ru', 'de', 'fr', 'pl']),
         ];
     }
 }

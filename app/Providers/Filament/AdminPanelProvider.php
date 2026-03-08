@@ -34,6 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->topbar(false)
             ->login()
             ->profile(isSimple: false)
             ->multiFactorAuthentication([

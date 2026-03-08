@@ -143,57 +143,63 @@
     });
 </script>
 
-<div class="min-h-screen bg-slate-100 text-slate-950 dark:bg-neutral-950 dark:text-white">
-    <div class="relative border-b border-slate-200/70 bg-linear-to-r from-slate-950 via-slate-900 to-sky-950 text-slate-100 dark:border-white/10">
-        <div class="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"></div>
-        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 text-sm lg:px-6">
-            <div class="flex items-center gap-3">
-                <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-300">
-                    Public UI
-                </span>
-                <div class="text-xs text-slate-300">
-                    Mailru RSS Parser routed through the public frontend shell
+<div class="min-h-screen bg-[linear-gradient(180deg,#f4f8fc_0%,#eef3fb_26%,#f8fafc_100%)] text-slate-950 dark:bg-[linear-gradient(180deg,#020617_0%,#0b1220_40%,#020617_100%)] dark:text-white">
+    <div class="relative overflow-hidden border-b border-slate-200/60 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.14),transparent_26%),linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.9))] text-slate-100 dark:border-white/10">
+        <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.05),transparent)]"></div>
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"></div>
+        <div class="mx-auto max-w-7xl px-4 py-4 lg:px-6">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-300">
+                        Public UI
+                    </span>
+                    <div class="rounded-full border border-white/10 bg-black/15 px-3 py-1 text-xs text-slate-300">
+                        Публичная оболочка новостного портала
+                    </div>
+                    <div class="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs text-slate-300">
+                        Быстрый доступ к ленте, поиску и аналитике
+                    </div>
                 </div>
-            </div>
 
-            <nav class="flex flex-wrap items-center gap-2">
+                <nav class="flex flex-wrap items-center gap-2">
                 {#if auth.user}
                     <Link
                         href={toUrl(dashboard())}
-                        class="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                        class="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/12"
                     >
                         Dashboard
                     </Link>
                     <a
                         href="/admin"
-                        class="rounded-full border border-sky-400/40 bg-sky-400/10 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/20"
+                        class="rounded-full border border-sky-400/40 bg-sky-400/12 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/22"
                     >
                         Админка
                     </a>
                 {:else}
                     <Link
                         href={toUrl(login())}
-                        class="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                        class="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/12"
                     >
                         Вход
                     </Link>
                     {#if canRegister}
                         <Link
                             href={toUrl(register())}
-                            class="rounded-full border border-sky-400/40 bg-sky-400/10 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/20"
+                            class="rounded-full border border-sky-400/40 bg-sky-400/12 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/22"
                         >
                             Регистрация
                         </Link>
                     {/if}
                 {/if}
-            </nav>
+                </nav>
+            </div>
         </div>
     </div>
 
     <BreakingNewsTicker />
     <Header />
 
-    <main>
+    <main class="relative">
         {#if currentRoute.name === 'home'}
             <HomePage />
         {:else if currentRoute.name === 'category'}

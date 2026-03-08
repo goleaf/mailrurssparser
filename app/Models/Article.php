@@ -7,10 +7,13 @@ use App\Services\ArticleStatus;
 use App\Services\MetricTracker;
 use App\Services\TrackedMetric;
 use Attla\EncodedAttributes\HasEncodedAttributes;
+use DateTimeInterface;
 use Filament\Forms\Components\RichEditor\MentionProvider;
 use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
 use Filament\Forms\Components\RichEditor\Models\Contracts\HasRichContent;
+use Filament\Forms\Components\RichEditor\TextColor;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,7 +44,14 @@ class Article extends Model implements HasRichContent
             ->mentions([
                 self::categoryMentionProvider(),
                 self::tagMentionProvider(),
-            ]);
+            ])
+            ->textColors([
+                'mail-blue' => TextColor::make('Mail Blue', '#2563eb', darkColor: '#60a5fa'),
+                'urgent-red' => TextColor::make('Urgent Red', '#dc2626', darkColor: '#f87171'),
+                'market-green' => TextColor::make('Market Green', '#059669', darkColor: '#34d399'),
+                ...TextColor::getDefaults(),
+            ])
+            ->customTextColors();
     }
 
     /**
@@ -235,6 +245,34 @@ class Article extends Model implements HasRichContent
         return $query->whereDate('published_at', $date);
     }
 
+    public function scopePublishedBetween(Builder $query, DateTimeInterface|string $from, DateTimeInterface|string $to): Builder
+    {
+        return $query
+            ->published()
+            ->whereBetween('published_at', [$from, $to]);
+    }
+
+    public function scopePublishedSince(Builder $query, DateTimeInterface|string $moment): Builder
+    {
+        return $query
+            ->published()
+            ->where('published_at', '>=', $moment);
+    }
+
+    public function scopeInCategory(Builder $query, Category|int $category): Builder
+    {
+        $categoryId = $category instanceof Category ? $category->getKey() : $category;
+
+        return $query->where('category_id', $categoryId);
+    }
+
+    public function scopeFromFeed(Builder $query, RssFeed|int $feed): Builder
+    {
+        $feedId = $feed instanceof RssFeed ? $feed->getKey() : $feed;
+
+        return $query->where('rss_feed_id', $feedId);
+    }
+
     public function scopeByContentType(Builder $query, string|ArticleContentType $type): Builder
     {
         $contentType = ArticleContentType::fromValue($type);
@@ -262,7 +300,7 @@ class Article extends Model implements HasRichContent
     public function scopeRelatedTo(Builder $query, Article $article, int $limit = 5): Builder
     {
         return $query
-            ->where('category_id', $article->category_id)
+            ->inCategory($article->category_id)
             ->whereKeyNot($article->getKey())
             ->orderByDesc('published_at')
             ->limit($limit);
@@ -300,6 +338,51 @@ class Article extends Model implements HasRichContent
     public function getReadingTimeTextAttribute(): string
     {
         return $this->reading_time.' мин чтения';
+    }
+
+    public static function sanitizeSourceName(?string $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $value = trim((string) preg_replace('/^[©\s]+/u', '', $value));
+        $value = trim($value, " \t\n\r\0\x0B\"'`«»„“”‚‘’");
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s*-\s*Новости$/u', '', $value) ?? $value;
+        $value = preg_replace('/\s+-\s+.+$/u', '', $value) ?? $value;
+        $value = trim($value, " \t\n\r\0\x0B\"'`«»„“”‚‘’");
+
+        if ($value === '') {
+            return null;
+        }
+
+        return in_array(Str::lower($value), self::genericSourceNames(), true)
+            ? null
+            : $value;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function genericSourceNames(): array
+    {
+        return [
+            Str::lower((string) config('rss.feed_host', implode('.', ['news', 'mail', 'ru']))),
+            Str::lower(implode('.', ['mail', 'ru'])),
+            'новости mail',
+            'спорт mail',
+            'погода mail',
+        ];
+    }
+
+    protected function sourceName(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?string => static::sanitizeSourceName($value),
+            set: fn (?string $value): ?string => static::sanitizeSourceName($value),
+        );
     }
 
     public function getMetaTitleAttribute(?string $value): string
@@ -389,15 +472,9 @@ class Article extends Model implements HasRichContent
     {
         $viewedAt = now();
         $hasRecentView = ArticleView::query()
-            ->where('article_id', $this->id)
-            ->where(function (Builder $query) use ($ipHash, $sessionHash): void {
-                $query->where('ip_hash', $ipHash);
-
-                if ($sessionHash !== '') {
-                    $query->orWhere('session_hash', $sessionHash);
-                }
-            })
-            ->where('viewed_at', '>=', $viewedAt->minus(hours: 1))
+            ->forArticle($this)
+            ->matchingViewer($ipHash, $sessionHash)
+            ->viewedSince($viewedAt->minus(hours: 1))
             ->exists();
 
         if ($hasRecentView) {
@@ -405,7 +482,7 @@ class Article extends Model implements HasRichContent
         }
 
         $isUniqueView = ArticleView::query()
-            ->where('article_id', $this->id)
+            ->forArticle($this)
             ->where('ip_hash', $ipHash)
             ->doesntExist();
 
@@ -421,6 +498,8 @@ class Article extends Model implements HasRichContent
             'ip_hash' => $ipHash,
             'session_hash' => $sessionHash !== '' ? $sessionHash : null,
             'country_code' => $meta['country_code'] ?? null,
+            'timezone' => $meta['timezone'] ?? null,
+            'locale' => $meta['locale'] ?? null,
             'device_type' => $meta['device_type'] ?? null,
             'referrer_type' => $meta['referrer_type'] ?? null,
             'referrer_domain' => $meta['referrer_domain'] ?? null,
@@ -491,7 +570,7 @@ class Article extends Model implements HasRichContent
             ],
             'publisher' => [
                 '@type' => 'Organization',
-                'name' => $this->source_name,
+                'name' => $this->source_name ?: config('app.name'),
             ],
             'url' => rtrim((string) config('app.url'), '/').'/#/articles/'.$this->slug,
             'keywords' => $tagNames,

@@ -2,6 +2,8 @@
 
 use App\Models\Article;
 use App\Models\ArticleView;
+use App\Models\Category;
+use App\Models\RssFeed;
 use App\Models\Tag;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
@@ -53,6 +55,51 @@ it('scopes published articles', function () {
     expect(Article::published()->pluck('id')->all())->toBe([$published->id]);
 });
 
+it('supports reusable publication, category, and feed scopes', function () {
+    $primaryCategory = Category::factory()->create();
+    $secondaryCategory = Category::factory()->create();
+    $primaryFeed = RssFeed::factory()->create(['category_id' => $primaryCategory->id]);
+    $secondaryFeed = RssFeed::factory()->create(['category_id' => $secondaryCategory->id]);
+
+    $matchingArticle = Article::factory()->create([
+        'category_id' => $primaryCategory->id,
+        'rss_feed_id' => $primaryFeed->id,
+        'status' => 'published',
+        'published_at' => now()->subHours(2),
+    ]);
+
+    $stalePrimaryArticle = Article::factory()->create([
+        'category_id' => $primaryCategory->id,
+        'rss_feed_id' => $primaryFeed->id,
+        'status' => 'published',
+        'published_at' => now()->subDays(2),
+    ]);
+
+    $secondaryRecentArticle = Article::factory()->create([
+        'category_id' => $secondaryCategory->id,
+        'rss_feed_id' => $secondaryFeed->id,
+        'status' => 'published',
+        'published_at' => now()->subHours(3),
+    ]);
+
+    $draftPrimaryArticle = Article::factory()->create([
+        'category_id' => $primaryCategory->id,
+        'rss_feed_id' => $primaryFeed->id,
+        'status' => 'draft',
+        'published_at' => now()->subHour(),
+    ]);
+
+    expect(Article::query()->publishedBetween(now()->subDay(), now())->pluck('id')->all())
+        ->toContain($matchingArticle->id, $secondaryRecentArticle->id)
+        ->not->toContain($stalePrimaryArticle->id, $draftPrimaryArticle->id)
+        ->and(Article::query()->publishedSince(now()->subDay())->pluck('id')->all())
+        ->toContain($matchingArticle->id, $secondaryRecentArticle->id)
+        ->not->toContain($stalePrimaryArticle->id, $draftPrimaryArticle->id)
+        ->and(Article::query()->publishedSince(now()->subDay())->inCategory($primaryCategory)->pluck('id')->all())->toBe([$matchingArticle->id])
+        ->and(Article::query()->published()->fromFeed($primaryFeed)->pluck('id')->all())->toContain($matchingArticle->id, $stalePrimaryArticle->id)
+        ->not->toContain($draftPrimaryArticle->id);
+});
+
 it('applies rolling breaking and recent windows', function () {
     $freshBreaking = Article::factory()->create([
         'status' => 'published',
@@ -80,6 +127,52 @@ it('applies rolling breaking and recent windows', function () {
         ->and($recentArticle->is_recent)->toBeTrue()
         ->and($staleArticle->is_recent)->toBeFalse()
         ->and($staleBreaking->fresh()->is_recent)->toBeFalse();
+});
+
+it('supports reusable article view analytics scopes', function () {
+    $article = Article::factory()->create();
+
+    $viewerMatch = ArticleView::factory()->create([
+        'article_id' => $article->id,
+        'ip_hash' => 'ip-match',
+        'session_hash' => 'session-match',
+        'country_code' => 'DE',
+        'timezone' => 'Europe/Berlin',
+        'viewed_at' => now()->subMinutes(30),
+    ]);
+
+    $sessionMatch = ArticleView::factory()->create([
+        'article_id' => $article->id,
+        'ip_hash' => 'other-ip',
+        'session_hash' => 'session-match',
+        'country_code' => null,
+        'timezone' => 'Europe/Paris',
+        'viewed_at' => now()->subHours(2),
+    ]);
+
+    $outsideWindow = ArticleView::factory()->create([
+        'article_id' => $article->id,
+        'ip_hash' => 'ip-old',
+        'session_hash' => 'session-old',
+        'country_code' => 'FR',
+        'timezone' => null,
+        'viewed_at' => now()->subDays(2),
+    ]);
+
+    $otherArticleView = ArticleView::factory()->create([
+        'viewed_at' => now()->subMinutes(10),
+        'country_code' => 'US',
+        'timezone' => 'America/New_York',
+    ]);
+
+    expect(ArticleView::query()->forArticle($article)->pluck('id')->all())->toContain($viewerMatch->id, $sessionMatch->id, $outsideWindow->id)
+        ->not->toContain($otherArticleView->id)
+        ->and(ArticleView::query()->forArticle($article)->matchingViewer('ip-match', 'session-match')->pluck('id')->all())->toContain($viewerMatch->id, $sessionMatch->id)
+        ->and(ArticleView::query()->viewedBetween(now()->subHour(), now())->pluck('id')->all())->toContain($viewerMatch->id, $otherArticleView->id)
+        ->not->toContain($outsideWindow->id)
+        ->and(ArticleView::query()->viewedSince(now()->subHour())->pluck('id')->all())->toContain($viewerMatch->id, $otherArticleView->id)
+        ->and(ArticleView::query()->withCountryCode()->pluck('id')->all())->toContain($viewerMatch->id, $outsideWindow->id, $otherArticleView->id)
+        ->and(ArticleView::query()->withTimezone()->pluck('id')->all())->toContain($viewerMatch->id, $sessionMatch->id, $otherArticleView->id);
 });
 
 it('casts status and content type to translated enums', function () {
@@ -115,14 +208,38 @@ it('syncs tags and updates usage counts', function () {
         ->and($second->refresh()->usage_count)->toBe(1);
 });
 
+it('can make transient articles without expanding parent factories', function () {
+    expect(Category::query()->count())->toBe(0);
+
+    $article = withoutExpandedFactoryRelationships(fn () => Article::factory()->make([
+        'title' => 'Transient article',
+    ]));
+
+    expect($article->category_id)->toBeNull()
+        ->and(Category::query()->count())->toBe(0);
+
+    $persisted = Article::factory()->create();
+
+    expect($persisted->category_id)->not->toBeNull()
+        ->and(Category::query()->count())->toBe(1);
+});
+
 it('formats the reading time text', function () {
-    $article = Article::factory()->make(['reading_time' => 7]);
+    $article = withoutExpandedFactoryRelationships(fn () => Article::factory()->make([
+        'reading_time' => 7,
+    ]));
 
     expect($article->reading_time_text)->toBe('7 мин чтения');
 });
 
+it('sanitizes generic and malformed source names', function () {
+    expect(Article::sanitizeSourceName('Новости Mail'))->toBeNull()
+        ->and(Article::sanitizeSourceName('Спортс"'))->toBe('Спортс')
+        ->and(Article::sanitizeSourceName('Коммерсантъ-Новости'))->toBe('Коммерсантъ');
+});
+
 it('provides seo fallbacks and content accessors', function () {
-    $article = Article::factory()->make([
+    $article = withoutExpandedFactoryRelationships(fn () => Article::factory()->make([
         'title' => 'Important Update',
         'meta_title' => null,
         'meta_description' => null,
@@ -131,7 +248,7 @@ it('provides seo fallbacks and content accessors', function () {
         'rss_content' => '<p>RSS content</p>',
         'slug' => 'important-update',
         'canonical_url' => null,
-    ]);
+    ]));
 
     $seoData = $article->getSeoData();
 
