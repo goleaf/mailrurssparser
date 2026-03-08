@@ -39,7 +39,10 @@ class TriggerSchedulerFromWebRequests
             return false;
         }
 
-        if (app()->runningUnitTests() && ! $request->headers->boolean('X-Run-Web-Scheduler')) {
+        if (
+            app()->runningUnitTests()
+            && ! filter_var($request->headers->get('X-Run-Web-Scheduler'), FILTER_VALIDATE_BOOL)
+        ) {
             return false;
         }
 
