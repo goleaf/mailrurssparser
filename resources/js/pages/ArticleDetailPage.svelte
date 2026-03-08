@@ -3,6 +3,9 @@
     import AppHead from '@/components/AppHead.svelte';
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import ArticleCardCompact from '@/components/article/ArticleCardCompact.svelte';
+    import { usePolling } from '@/composables/usePolling.js';
+    import { injectJsonLd, setSeoMeta } from '@/composables/useSeo.js';
+    import { showToast } from '@/components/ui/Toast.svelte';
     import * as api from '@/lib/api';
     import { cn } from '@/lib/utils';
     import {
@@ -78,7 +81,11 @@
     let error = $state<string | null>(null);
     let shareMenuOpen = $state(false);
     let readProgress = $state(0);
-    let toastMessage = $state('');
+    const viewsPolling = usePolling(async () => {
+        const response = await api.getArticle(slug, { track: 0 });
+
+        return (response.data?.data ?? null) as Article | null;
+    }, 120000);
 
     const publishedDate = $derived(
         article?.published_at
@@ -132,46 +139,6 @@
             .replace(/\son\w+='[^']*'/g, '');
     }
 
-    function setMetaDescription(content: string): void {
-        if (typeof document === 'undefined') {
-            return;
-        }
-
-        let meta = document.querySelector<HTMLMetaElement>(
-            'meta[name="description"]',
-        );
-
-        if (!meta) {
-            meta = document.createElement('meta');
-            meta.name = 'description';
-            document.head.appendChild(meta);
-        }
-
-        meta.content = content;
-    }
-
-    function injectJsonLd(data: Record<string, unknown>): void {
-        if (typeof document === 'undefined') {
-            return;
-        }
-
-        const existing = document.getElementById('article-jsonld');
-
-        if (existing) {
-            existing.remove();
-        }
-
-        const script = document.createElement('script');
-        script.id = 'article-jsonld';
-        script.type = 'application/ld+json';
-        script.text = JSON.stringify(data);
-        document.head.appendChild(script);
-    }
-
-    function showToast(message: string): void {
-        toastMessage = message;
-    }
-
     function updateReadProgress(): void {
         if (typeof window === 'undefined' || typeof document === 'undefined') {
             return;
@@ -213,15 +180,6 @@
             related = nextArticle.related_articles ?? [];
             similar = nextArticle.similar_articles ?? [];
             moreFromCategory = nextArticle.more_from_category ?? [];
-
-            if (typeof document !== 'undefined') {
-                document.title = nextArticle.title;
-                setMetaDescription(
-                    nextArticle.meta_description ||
-                        nextArticle.short_description ||
-                        '',
-                );
-            }
         } catch (loadError) {
             if (
                 loadError instanceof Error &&
@@ -291,7 +249,7 @@
         return () => {
             window.removeEventListener('scroll', updateReadProgress);
 
-            const existing = document.getElementById('article-jsonld');
+            const existing = document.getElementById('json-ld');
 
             if (existing) {
                 existing.remove();
@@ -306,17 +264,38 @@
     });
 
     $effect(() => {
-        if (!toastMessage || typeof window === 'undefined') {
+        if (!article) {
             return;
         }
 
-        const timeoutId = window.setTimeout(() => {
-            toastMessage = '';
-        }, 1800);
+        setSeoMeta({
+            title: article.meta_title || article.title,
+            description: metaDescription,
+            image: article.image_url || undefined,
+            url:
+                typeof window !== 'undefined'
+                    ? `${window.location.origin}/#/articles/${article.slug}`
+                    : undefined,
+            type: 'article',
+            publishedAt: article.published_at || undefined,
+            author: article.author || undefined,
+            tags: (article.tags ?? []).map((tag) => tag.name),
+        });
+    });
 
-        return () => {
-            window.clearTimeout(timeoutId);
-        };
+    $effect(() => {
+        const nextArticle = viewsPolling.data;
+
+        if (!article || !nextArticle?.id || nextArticle.id !== article.id) {
+            return;
+        }
+
+        if (nextArticle.views_count !== article.views_count) {
+            article = {
+                ...article,
+                views_count: nextArticle.views_count,
+            };
+        }
     });
 </script>
 
@@ -335,14 +314,6 @@
             style={`width: ${readProgress}%`}
         ></div>
     </div>
-
-    {#if toastMessage}
-        <div
-            class="fixed bottom-6 right-6 z-50 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-xl dark:bg-white dark:text-slate-950"
-        >
-            {toastMessage}
-        </div>
-    {/if}
 
     {#if loading}
         <div class="mx-auto max-w-6xl px-4 py-20 lg:px-6">
@@ -477,6 +448,8 @@
                         <img
                             src={article.image_url}
                             alt={article.title}
+                            loading="eager"
+                            decoding="async"
                             class="max-h-[32rem] w-full object-cover"
                         />
                         {#if article.image_caption}
@@ -621,9 +594,20 @@
                                     : 'bg-slate-900 text-white hover:bg-slate-700 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200',
                             )}
                             onclick={() => {
-                                if (article) {
-                                    void toggleBookmark(article.id);
+                                if (!article) {
+                                    return;
                                 }
+
+                                void (async () => {
+                                    const result = await toggleBookmark(article.id);
+
+                                    showToast(
+                                        result.bookmarked
+                                            ? 'Статья сохранена в закладки'
+                                            : 'Статья удалена из закладок',
+                                        result.bookmarked ? 'success' : 'info',
+                                    );
+                                })();
                             }}
                         >
                             {isBookmarked(article.id)

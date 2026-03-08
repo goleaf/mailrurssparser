@@ -6,6 +6,7 @@
     import AppHead from '@/components/AppHead.svelte';
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
+    import { setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
     import { cn } from '@/lib/utils';
     import { appState, initApp } from '@/stores/app.svelte.js';
@@ -505,6 +506,21 @@
                 hashListenerAttached = false;
             }
         };
+    });
+
+    $effect(() => {
+        setSeoMeta({
+            title: activeQuery ? `Поиск: ${activeQuery}` : 'Поиск',
+            description: activeQuery
+                ? `Результаты поиска по запросу «${activeQuery}» в новостном портале.`
+                : 'Поиск по материалам новостного портала.',
+            type: 'website',
+            url:
+                typeof window !== 'undefined'
+                    ? `${window.location.origin}${window.location.hash || '#/search'}`
+                    : undefined,
+            tags: [activeQuery].filter(Boolean),
+        });
     });
 </script>
 

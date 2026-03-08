@@ -15,6 +15,9 @@
     import TagPage from '@/pages/TagPage.svelte';
     import { dashboard, login, register } from '@/routes';
 
+    /** Route-level code splitting can be added later if the public shell keeps growing. */
+    // const ArticleDetailPage = await import('./ArticleDetailPage.svelte');
+
     type PublicRoute =
         | { name: 'home' }
         | { name: 'category'; slug: string }

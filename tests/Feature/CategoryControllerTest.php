@@ -37,7 +37,8 @@ it('lists active categories with sub categories', function () {
 
     $response = $this->getJson('/api/categories');
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertHeader('Cache-Control', 'public, max-age=3600');
 
     $payload = $response->json('data');
 

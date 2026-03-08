@@ -8,10 +8,12 @@
     import SunMedium from 'lucide-svelte/icons/sun-medium';
     import X from 'lucide-svelte/icons/x';
     import SearchModal from '@/components/SearchModal.svelte';
+    import { usePolling } from '@/composables/usePolling.js';
     import { cn } from '@/lib/utils';
     import { appState, initApp, toggleDarkMode, toggleSidebar } from '@/stores/app.svelte.js';
     import { resetFilters } from '@/stores/articles.svelte.js';
     import { bookmarkIds, loadBookmarks } from '@/stores/bookmarks.svelte.js';
+    import * as api from '@/lib/api';
 
     type Category = {
         id: number | string;
@@ -25,10 +27,25 @@
     let hasShadow = $state(false);
     let moreMenuOpen = $state(false);
     let searchOpen = $state(false);
+    let initialArticleCount = $state<number | null>(null);
 
     const categories = $derived((appState.categories ?? []) as Category[]);
     const featuredCategories = $derived(categories.slice(0, 6));
     const bookmarkCount = $derived(bookmarkIds.length);
+    const statsPolling = usePolling(async () => {
+        const response = await api.getStats();
+
+        return response.data ?? null;
+    }, 300000);
+    const newArticleDelta = $derived.by(() => {
+        const currentTotal = Number(statsPolling.data?.articles?.total ?? 0);
+
+        if (initialArticleCount === null) {
+            return 0;
+        }
+
+        return Math.max(0, currentTotal - initialArticleCount);
+    });
 
     function openSearch(): void {
         searchOpen = true;
@@ -88,6 +105,18 @@
             appState.darkMode = document.documentElement.classList.contains('dark');
         }
     });
+
+    $effect(() => {
+        const totalArticles = Number(statsPolling.data?.articles?.total ?? 0);
+
+        if (!Number.isFinite(totalArticles) || totalArticles <= 0) {
+            return;
+        }
+
+        if (initialArticleCount === null) {
+            initialArticleCount = totalArticles;
+        }
+    });
 </script>
 
 <header
@@ -111,7 +140,14 @@
                 <div class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
                     News Portal
                 </div>
-                <div class="font-semibold">Новости</div>
+                <div class="flex items-center gap-2 font-semibold">
+                    <span>Новости</span>
+                    {#if newArticleDelta > 0}
+                        <span class="rounded-full bg-emerald-500 px-2 py-0.5 text-[0.65rem] font-semibold text-white">
+                            +{newArticleDelta}
+                        </span>
+                    {/if}
+                </div>
             </div>
         </a>
 

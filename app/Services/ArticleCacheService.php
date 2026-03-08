@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Http\Resources\TagResource;
 use App\Models\Article;
+use App\Models\ArticleView;
 use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\Tag;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class ArticleCacheService
 {
@@ -63,34 +65,49 @@ class ArticleCacheService
     public function getStatsOverview(): array
     {
         return Cache::remember(ArticleCacheKey::StatsOverview, 600, function (): array {
+            $lastParse = RssFeed::query()
+                ->active()
+                ->orderByDesc('last_parsed_at')
+                ->value('last_parsed_at');
+
             return [
                 'articles' => [
                     'total' => Article::query()->published()->count(),
                     'today' => Article::query()->published()->whereDate('published_at', today())->count(),
+                    'this_week' => Article::query()->published()->where('published_at', '>=', now()->subDays(7))->count(),
+                    'breaking' => Article::query()->published()->breaking()->count(),
+                    'featured' => Article::query()->published()->featured()->count(),
                 ],
                 'views' => [
                     'total' => Article::query()->published()->sum('views_count'),
-                ],
-                'feeds' => [
-                    'active' => RssFeed::query()->active()->count(),
+                    'today' => ArticleView::query()->whereDate('viewed_at', today())->count(),
+                    'this_week' => ArticleView::query()->where('viewed_at', '>=', now()->subDays(7))->count(),
+                    'unique_today' => ArticleView::query()->whereDate('viewed_at', today())->distinct('ip_hash')->count('ip_hash'),
                 ],
                 'top_categories' => Category::query()
                     ->active()
-                    ->withCount(['articles' => fn ($query) => $query->published()])
-                    ->orderByDesc('articles_count')
-                    ->limit(5)
-                    ->get(),
-                'trending_tags' => Tag::query()
-                    ->orderByDesc('usage_count')
-                    ->limit(10)
-                    ->get(),
-                'views_last_7_days' => DB::table('article_views')
-                    ->selectRaw("strftime('%Y-%m-%d', viewed_at) as date, COUNT(*) as count")
-                    ->where('viewed_at', '>=', now()->subDays(7))
-                    ->groupBy('date')
-                    ->orderBy('date')
-                    ->pluck('count', 'date')
+                    ->withCount(['articles as article_count' => fn (Builder $query) => $query->published()])
+                    ->orderByDesc('article_count')
+                    ->limit(8)
+                    ->get()
+                    ->map(fn (Category $category): array => [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => $category->slug,
+                        'color' => $category->color,
+                        'icon' => $category->icon,
+                        'article_count' => $category->article_count,
+                    ])
                     ->all(),
+                'trending_tags' => TagResource::collection(
+                    Tag::query()->orderByDesc('usage_count')->limit(20)->get(),
+                )->resolve(),
+                'last_parse' => $lastParse?->toIso8601String(),
+                'feeds' => [
+                    'total' => RssFeed::query()->count(),
+                    'active' => RssFeed::query()->active()->count(),
+                    'errors' => RssFeed::query()->whereNotNull('last_error')->where('last_error', '!=', '')->count(),
+                ],
             ];
         });
     }

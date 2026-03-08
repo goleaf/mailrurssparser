@@ -1,5 +1,6 @@
 <script lang="ts">
     import MailCheck from 'lucide-svelte/icons/mail-check';
+    import { showToast } from '@/components/ui/Toast.svelte';
     import * as api from '@/lib/api';
 
     let email = $state('');
@@ -26,11 +27,13 @@
 
             submitted = true;
             email = '';
+            showToast('Проверьте почту для подтверждения', 'success');
         } catch (error) {
             errorMessage =
                 error instanceof Error
                     ? error.message
                     : 'Не удалось оформить подписку.';
+            showToast(errorMessage, 'error');
         } finally {
             loading = false;
         }

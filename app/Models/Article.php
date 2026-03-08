@@ -393,7 +393,7 @@ class Article extends Model
                 '@type' => 'Organization',
                 'name' => $this->source_name,
             ],
-            'url' => rtrim((string) config('app.url'), '/').'#/articles/'.$this->slug,
+            'url' => rtrim((string) config('app.url'), '/').'/#/articles/'.$this->slug,
             'keywords' => $tagNames,
         ];
     }
@@ -406,7 +406,7 @@ class Article extends Model
         return [
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
-            'canonical_url' => $this->canonical_url ?: rtrim((string) config('app.url'), '/').'#/articles/'.$this->slug,
+            'canonical_url' => $this->canonical_url ?: rtrim((string) config('app.url'), '/').'/#/articles/'.$this->slug,
             'structured_data' => $this->structured_data ?? $this->generateStructuredData(),
             'image_url' => $this->image_url,
         ];

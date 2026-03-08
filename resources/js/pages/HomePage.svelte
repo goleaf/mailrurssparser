@@ -8,12 +8,14 @@
     import AppHead from '@/components/AppHead.svelte';
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import ArticleCardCompact from '@/components/article/ArticleCardCompact.svelte';
+    import FilterBar from '@/components/FilterBar.svelte';
     import SidebarCategoryTree from '@/components/sidebar/SidebarCategoryTree.svelte';
     import SidebarDateCalendar from '@/components/sidebar/SidebarDateCalendar.svelte';
     import SidebarNewsletterBox from '@/components/sidebar/SidebarNewsletterBox.svelte';
     import SidebarPopularArticles from '@/components/sidebar/SidebarPopularArticles.svelte';
     import SidebarTagCloud from '@/components/sidebar/SidebarTagCloud.svelte';
     import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
+    import { setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
     import { cn } from '@/lib/utils';
     import { appState, initApp } from '@/stores/app.svelte.js';
@@ -67,6 +69,7 @@
         sub: string | null;
         tags: string[];
         content_type: string | null;
+        importance_min: number | null;
         date: string | null;
         date_from: string | null;
         date_to: string | null;
@@ -75,21 +78,6 @@
         page: number;
         per_page: number;
     };
-
-    const sortTabs = [
-        { key: 'latest', label: 'Новые' },
-        { key: 'popular', label: 'Популярные' },
-        { key: 'importance', label: 'Главные' },
-    ] as const;
-
-    const contentTypeOptions = [
-        { value: null, label: 'Все форматы' },
-        { value: 'news', label: 'Новости' },
-        { value: 'article', label: 'Статьи' },
-        { value: 'analysis', label: 'Аналитика' },
-        { value: 'opinion', label: 'Мнения' },
-        { value: 'interview', label: 'Интервью' },
-    ] as const;
 
     const contentTypeLabels: Record<string, string> = {
         news: 'Новости',
@@ -141,6 +129,14 @@
 
         if (pageFilters.content_type) {
             chips.push(contentTypeLabels[pageFilters.content_type] ?? pageFilters.content_type);
+        }
+
+        if (pageFilters.importance_min) {
+            chips.push(`Важность от ${pageFilters.importance_min}`);
+        }
+
+        if (pageFilters.date_from && pageFilters.date_to) {
+            chips.push(`${pageFilters.date_from} → ${pageFilters.date_to}`);
         }
 
         return chips;
@@ -250,16 +246,6 @@
         highlightsLoading = false;
     }
 
-    function changeSort(sort: (typeof sortTabs)[number]['key']): void {
-        pageFilters.sort = sort;
-        pageFilters.page = 1;
-    }
-
-    function changeContentType(value: (typeof contentTypeOptions)[number]['value']): void {
-        pageFilters.content_type = value;
-        pageFilters.page = 1;
-    }
-
     function changePage(page: number): void {
         if (page < 1 || page > lastPage || page === currentPage) {
             return;
@@ -285,10 +271,25 @@
     });
 
     $effect(() => {
+        setSeoMeta({
+            title: 'Главная',
+            description:
+                'Редакционная лента новостей с быстрым поиском, фильтрами по рубрикам и живой статистикой.',
+            type: 'website',
+            url:
+                typeof window !== 'undefined'
+                    ? `${window.location.origin}/#/`
+                    : undefined,
+            tags: categories.slice(0, 8).map((category) => category.name),
+        });
+    });
+
+    $effect(() => {
         const currentCategory = pageFilters.category;
         const currentSub = pageFilters.sub;
         const currentTags = pageFilters.tags.join(',');
         const currentContentType = pageFilters.content_type;
+        const currentImportance = pageFilters.importance_min;
         const currentDate = pageFilters.date;
         const currentDateFrom = pageFilters.date_from;
         const currentDateTo = pageFilters.date_to;
@@ -301,6 +302,7 @@
         void currentSub;
         void currentTags;
         void currentContentType;
+        void currentImportance;
         void currentDate;
         void currentDateFrom;
         void currentDateTo;
@@ -533,78 +535,23 @@
 
         <div class="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
             <section class="space-y-6">
-                <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
-                    <div class="flex flex-wrap items-start justify-between gap-5">
-                        <div>
-                            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                                Редакционная лента
-                            </div>
-                            <h2 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
-                                {selectedCategory?.name ?? 'Все новости'}
-                            </h2>
-                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                Основной поток материалов с фильтрами по рубрикам, тегам, форматам
-                                и календарю публикаций.
-                            </p>
+                <section class="space-y-6">
+                    <div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                            Редакционная лента
                         </div>
-
-                        <div class="flex flex-wrap gap-2">
-                            {#each sortTabs as tab (tab.key)}
-                                <button
-                                    type="button"
-                                    class={cn(
-                                        'rounded-full px-4 py-2 text-sm font-medium transition',
-                                        pageFilters.sort === tab.key
-                                            ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10',
-                                    )}
-                                    onclick={() => {
-                                        changeSort(tab.key);
-                                    }}
-                                >
-                                    {tab.label}
-                                </button>
-                            {/each}
-                        </div>
+                        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                            {selectedCategory?.name ?? 'Все новости'}
+                        </h2>
+                        <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                            Основной поток материалов с фильтрами по рубрикам, тегам, форматам
+                            и календарю публикаций.
+                        </p>
                     </div>
 
-                    <div class="mt-5 flex flex-wrap gap-2">
-                        {#each contentTypeOptions as option (`type-${option.value ?? 'all'}`)}
-                            <button
-                                type="button"
-                                class={cn(
-                                    'rounded-full border px-3 py-2 text-sm transition',
-                                    pageFilters.content_type === option.value
-                                        ? 'border-transparent bg-sky-500 text-white'
-                                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10',
-                                )}
-                                onclick={() => {
-                                    changeContentType(option.value);
-                                }}
-                            >
-                                {option.label}
-                            </button>
-                        {/each}
-                    </div>
+                    <FilterBar pagination={pagination} />
 
-                    <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] bg-slate-50 px-4 py-3 dark:bg-white/5">
-                        <div class="text-sm text-slate-500 dark:text-slate-400">
-                            Найдено <span class="font-semibold text-slate-900 dark:text-white">{totalResults}</span>
-                            материалов
-                        </div>
-
-                        {#if activeFilterTotal > 0}
-                            <button
-                                type="button"
-                                class="text-sm font-medium text-sky-700 transition hover:text-sky-800 dark:text-sky-300"
-                                onclick={clearAllFilters}
-                            >
-                                Очистить фильтры
-                            </button>
-                        {/if}
-                    </div>
-
-                    <div class="mt-6">
+                    <div>
                         {#if listState.loading}
                             <div class="grid gap-5 md:grid-cols-2">
                                 {#each Array.from({ length: 6 }) as _, index (`home-loading-${index}`)}
@@ -646,6 +593,12 @@
                                     <ArticleCard {article} />
                                 {/each}
                             </div>
+
+                            {#if listState.articles.length > 50}
+                                <div class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+                                    Показываем первые 50. Используйте фильтры для уточнения.
+                                </div>
+                            {/if}
                         {/if}
                     </div>
 

@@ -6,13 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StatsCalendarRequest;
 use App\Http\Requests\Api\StatsChartRequest;
 use App\Http\Requests\Api\StatsPopularRequest;
-use App\Http\Resources\TagResource;
 use App\Models\Article;
 use App\Models\ArticleView;
 use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
-use App\Models\Tag;
+use App\Services\ArticleCacheService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
@@ -20,48 +19,11 @@ use Illuminate\Support\Facades\DB;
 
 class StatsController extends Controller
 {
-    public function overview(): JsonResponse
+    public function overview(ArticleCacheService $cacheService): JsonResponse
     {
-        $lastParse = RssFeed::query()->active()->orderByDesc('last_parsed_at')->value('last_parsed_at');
-        $topCategories = Category::query()
-            ->where('is_active', true)
-            ->withCount(['articles as article_count' => fn (Builder $query) => $query->published()])
-            ->orderByDesc('article_count')
-            ->limit(8)
-            ->get()
-            ->map(fn (Category $category): array => [
-                'id' => $category->id,
-                'name' => $category->name,
-                'slug' => $category->slug,
-                'color' => $category->color,
-                'icon' => $category->icon,
-                'article_count' => $category->article_count,
-            ])
-            ->all();
-
-        return response()->json([
-            'articles' => [
-                'total' => Article::query()->published()->count(),
-                'today' => Article::query()->published()->whereDate('published_at', today())->count(),
-                'this_week' => Article::query()->published()->where('published_at', '>=', now()->subDays(7))->count(),
-                'breaking' => Article::query()->published()->breaking()->count(),
-                'featured' => Article::query()->published()->featured()->count(),
-            ],
-            'views' => [
-                'total' => Article::query()->published()->sum('views_count'),
-                'today' => ArticleView::query()->whereDate('viewed_at', today())->count(),
-                'this_week' => ArticleView::query()->where('viewed_at', '>=', now()->subDays(7))->count(),
-                'unique_today' => ArticleView::query()->whereDate('viewed_at', today())->distinct('ip_hash')->count('ip_hash'),
-            ],
-            'top_categories' => $topCategories,
-            'trending_tags' => TagResource::collection(Tag::query()->orderByDesc('usage_count')->limit(20)->get())->resolve(),
-            'last_parse' => $lastParse?->toIso8601String(),
-            'feeds' => [
-                'total' => RssFeed::query()->count(),
-                'active' => RssFeed::query()->active()->count(),
-                'errors' => RssFeed::query()->whereNotNull('last_error')->where('last_error', '!=', '')->count(),
-            ],
-        ])->header('Cache-Control', 'public, max-age=300');
+        return response()
+            ->json($cacheService->getStatsOverview())
+            ->header('Cache-Control', 'public, max-age=300');
     }
 
     public function chart(StatsChartRequest $request): JsonResponse

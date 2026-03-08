@@ -2,7 +2,6 @@
 name: news-portal-frontend
 description: "Works on this repository's public news portal frontend, including the hash-routed Welcome shell, homepage design, article/category/tag/search pages, and the shared public stores."
 ---
-
 # News Portal Frontend
 
 ## When to Apply

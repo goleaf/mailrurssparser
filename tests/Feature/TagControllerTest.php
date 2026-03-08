@@ -30,6 +30,22 @@ it('lists tags ordered by usage count', function () {
         ->and($payload)->toHaveCount(2);
 });
 
+it('supports trending and limit query parameters for tags', function () {
+    Route::get('/api/tags', [TagController::class, 'index'])->name('api.tags.filtered');
+
+    Tag::factory()->create(['name' => 'Regular', 'usage_count' => 40, 'is_trending' => false]);
+    $trending = Tag::factory()->create(['name' => 'Trending', 'usage_count' => 30, 'is_trending' => true]);
+
+    $response = $this->getJson('/api/tags?trending=1&limit=1');
+
+    $response->assertOk();
+
+    $payload = $response->json('data');
+
+    expect($payload)->toHaveCount(1)
+        ->and($payload[0]['name'])->toBe($trending->name);
+});
+
 it('shows tag details with article count', function () {
     Route::get('/api/tags/{slug}', [TagController::class, 'show'])->name('api.tags.show');
 

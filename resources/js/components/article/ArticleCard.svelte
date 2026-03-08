@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { showToast } from '@/components/ui/Toast.svelte';
+    import { cn } from '@/lib/utils';
     import { toggleBookmark, isBookmarked } from '@/stores/bookmarks.svelte.js';
 
     type ArticleTag = {
@@ -72,6 +74,11 @@
             ? Date.now() - publishedDate.getTime() < 6 * 60 * 60 * 1000
             : false,
     );
+    let imageLoaded = $state(!article.image_url);
+
+    $effect(() => {
+        imageLoaded = !article.image_url;
+    });
 </script>
 
 <article
@@ -79,13 +86,19 @@
 >
     <div class="relative overflow-hidden">
         {#if article.image_url}
-            <a href={`/#/articles/${article.slug}`}>
+            <a href={`/#/articles/${article.slug}`} class="bg-slate-200 dark:bg-slate-700">
                 <img
                     src={article.image_url}
                     alt={article.title}
                     loading="lazy"
                     decoding="async"
-                    class="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    class={cn(
+                        'h-48 w-full object-cover transition duration-500 group-hover:scale-105',
+                        !imageLoaded && 'scale-105 blur-xl',
+                    )}
+                    onload={() => {
+                        imageLoaded = true;
+                    }}
                 />
             </a>
         {:else}
@@ -169,6 +182,13 @@
                         type="button"
                         onclick={async () => {
                             const result = await toggleBookmark(article.id);
+
+                            showToast(
+                                result.bookmarked
+                                    ? 'Статья сохранена в закладки'
+                                    : 'Статья удалена из закладок',
+                                result.bookmarked ? 'success' : 'info',
+                            );
 
                             await onBookmarkToggle?.({
                                 ...result,

@@ -201,6 +201,21 @@ it('embeds related content collections directly in the show payload', function (
         ->assertJsonPath('data.similar_articles.0.id', $similarArticle->id);
 });
 
+it('can fetch an article without tracking a new view and returns cache headers', function () {
+    $article = Article::factory()->create([
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+        'views_count' => 7,
+    ]);
+
+    $this->getJson('/api/v1/articles/'.$article->slug.'?track=0')
+        ->assertSuccessful()
+        ->assertHeader('Cache-Control', 'public, max-age=60')
+        ->assertJsonPath('data.views_count', 7);
+
+    expect($article->fresh()->views_count)->toBe(7);
+});
+
 it('returns trending articles ordered by views within the recent window', function () {
     $category = Category::factory()->create(['slug' => 'main']);
 

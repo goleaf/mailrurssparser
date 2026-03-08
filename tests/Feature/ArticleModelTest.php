@@ -94,7 +94,7 @@ it('provides seo fallbacks and content accessors', function () {
     expect($article->meta_title)->toBe('Important Update')
         ->and($article->meta_description)->toStartWith('short short')
         ->and($article->content)->toBe('<p>Full content</p>')
-        ->and($seoData['canonical_url'])->toBe(rtrim((string) config('app.url'), '/').'#/articles/important-update')
+        ->and($seoData['canonical_url'])->toBe(rtrim((string) config('app.url'), '/').'/#/articles/important-update')
         ->and($seoData['structured_data'])->toBeArray();
 });
 

@@ -11,6 +11,7 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Services\RelatedArticlesService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Uri;
@@ -36,7 +37,7 @@ class ArticleController extends Controller
         return new ArticleCollection($articles);
     }
 
-    public function show(Request $request, string $slug): ArticleResource
+    public function show(Request $request, string $slug): JsonResponse
     {
         $article = Article::query()
             ->published()
@@ -44,19 +45,21 @@ class ArticleController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
-        $article->incrementViews(
-            $this->hashIp($request),
-            $this->hashSession($request),
-            [
-                'device_type' => $this->detectDeviceType($request),
-                'referrer_type' => $this->detectReferrerType($request),
-                'referrer_domain' => $this->extractUriHost($request->headers->get('referer')),
-                'ip_address' => $request->ip(),
-                'session_id' => $request->hasSession() ? $request->session()->getId() : null,
-                'user_agent' => (string) $request->userAgent(),
-                'referer' => $request->headers->get('referer'),
-            ],
-        );
+        if ($request->boolean('track', true)) {
+            $article->incrementViews(
+                $this->hashIp($request),
+                $this->hashSession($request),
+                [
+                    'device_type' => $this->detectDeviceType($request),
+                    'referrer_type' => $this->detectReferrerType($request),
+                    'referrer_domain' => $this->extractUriHost($request->headers->get('referer')),
+                    'ip_address' => $request->ip(),
+                    'session_id' => $request->hasSession() ? $request->session()->getId() : null,
+                    'user_agent' => (string) $request->userAgent(),
+                    'referer' => $request->headers->get('referer'),
+                ],
+            );
+        }
 
         $related = $this->relatedArticles->getRelated($article, 8);
         $primaryRelated = $related
@@ -84,7 +87,9 @@ class ArticleController extends Controller
         $article->setAttribute('similar_articles', ArticleListResource::collection($similar)->resolve());
         $article->setAttribute('more_from_category', ArticleListResource::collection($moreFromCategory)->resolve());
 
-        return ArticleResource::make($article);
+        return ArticleResource::make($article)
+            ->response()
+            ->header('Cache-Control', 'public, max-age=60');
     }
 
     public function featured(): ArticleCollection

@@ -40,6 +40,7 @@ This project has domain-specific skills available. You MUST activate the relevan
 - `inertia-svelte-development` — Develops Inertia.js v2 Svelte client-side applications. Activates when creating Svelte pages, forms, or navigation; using Link, Form, or router; working with deferred props, prefetching, or polling; or when user mentions Svelte with Inertia, Svelte pages, Svelte forms, or Svelte navigation.
 - `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 - `news-portal-frontend` — Works on this repository&#039;s public news portal frontend, including the hash-routed Welcome shell, homepage design, article/category/tag/search pages, and the shared public stores.
+- `laravel-herd-worktree` — Use when creating, inspecting, or removing Laravel Herd worktrees for this repository, including isolated .env setup, SQLite cloning, and Herd site naming.
 
 ## Conventions
 
@@ -165,8 +166,14 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - Inertia creates fully client-side rendered SPAs without modern SPA complexity, leveraging existing server-side patterns.
 - Components live in `resources/js/pages` (unless specified in `vite.config.js`). Use `Inertia::render()` for server-side routing instead of Blade views.
-- ALWAYS use `search-docs` tool for version-specific Inertia documentation and updated code examples.
 - IMPORTANT: Activate `inertia-svelte-development` when working with Inertia Svelte client-side patterns.
+- ALWAYS use `search-docs` tool for version-specific Inertia documentation and updated code examples.
+- This repository serves the public frontend through the Inertia `Welcome` page for both the `home` route (`/`) and the `spa` catch-all route (`/{any}`) defined in `routes/web.php`.
+- Keep `sitemap.xml`, `rss.xml`, and `offline.html` as dedicated Laravel routes. Public news, category, tag, article, search, bookmark, and stats pages should stay in the client hash router unless a backend route is truly required.
+- Prefer `Route::inertia()` for simple page routes, and keep the `home` and `spa` route names stable because tests and auth redirects depend on them.
+- If you change the props passed to `Welcome`, keep them serializable and available anywhere the public shell is rendered.
+- Prefer extending the existing `/api/v1/...` endpoints for public content data instead of introducing extra server-rendered Inertia pages.
+- When changing public routing or the rendered Inertia page, update focused Pest coverage such as `tests/Feature/ExampleTest.php` and `tests/Feature/ApiRoutesTest.php`.
 
 # Inertia v2
 
@@ -296,6 +303,9 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
   - `resources/js/stores/bookmarks.svelte.js`
   - `resources/js/lib/api.js`
 - Keep article filter payloads aligned with the backend request validation. In particular, `tags` must be sent as an array to the article index API.
+- Keep page resolution lazy via `import.meta.glob()` and mirror any bootstrap changes in both `resources/js/app.ts` and `resources/js/ssr.ts`.
+- Preserve the current bootstrap contract in `resources/js/app.ts`: the client mounts through `AppRoot.svelte`, and hydration is selected via `el.dataset.serverRendered === 'true'`.
+- `resources/js/AppRoot.svelte` is not optional wrapper chrome. It initializes app-level state, owns the toast/update UI, and listens for the `sw:update-ready` browser event from the service worker registration flow.
 - When changing Inertia bootstrapping, update both `resources/js/app.ts` and `resources/js/ssr.ts`.
 - Preserve the current public-shell pattern: `Welcome.svelte` is the router shell, while `HomePage.svelte`, `CategoryPage.svelte`, `TagPage.svelte`, `ArticleDetailPage.svelte`, `SearchPage.svelte`, `BookmarksPage.svelte`, `StatsPage.svelte`, and the public info pages render the actual content.
 - Verify public frontend changes with `npm run types:check`, `npm run lint:check`, and `npm run build:ssr`. When routing or Laravel page responses change, also run a focused Pest test.

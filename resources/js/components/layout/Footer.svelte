@@ -2,6 +2,7 @@
     import ArrowUpRight from 'lucide-svelte/icons/arrow-up-right';
     import MessageSquare from 'lucide-svelte/icons/message-square';
     import Send from 'lucide-svelte/icons/send';
+    import { showToast } from '@/components/ui/Toast.svelte';
     import * as api from '@/lib/api';
     import { appState, initApp } from '@/stores/app.svelte.js';
 
@@ -49,12 +50,15 @@
                     response.data?.message ?? 'Проверьте почту для подтверждения.';
             }
 
+            showToast(successMessage, 'success');
+
             email = '';
         } catch (error) {
             errorMessage =
                 error instanceof Error
                     ? error.message
                     : 'Не удалось оформить подписку.';
+            showToast(errorMessage, 'error');
         } finally {
             loading = false;
         }

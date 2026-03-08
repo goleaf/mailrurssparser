@@ -1,7 +1,9 @@
 <script lang="ts">
     import X from 'lucide-svelte/icons/x';
+    import { usePolling } from '@/composables/usePolling.js';
+    import { showToast } from '@/components/ui/Toast.svelte';
     import * as api from '@/lib/api';
-    import { appState, initApp } from '@/stores/app.svelte.js';
+    import { appState, initApp, setBreakingNews } from '@/stores/app.svelte.js';
 
     type BreakingArticle = {
         id: number | string;
@@ -11,25 +13,23 @@
 
     let dismissed = $state(false);
     let paused = $state(false);
+    let hasHydrated = $state(false);
+    let seenBreakingIds = $state<Array<number | string>>([]);
 
     const breakingNews = $derived((appState.breakingNews ?? []) as BreakingArticle[]);
     const tickerText = $derived(breakingNews.map((article) => article.title).join(' | '));
     const durationSeconds = $derived(Math.max(16, Math.ceil(tickerText.length / 10)));
+    const breakingPolling = usePolling(async () => {
+        const response = await api.getBreaking();
+
+        return (response.data?.data ?? []) as BreakingArticle[];
+    }, 60000);
 
     function dismissTicker(): void {
         dismissed = true;
 
         if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('news-portal-breaking-dismissed', 'true');
-        }
-    }
-
-    async function refreshBreakingNews(): Promise<void> {
-        try {
-            const response = await api.getBreaking();
-            appState.breakingNews = response.data?.data ?? [];
-        } catch {
-            return;
         }
     }
 
@@ -42,8 +42,6 @@
                     return;
                 }
             }
-
-            await refreshBreakingNews();
         })();
 
         if (typeof sessionStorage !== 'undefined') {
@@ -53,17 +51,37 @@
     });
 
     $effect(() => {
-        if (typeof window === 'undefined') {
+        const nextItems = breakingPolling.data;
+
+        if (!Array.isArray(nextItems)) {
             return;
         }
 
-        const intervalId = window.setInterval(() => {
-            void refreshBreakingNews();
-        }, 60000);
+        const nextIds = nextItems.map((article) => article.id);
+        const hasNewBreaking =
+            hasHydrated &&
+            nextIds.some((id) => !seenBreakingIds.includes(id));
 
-        return () => {
-            window.clearInterval(intervalId);
-        };
+        setBreakingNews(nextItems);
+        seenBreakingIds = nextIds;
+
+        if (hasNewBreaking) {
+            showToast('Новые срочные новости', 'warning');
+        }
+
+        if (!hasHydrated) {
+            hasHydrated = true;
+        }
+    });
+
+    $effect(() => {
+        if (breakingNews.length > 0 && dismissed) {
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem('news-portal-breaking-dismissed');
+            }
+
+            dismissed = false;
+        }
     });
 </script>
 

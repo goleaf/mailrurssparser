@@ -2,12 +2,14 @@
     import AppHead from '@/components/AppHead.svelte';
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import ArticleCardCompact from '@/components/article/ArticleCardCompact.svelte';
+    import FilterBar from '@/components/FilterBar.svelte';
     import SidebarCategoryTree from '@/components/sidebar/SidebarCategoryTree.svelte';
     import SidebarDateCalendar from '@/components/sidebar/SidebarDateCalendar.svelte';
     import SidebarNewsletterBox from '@/components/sidebar/SidebarNewsletterBox.svelte';
     import SidebarPopularArticles from '@/components/sidebar/SidebarPopularArticles.svelte';
     import SidebarTagCloud from '@/components/sidebar/SidebarTagCloud.svelte';
     import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
+    import { setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
     import { cn } from '@/lib/utils';
     import { initApp } from '@/stores/app.svelte.js';
@@ -63,19 +65,16 @@
         category: string | null;
         sub: string | null;
         tags: string[];
+        content_type: string | null;
+        importance_min: number | null;
         date: string | null;
         date_from: string | null;
         date_to: string | null;
         sort: string;
+        search: string;
         page: number;
         per_page: number;
     };
-
-    const sortTabs = [
-        { key: 'latest', label: 'Новые' },
-        { key: 'popular', label: 'Популярные' },
-        { key: 'oldest', label: 'Старые' },
-    ] as const;
 
     let { slug }: { slug: string } = $props();
 
@@ -140,11 +139,6 @@
         }
     }
 
-    function changeSort(sort: (typeof sortTabs)[number]['key']): void {
-        pageFilters.sort = sort;
-        pageFilters.page = 1;
-    }
-
     async function loadPage(currentSlug: string): Promise<void> {
         loading = true;
         error = null;
@@ -160,9 +154,12 @@
                         category: currentSlug,
                         sub: pageFilters.sub,
                         tags: pageFilters.tags,
+                        content_type: pageFilters.content_type,
+                        importance_min: pageFilters.importance_min,
                         date: pageFilters.date,
                         date_from: pageFilters.date_from,
                         date_to: pageFilters.date_to,
+                        search: pageFilters.search,
                         sort: pageFilters.sort,
                         page: pageFilters.page,
                         per_page: pageFilters.per_page,
@@ -192,6 +189,21 @@
     });
 
     $effect(() => {
+        setSeoMeta({
+            title: category ? category.name : 'Категория',
+            description:
+                category?.description ||
+                `Свежая лента материалов раздела ${category?.name ?? 'новостей'}.`,
+            type: 'website',
+            url:
+                typeof window !== 'undefined'
+                    ? `${window.location.origin}/#/category/${slug}`
+                    : undefined,
+            tags: category ? [category.name] : [],
+        });
+    });
+
+    $effect(() => {
         pageFilters.category = slug;
         pageFilters.page = 1;
     });
@@ -210,19 +222,25 @@
         const currentSlug = slug;
         const activeSub = pageFilters.sub;
         const activeTags = pageFilters.tags.join(',');
+        const activeContentType = pageFilters.content_type;
+        const activeImportance = pageFilters.importance_min;
         const activeDate = pageFilters.date;
         const activeDateFrom = pageFilters.date_from;
         const activeDateTo = pageFilters.date_to;
         const activeSort = pageFilters.sort;
+        const activeSearch = pageFilters.search;
         const activePage = pageFilters.page;
         const activePerPage = pageFilters.per_page;
 
         void activeSub;
         void activeTags;
+        void activeContentType;
+        void activeImportance;
         void activeDate;
         void activeDateFrom;
         void activeDateTo;
         void activeSort;
+        void activeSearch;
         void activePage;
         void activePerPage;
 
@@ -346,37 +364,7 @@
             </aside>
 
             <section class="space-y-6">
-                <div class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
-                    <div class="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                                Лента раздела
-                            </div>
-                            <div class="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">
-                                {category?.name ?? 'Категория'}
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-2">
-                            {#each sortTabs as tab (tab.key)}
-                                <button
-                                    type="button"
-                                    class={cn(
-                                        'rounded-full px-4 py-2 text-sm font-medium transition',
-                                        pageFilters.sort === tab.key
-                                            ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10',
-                                    )}
-                                    onclick={() => {
-                                        changeSort(tab.key);
-                                    }}
-                                >
-                                    {tab.label}
-                                </button>
-                            {/each}
-                        </div>
-                    </div>
-                </div>
+                <FilterBar pagination={pagination} />
 
                 {#if loading}
                     <div class="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">

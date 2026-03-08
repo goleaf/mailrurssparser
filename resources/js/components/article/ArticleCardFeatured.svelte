@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { showToast } from '@/components/ui/Toast.svelte';
+    import { cn } from '@/lib/utils';
     import { toggleBookmark, isBookmarked } from '@/stores/bookmarks.svelte.js';
 
     type ArticleTag = {
@@ -58,6 +60,11 @@
             ? Date.now() - publishedDate.getTime() < 6 * 60 * 60 * 1000
             : false,
     );
+    let imageLoaded = $state(!article.image_url);
+
+    $effect(() => {
+        imageLoaded = !article.image_url;
+    });
 </script>
 
 <article
@@ -65,13 +72,19 @@
 >
     <div class="relative overflow-hidden">
         {#if article.image_url}
-            <a href={`/#/articles/${article.slug}`}>
+            <a href={`/#/articles/${article.slug}`} class="bg-slate-200 dark:bg-slate-700">
                 <img
                     src={article.image_url}
                     alt={article.title}
                     loading="lazy"
                     decoding="async"
-                    class="h-72 w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    class={cn(
+                        'h-72 w-full object-cover transition duration-700 group-hover:scale-105',
+                        !imageLoaded && 'scale-105 blur-xl',
+                    )}
+                    onload={() => {
+                        imageLoaded = true;
+                    }}
                 />
             </a>
         {:else}
@@ -105,8 +118,15 @@
                 {#if showBookmark}
                     <button
                         type="button"
-                        onclick={() => {
-                            void toggleBookmark(article.id);
+                        onclick={async () => {
+                            const result = await toggleBookmark(article.id);
+
+                            showToast(
+                                result.bookmarked
+                                    ? 'Статья сохранена в закладки'
+                                    : 'Статья удалена из закладок',
+                                result.bookmarked ? 'success' : 'info',
+                            );
                         }}
                         class={`rounded-full bg-white/90 px-3 py-1 text-sm shadow transition-colors dark:bg-gray-900/80 ${
                             isBookmarked(article.id)

@@ -43,6 +43,7 @@ it('returns overview analytics with top categories and tags', function () {
     $response = $this->getJson('/api/v1/stats/overview');
 
     $response->assertSuccessful()
+        ->assertHeader('Cache-Control', 'public, max-age=300')
         ->assertJsonPath('articles.total', 1)
         ->assertJsonPath('articles.today', 1)
         ->assertJsonPath('articles.this_week', 1)

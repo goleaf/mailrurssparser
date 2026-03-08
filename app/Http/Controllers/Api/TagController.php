@@ -10,14 +10,22 @@ use App\Models\Article;
 use App\Models\Tag;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class TagController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $limit = max(1, min(100, (int) $request->integer('limit', 100)));
+        $query = Tag::query()->orderByDesc('usage_count');
+
+        if ($request->boolean('trending')) {
+            $query->trending();
+        }
+
         return response()->json([
             'data' => TagResource::collection(
-                Tag::query()->orderByDesc('usage_count')->limit(100)->get(),
+                $query->limit($limit)->get(),
             )->resolve(),
         ]);
     }
