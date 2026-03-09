@@ -67,6 +67,28 @@
         currentPage: number;
         lastPage: number;
     } = $props();
+
+    function handlePageChange(page: number): void {
+        dispatch('pagechange', page);
+    }
+
+    function handleEmptySuggestionClick(event: Event): void {
+        const button = event.currentTarget as HTMLButtonElement;
+        const suggestionType = button.dataset.suggestionType;
+        const suggestionSlug = button.dataset.suggestionSlug;
+
+        if (!suggestionType || !suggestionSlug) {
+            return;
+        }
+
+        if (suggestionType === 'category') {
+            dispatch('categoryselect', suggestionSlug);
+
+            return;
+        }
+
+        dispatch('tagselect', suggestionSlug);
+    }
 </script>
 
 <section class="space-y-6">
@@ -123,15 +145,9 @@
                         <button
                             type="button"
                             class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
-                            onclick={() => {
-                                if (suggestion.type === 'category') {
-                                    dispatch('categoryselect', suggestion.slug);
-
-                                    return;
-                                }
-
-                                dispatch('tagselect', suggestion.slug);
-                            }}
+                            data-suggestion-type={suggestion.type}
+                            data-suggestion-slug={suggestion.slug}
+                            onclick={handleEmptySuggestionClick}
                         >
                             <span
                                 class="size-2 rounded-full"
@@ -167,8 +183,6 @@
     <Pagination
         {currentPage}
         {lastPage}
-        onChange={(page) => {
-            dispatch('pagechange', page);
-        }}
+        onChange={handlePageChange}
     />
 </section>

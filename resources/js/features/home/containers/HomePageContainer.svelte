@@ -106,13 +106,11 @@
                 articles.length,
         ),
     );
-    const briefingDate = $derived(
-        new Intl.DateTimeFormat('ru-RU', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-        }).format(new Date()),
-    );
+    const briefingDate = new Intl.DateTimeFormat('ru-RU', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+    }).format(new Date());
     const selectedCategory = $derived.by(() => {
         if (!pageFilters.category) {
             return null;

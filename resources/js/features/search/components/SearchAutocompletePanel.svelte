@@ -45,55 +45,68 @@
         onTagSelect,
     }: Props = $props();
 
+    type SearchActionItem = Extract<SearchAutocompleteItem, { kind: 'search' }>;
+    type ArticleSuggestionItem = Extract<
+        SearchAutocompleteItem,
+        { section: 'articles' }
+    >;
+    type CategorySuggestionItem = Extract<
+        SearchAutocompleteItem,
+        { section: 'categories' }
+    >;
+    type TagSuggestionItem = Extract<SearchAutocompleteItem, { section: 'tags' }>;
+
     const normalizedQuery = $derived(query.trim());
     const items = $derived(
         buildSearchAutocompleteItems(normalizedQuery, suggestions),
     );
-    const hasMatches = $derived(hasSearchSuggestions(suggestions));
-    const searchAction = $derived.by(
-        (): Extract<SearchAutocompleteItem, { kind: 'search' }> | null =>
-            items.find(
-                (
-                    item,
-                ): item is Extract<
-                    SearchAutocompleteItem,
-                    { kind: 'search' }
-                > => item.kind === 'search',
-            ) ?? null,
-    );
-    const articleItems = $derived.by(
-        (): Array<Extract<SearchAutocompleteItem, { section: 'articles' }>> =>
-            items.filter(
-                (
-                    item,
-                ): item is Extract<
-                    SearchAutocompleteItem,
-                    { section: 'articles' }
-                > => item.section === 'articles',
-            ),
-    );
-    const categoryItems = $derived.by(
-        (): Array<Extract<SearchAutocompleteItem, { section: 'categories' }>> =>
-            items.filter(
-                (
-                    item,
-                ): item is Extract<
-                    SearchAutocompleteItem,
-                    { section: 'categories' }
-                > => item.section === 'categories',
-            ),
-    );
-    const tagItems = $derived.by(
-        (): Array<Extract<SearchAutocompleteItem, { section: 'tags' }>> =>
-            items.filter(
-                (
-                    item,
-                ): item is Extract<
-                    SearchAutocompleteItem,
-                    { section: 'tags' }
-                > => item.section === 'tags',
-            ),
-    );
+    const autocompleteSections = $derived.by(() => {
+        const sections: {
+            hasMatches: boolean;
+            suggestionCount: number;
+            searchAction: SearchActionItem | null;
+            articleItems: ArticleSuggestionItem[];
+            categoryItems: CategorySuggestionItem[];
+            tagItems: TagSuggestionItem[];
+            itemByKey: Map<string, SearchAutocompleteItem>;
+        } = {
+            hasMatches: hasSearchSuggestions(suggestions),
+            suggestionCount: 0,
+            searchAction: null,
+            articleItems: [],
+            categoryItems: [],
+            tagItems: [],
+            itemByKey: new Map<string, SearchAutocompleteItem>(),
+        };
+
+        for (const item of items) {
+            sections.itemByKey.set(getItemKey(item), item);
+
+            if (item.kind === 'search') {
+                sections.searchAction = item;
+
+                continue;
+            }
+
+            sections.suggestionCount += 1;
+
+            if (item.section === 'articles') {
+                sections.articleItems.push(item);
+
+                continue;
+            }
+
+            if (item.section === 'categories') {
+                sections.categoryItems.push(item);
+
+                continue;
+            }
+
+            sections.tagItems.push(item);
+        }
+
+        return sections;
+    });
 
     function formatArticleDate(value?: string | null): string {
         if (!value) {
@@ -126,6 +139,35 @@
                 return;
         }
     }
+
+    function getItemKey(item: SearchAutocompleteItem): string {
+        switch (item.kind) {
+            case 'search':
+                return `search:${item.query}`;
+            case 'article':
+                return `article:${item.article.slug}`;
+            case 'category':
+                return `category:${item.category.slug}`;
+            case 'tag':
+                return `tag:${item.tag.slug}`;
+        }
+    }
+
+    function handleItemClick(event: Event): void {
+        const itemKey = (event.currentTarget as HTMLButtonElement).dataset.itemKey;
+
+        if (!itemKey) {
+            return;
+        }
+
+        const item = autocompleteSections.itemByKey.get(itemKey);
+
+        if (!item) {
+            return;
+        }
+
+        selectItem(item);
+    }
 </script>
 
 {#if normalizedQuery.length >= 2}
@@ -143,8 +185,8 @@
             <div class="text-xs text-slate-400">
                 {#if loading}
                     Ищем варианты...
-                {:else if hasMatches}
-                    {items.length - 1} вариантов
+                {:else if autocompleteSections.hasMatches}
+                    {autocompleteSections.suggestionCount} вариантов
                 {:else}
                     Без совпадений
                 {/if}
@@ -156,20 +198,19 @@
             role="listbox"
             aria-label="Подсказки поиска"
         >
-            {#if searchAction}
+            {#if autocompleteSections.searchAction}
                 <button
                     type="button"
                     role="option"
-                    aria-selected={activeIndex === searchAction.index}
+                    aria-selected={activeIndex === autocompleteSections.searchAction.index}
                     class={cn(
                         'flex w-full items-center gap-3 rounded-[1.15rem] px-3 py-3 text-left transition',
-                        activeIndex === searchAction.index
+                        activeIndex === autocompleteSections.searchAction.index
                             ? 'bg-sky-50 text-sky-950 ring-1 ring-sky-200 dark:bg-sky-500/15 dark:text-sky-50 dark:ring-sky-500/30'
                             : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5',
                     )}
-                    onclick={() => {
-                        selectItem(searchAction);
-                    }}
+                    data-item-key={getItemKey(autocompleteSections.searchAction)}
+                    onclick={handleItemClick}
                 >
                     <span
                         class="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-300"
@@ -178,7 +219,7 @@
                     </span>
                     <div class="min-w-0">
                         <div class="text-sm font-semibold">
-                            Искать по запросу “{searchAction.query}”
+                            Искать по запросу “{autocompleteSections.searchAction.query}”
                         </div>
                         <div class="text-xs text-slate-400">
                             Показать полную поисковую выдачу
@@ -187,13 +228,13 @@
                 </button>
             {/if}
 
-            {#if articleItems.length > 0}
+            {#if autocompleteSections.articleItems.length > 0}
                 <div
                     class="px-3 pb-2 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400"
                 >
                     Статьи
                 </div>
-                {#each articleItems as item (item.id)}
+                {#each autocompleteSections.articleItems as item (item.id)}
                     <button
                         type="button"
                         role="option"
@@ -204,9 +245,8 @@
                                 ? 'bg-sky-50 text-sky-950 ring-1 ring-sky-200 dark:bg-sky-500/15 dark:text-sky-50 dark:ring-sky-500/30'
                                 : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5',
                         )}
-                        onclick={() => {
-                            selectItem(item);
-                        }}
+                        data-item-key={getItemKey(item)}
+                        onclick={handleItemClick}
                     >
                         <div class="min-w-0">
                             <div class="line-clamp-1 text-sm font-semibold">
@@ -233,14 +273,14 @@
                 {/each}
             {/if}
 
-            {#if categoryItems.length > 0}
+            {#if autocompleteSections.categoryItems.length > 0}
                 <div
                     class="px-3 pb-2 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400"
                 >
                     Рубрики
                 </div>
                 <div class="flex flex-wrap gap-2 px-2 pb-1">
-                    {#each categoryItems as item (item.id)}
+                    {#each autocompleteSections.categoryItems as item (item.id)}
                         <button
                             type="button"
                             role="option"
@@ -251,9 +291,8 @@
                                     ? 'border-sky-300 bg-sky-50 text-sky-950 dark:border-sky-500/40 dark:bg-sky-500/15 dark:text-sky-50'
                                     : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5',
                             )}
-                            onclick={() => {
-                                selectItem(item);
-                            }}
+                            data-item-key={getItemKey(item)}
+                            onclick={handleItemClick}
                         >
                             <span
                                 class="size-2 rounded-full"
@@ -277,14 +316,14 @@
                 </div>
             {/if}
 
-            {#if tagItems.length > 0}
+            {#if autocompleteSections.tagItems.length > 0}
                 <div
                     class="px-3 pb-2 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400"
                 >
                     Теги
                 </div>
                 <div class="flex flex-wrap gap-2 px-2 pb-1">
-                    {#each tagItems as item (item.id)}
+                    {#each autocompleteSections.tagItems as item (item.id)}
                         <button
                             type="button"
                             role="option"
@@ -295,9 +334,8 @@
                                     ? 'bg-sky-50 text-sky-950 ring-1 ring-sky-200 dark:bg-sky-500/15 dark:text-sky-50 dark:ring-sky-500/30'
                                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10',
                             )}
-                            onclick={() => {
-                                selectItem(item);
-                            }}
+                            data-item-key={getItemKey(item)}
+                            onclick={handleItemClick}
                         >
                             <span class="text-slate-400">#</span>
                             <span class="font-medium">
@@ -318,7 +356,7 @@
                 </div>
             {/if}
 
-            {#if !loading && !hasMatches}
+            {#if !loading && !autocompleteSections.hasMatches}
                 <div
                     class="px-3 py-4 text-sm text-slate-500 dark:text-slate-400"
                 >

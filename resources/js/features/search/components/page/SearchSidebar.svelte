@@ -43,6 +43,26 @@
         suggestions: SearchSuggestions;
         articleHref: (slug: string) => string;
     } = $props();
+
+    function handleCategorySuggestionClick(event: Event): void {
+        const slug = (event.currentTarget as HTMLButtonElement).dataset.slug;
+
+        if (!slug) {
+            return;
+        }
+
+        dispatch('categoryselect', slug);
+    }
+
+    function handleTagSuggestionClick(event: Event): void {
+        const slug = (event.currentTarget as HTMLButtonElement).dataset.slug;
+
+        if (!slug) {
+            return;
+        }
+
+        dispatch('tagselect', slug);
+    }
 </script>
 
 <aside class="space-y-5">
@@ -105,9 +125,8 @@
                             <button
                                 type="button"
                                 class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
-                                onclick={() => {
-                                    dispatch('categoryselect', category.slug);
-                                }}
+                                data-slug={category.slug}
+                                onclick={handleCategorySuggestionClick}
                             >
                                 <span
                                     class="size-2 rounded-full"
@@ -134,9 +153,8 @@
                             <button
                                 type="button"
                                 class="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-200 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
-                                onclick={() => {
-                                    dispatch('tagselect', tag.slug);
-                                }}
+                                data-slug={tag.slug}
+                                onclick={handleTagSuggestionClick}
                             >
                                 #{tag.name}
                             </button>

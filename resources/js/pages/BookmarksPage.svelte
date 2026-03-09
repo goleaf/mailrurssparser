@@ -173,7 +173,7 @@
                     <button
                         type="button"
                         class="relative rounded-full border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-rose-500/40 dark:hover:bg-rose-950/40 dark:hover:text-rose-200"
-                        on:click={() => {
+                        onclick={() => {
                             void clearAllBookmarks();
                         }}
                         disabled={clearing}

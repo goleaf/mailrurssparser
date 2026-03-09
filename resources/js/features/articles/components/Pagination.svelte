@@ -26,6 +26,26 @@
 
         return pages;
     });
+
+    function goToPreviousPage(): void {
+        onChange(currentPage - 1);
+    }
+
+    function goToNextPage(): void {
+        onChange(currentPage + 1);
+    }
+
+    function handlePageClick(event: Event): void {
+        const page = Number(
+            (event.currentTarget as HTMLButtonElement).dataset.page,
+        );
+
+        if (!Number.isFinite(page)) {
+            return;
+        }
+
+        onChange(page);
+    }
 </script>
 
 {#if lastPage > 1}
@@ -52,9 +72,7 @@
                 <button
                     type="button"
                     class="rounded-full border border-slate-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                    onclick={() => {
-                        onChange(currentPage - 1);
-                    }}
+                    onclick={goToPreviousPage}
                     disabled={currentPage <= 1}
                 >
                     Назад
@@ -72,9 +90,8 @@
                                     ? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-950'
                                     : 'text-slate-600 hover:bg-white hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white',
                             )}
-                            onclick={() => {
-                                onChange(pageNumber);
-                            }}
+                            data-page={pageNumber}
+                            onclick={handlePageClick}
                         >
                             {pageNumber}
                         </button>
@@ -84,9 +101,7 @@
                 <button
                     type="button"
                     class="rounded-full border border-slate-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                    onclick={() => {
-                        onChange(currentPage + 1);
-                    }}
+                    onclick={goToNextPage}
                     disabled={currentPage >= lastPage}
                 >
                     {nextLabel}

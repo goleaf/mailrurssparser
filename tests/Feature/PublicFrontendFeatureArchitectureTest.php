@@ -168,6 +168,43 @@ it('uses lifecycle hooks for browser-only setup and async cleanup', function ():
         ->toContain('onDestroy(() => {');
 });
 
+it('lazy loads heavy search ui and avoids inline handlers in repeated list components', function (): void {
+    $header = file_get_contents(resource_path('js/features/portal/components/Header.svelte'));
+    $autocompletePanel = file_get_contents(resource_path('js/features/search/components/SearchAutocompletePanel.svelte'));
+    $resultsSection = file_get_contents(resource_path('js/features/search/components/page/SearchResultsSection.svelte'));
+    $sidebar = file_get_contents(resource_path('js/features/search/components/page/SearchSidebar.svelte'));
+    $pagination = file_get_contents(resource_path('js/features/articles/components/Pagination.svelte'));
+    $bookmarksPage = file_get_contents(resource_path('js/pages/BookmarksPage.svelte'));
+    $homeContainer = file_get_contents(resource_path('js/features/home/containers/HomePageContainer.svelte'));
+
+    expect($header)
+        ->toContain("import('@/features/search/components/SearchModal.svelte')")
+        ->not->toContain("import SearchModal from '@/features/search/components/SearchModal.svelte'");
+
+    expect($autocompletePanel)
+        ->toContain('const autocompleteSections = $derived.by(() => {')
+        ->toContain('function handleItemClick(event: Event): void {')
+        ->toContain('onclick={handleItemClick}');
+
+    expect($resultsSection)
+        ->toContain('function handleEmptySuggestionClick(event: Event): void {')
+        ->toContain('onChange={handlePageChange}');
+
+    expect($sidebar)
+        ->toContain('function handleCategorySuggestionClick(event: Event): void {')
+        ->toContain('function handleTagSuggestionClick(event: Event): void {');
+
+    expect($pagination)
+        ->toContain('function handlePageClick(event: Event): void {')
+        ->not->toContain('onclick={() => {');
+
+    expect($bookmarksPage)
+        ->not->toContain('on:click={() => {');
+
+    expect($homeContainer)
+        ->not->toContain('const briefingDate = $derived(');
+});
+
 it('keeps search component props one-way, typed, and flattened', function (): void {
     $searchHero = file_get_contents(resource_path('js/features/search/components/page/SearchHeroPanel.svelte'));
     $searchContainer = file_get_contents(resource_path('js/features/search/containers/SearchPageContainer.svelte'));
@@ -194,7 +231,7 @@ it('keeps search component props one-way, typed, and flattened', function (): vo
         ->not->toContain('$bindable(');
 
     expect($header)
-        ->toContain('onClose={() => {')
+        ->toContain('onClose={closeSearch}')
         ->not->toContain('bind:open');
 });
 

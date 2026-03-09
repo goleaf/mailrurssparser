@@ -36,12 +36,16 @@
         toggleDarkMode,
         toggleSidebar,
     } from '@/features/portal/state/app.svelte.js';
-    import SearchModal from '@/features/search/components/SearchModal.svelte';
     import { cn } from '@/lib/utils';
+
+    type SearchModalComponentType =
+        typeof import('@/features/search/components/SearchModal.svelte').default;
 
     let hasShadow = $state(false);
     let searchOpen = $state(false);
     let initialArticleCount = $state<number | null>(null);
+    let SearchModalComponent = $state<SearchModalComponentType | null>(null);
+    let searchModalLoader: Promise<void> | null = null;
 
     const categories = $derived($appCategories as ApiCategory[]);
     const totalBookmarks = $derived($bookmarkCount);
@@ -61,9 +65,38 @@
         return Math.max(0, currentTotal - initialArticleCount);
     });
 
+    async function ensureSearchModalLoaded(): Promise<void> {
+        if (SearchModalComponent) {
+            return;
+        }
+
+        if (!searchModalLoader) {
+            searchModalLoader = import(
+                '@/features/search/components/SearchModal.svelte'
+            )
+                .then((module) => {
+                    SearchModalComponent = module.default;
+                })
+                .finally(() => {
+                    searchModalLoader = null;
+                });
+        }
+
+        await searchModalLoader;
+    }
+
+    function prefetchSearchModal(): void {
+        void ensureSearchModalLoaded();
+    }
+
     function openSearch(): void {
         searchOpen = true;
         setSidebarOpen(false);
+        prefetchSearchModal();
+    }
+
+    function closeSearch(): void {
+        searchOpen = false;
     }
 
     function goHome(): void {
@@ -178,9 +211,9 @@
                 <button
                     type="button"
                     class="inline-flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-sky-700 dark:hover:bg-sky-950/60 dark:hover:text-sky-300"
-                    onclick={() => {
-                        openSearch();
-                    }}
+                    onclick={openSearch}
+                    onmouseenter={prefetchSearchModal}
+                    onfocus={prefetchSearchModal}
                     aria-label="Открыть поиск"
                 >
                     <Search class="size-5" />
@@ -286,9 +319,9 @@
                 <button
                     type="button"
                     class="w-full rounded-3xl bg-slate-900 px-4 py-3 text-left text-sm font-medium text-white dark:bg-white dark:text-slate-950"
-                    onclick={() => {
-                        openSearch();
-                    }}
+                    onclick={openSearch}
+                    onmouseenter={prefetchSearchModal}
+                    onfocus={prefetchSearchModal}
                 >
                     Открыть поиск
                 </button>
@@ -343,9 +376,9 @@
     {/if}
 </header>
 
-<SearchModal
-    open={searchOpen}
-    onClose={() => {
-        searchOpen = false;
-    }}
-/>
+{#if SearchModalComponent}
+    <SearchModalComponent
+        open={searchOpen}
+        onClose={closeSearch}
+    />
+{/if}
