@@ -3,6 +3,7 @@
     import { onMount } from 'svelte';
     import Toast, { showToast } from '@/components/ui/Toast.svelte';
     import type { ToastType } from '@/components/ui/Toast.svelte';
+    import { isPublicInertiaPath, visitPublic } from '@/lib/publicRoutes';
     import { initApp } from '@/stores/app.svelte.js';
 
     type AppRootProps = {
@@ -76,9 +77,6 @@
 
         void initApp();
 
-        const unsubscribePage = page.subscribe((currentPage) => {
-            syncFlashToast(currentPage as InertiaPage | undefined);
-        });
         const heartbeatTimer = window.setInterval(() => {
             void sendSchedulerHeartbeat();
         }, 60_000);
@@ -89,13 +87,68 @@
             updateRegistration = detail?.registration ?? null;
         };
 
+        const handleDocumentClick = (event: MouseEvent): void => {
+            if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+            ) {
+                return;
+            }
+
+            const target = event.target;
+
+            if (!(target instanceof Element)) {
+                return;
+            }
+
+            const anchor = target.closest('a');
+
+            if (!(anchor instanceof HTMLAnchorElement)) {
+                return;
+            }
+
+            const href = anchor.getAttribute('href');
+
+            if (
+                !href ||
+                href.startsWith('#') ||
+                anchor.target === '_blank' ||
+                anchor.hasAttribute('download') ||
+                anchor.getAttribute('rel')?.includes('external')
+            ) {
+                return;
+            }
+
+            const url = new URL(anchor.href, window.location.origin);
+
+            if (
+                url.origin !== window.location.origin ||
+                !isPublicInertiaPath(url.pathname)
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+
+            visitPublic(`${url.pathname}${url.search}${url.hash}`);
+        };
+
         window.addEventListener('sw:update-ready', handleUpdate);
+        document.addEventListener('click', handleDocumentClick);
 
         return () => {
-            unsubscribePage();
             window.clearInterval(heartbeatTimer);
             window.removeEventListener('sw:update-ready', handleUpdate);
+            document.removeEventListener('click', handleDocumentClick);
         };
+    });
+
+    $effect(() => {
+        syncFlashToast(page as InertiaPage | undefined);
     });
 </script>
 

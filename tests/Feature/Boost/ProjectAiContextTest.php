@@ -122,7 +122,8 @@ it('uses the project override for the wayfinder guideline', function () {
         ->toEndWith('/.ai/guidelines/wayfinder/core.blade.php')
         ->and($guideline['content'])
         ->toContain('Normalize Wayfinder route objects to strings with `toUrl()`')
-        ->toContain('ProfileController.update.form()');
+        ->toContain('RssParseController.parseAll.form()')
+        ->toContain('admin login');
 });
 
 it('uses the project override for the pest guideline', function () {

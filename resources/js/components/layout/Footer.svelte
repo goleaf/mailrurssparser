@@ -3,23 +3,23 @@
     import MessageSquare from 'lucide-svelte/icons/message-square';
     import Send from 'lucide-svelte/icons/send';
     import { showToast } from '@/components/ui/Toast.svelte';
+    import type { ApiCategory } from '@/lib/api';
     import * as api from '@/lib/api';
+    import {
+        aboutUrl,
+        categoryUrl,
+        contactUrl,
+        privacyUrl,
+        searchUrl,
+    } from '@/lib/publicRoutes';
     import { appState, initApp } from '@/stores/app.svelte.js';
-
-    type Category = {
-        id: number | string;
-        name: string;
-        slug: string;
-        color?: string | null;
-        icon?: string | null;
-    };
 
     let email = $state('');
     let loading = $state(false);
     let successMessage = $state('');
     let errorMessage = $state('');
 
-    const categories = $derived((appState.categories ?? []) as Category[]);
+    const categories = $derived(appState.categories as ApiCategory[]);
     const currentYear = new Date().getFullYear();
 
     async function submitNewsletter(): Promise<void> {
@@ -40,15 +40,16 @@
             const response = await api.subscribe({
                 email: trimmedEmail,
             });
+            const subscription = response.data;
 
-            if (response.data?.already_subscribed) {
+            if (subscription?.already_subscribed) {
                 successMessage = 'Этот адрес уже подтверждён в рассылке.';
-            } else if (response.data?.resent) {
+            } else if (subscription?.resent) {
                 successMessage =
                     'Мы повторно отправили письмо для подтверждения.';
             } else {
                 successMessage =
-                    response.data?.message ??
+                    subscription?.message ??
                     'Проверьте почту для подтверждения.';
             }
 
@@ -95,7 +96,7 @@
                 </div>
             </div>
             <a
-                href="/#/search"
+                href={searchUrl()}
                 class="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-100"
             >
                 Открыть поиск
@@ -158,7 +159,7 @@
                 <div class="mt-5 grid gap-2 sm:grid-cols-2">
                     {#each categories as category (category.id)}
                         <a
-                            href={`/#/category/${category.slug}`}
+                            href={categoryUrl(category.slug)}
                             class="flex items-center gap-3 rounded-2xl border border-white/6 bg-white/4 px-3 py-3 text-sm text-slate-200 transition hover:border-white/12 hover:bg-white/8"
                         >
                             <span
@@ -181,21 +182,21 @@
                 </div>
 
                 <a
-                    href="/#/about"
+                    href={aboutUrl()}
                     class="flex items-center justify-between rounded-2xl border border-white/6 bg-white/4 px-4 py-3 text-sm transition hover:border-white/12 hover:bg-white/8"
                 >
                     <span>О проекте</span>
                     <ArrowUpRight class="size-4 text-slate-400" />
                 </a>
                 <a
-                    href="/#/contact"
+                    href={contactUrl()}
                     class="flex items-center justify-between rounded-2xl border border-white/6 bg-white/4 px-4 py-3 text-sm transition hover:border-white/12 hover:bg-white/8"
                 >
                     <span>Контакты</span>
                     <ArrowUpRight class="size-4 text-slate-400" />
                 </a>
                 <a
-                    href="/#/privacy"
+                    href={privacyUrl()}
                     class="flex items-center justify-between rounded-2xl border border-white/6 bg-white/4 px-4 py-3 text-sm transition hover:border-white/12 hover:bg-white/8"
                 >
                     <span>Политика данных</span>

@@ -6,6 +6,7 @@
     import SidebarPopularArticles from '@/components/sidebar/SidebarPopularArticles.svelte';
     import SkeletonCard from '@/components/SkeletonCard.svelte';
     import * as api from '@/lib/api';
+    import { tagUrl, visitPublic } from '@/lib/publicRoutes';
     import { cn } from '@/lib/utils';
     import { appState, initApp } from '@/stores/app.svelte.js';
 
@@ -135,11 +136,7 @@
     ]);
 
     function navigateToTag(nextSlug: string): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        window.location.hash = `/tag/${nextSlug}`;
+        visitPublic(tagUrl(nextSlug));
     }
 
     function changePage(nextPage: number): void {

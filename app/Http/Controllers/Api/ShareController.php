@@ -16,7 +16,7 @@ class ShareController extends Controller
 
         $article->incrementShares();
 
-        $url = rtrim((string) config('app.url'), '/').'#/articles/'.$article->slug;
+        $url = route('articles.show', ['slug' => $article->slug]);
         $title = rawurlencode((string) $article->title);
         $encodedUrl = rawurlencode($url);
 

@@ -1,6 +1,7 @@
 <script lang="ts">
     import ChevronDown from 'lucide-svelte/icons/chevron-down';
     import Newspaper from 'lucide-svelte/icons/newspaper';
+    import { categoryUrl, homeUrl } from '@/lib/publicRoutes';
     import { cn } from '@/lib/utils';
 
     type Category = {
@@ -20,11 +21,11 @@
 
     let {
         categories = [],
-        currentHash = '#/',
+        currentPath = '/',
         onHome = () => {},
     }: {
         categories?: Category[];
-        currentHash?: string;
+        currentPath?: string;
         onHome?: () => void;
     } = $props();
 
@@ -34,9 +35,9 @@
         categories.map(
             (category): HeaderCategoryLink => ({
                 ...category,
-                href: `/#/category/${category.slug}`,
+                href: categoryUrl(category.slug),
                 indicatorStyle: `background-color: ${category.color ?? '#2563EB'};`,
-                isActive: currentHash.startsWith(`#/category/${category.slug}`),
+                isActive: currentPath.startsWith(categoryUrl(category.slug)),
                 menuLabel: `${category.icon ?? '•'} ${category.name}`,
             }),
         ),
@@ -46,7 +47,7 @@
     const allCategoriesLinkClass = $derived(
         cn(
             'rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white',
-            currentHash === '#/' &&
+            currentPath === homeUrl() &&
                 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-950',
         ),
     );
@@ -81,7 +82,7 @@
 </script>
 
 <nav class="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
-    <a href="/#/" onclick={onHome} class={allCategoriesLinkClass}>
+    <a href={homeUrl()} onclick={onHome} class={allCategoriesLinkClass}>
         Все новости
     </a>
 

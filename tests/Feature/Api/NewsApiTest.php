@@ -69,7 +69,7 @@ it('classifies internal referrers using URI authority parsing', function () {
 
     $this->withHeaders([
         'User-Agent' => 'Pest Browser',
-        'Referer' => 'https://news.test:8443/#/articles/source-story',
+        'Referer' => 'https://news.test:8443/articles/source-story',
     ])->getJson('/api/v1/articles/'.$article->slug)
         ->assertSuccessful();
 
@@ -87,7 +87,7 @@ it('classifies malformed referrers as other when they do not contain a scheme', 
 
     $this->withHeaders([
         'User-Agent' => 'Pest Browser',
-        'Referer' => 'news.test/#/articles/source-story',
+        'Referer' => 'news.test/articles/source-story',
     ])->getJson('/api/v1/articles/'.$article->slug)
         ->assertSuccessful();
 

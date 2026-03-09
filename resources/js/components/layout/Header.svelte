@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { page } from '@inertiajs/svelte';
     import Bookmark from 'lucide-svelte/icons/bookmark';
     import Menu from 'lucide-svelte/icons/menu';
     import MoonStar from 'lucide-svelte/icons/moon-star';
@@ -8,7 +9,10 @@
     import HeaderMenuBlock from '@/components/layout/HeaderMenuBlock.svelte';
     import SearchModal from '@/components/SearchModal.svelte';
     import { usePolling } from '@/composables/usePolling.js';
+    import type { ApiCategory, StatsOverview } from '@/lib/api';
     import * as api from '@/lib/api';
+    import { currentPath } from '@/lib/currentUrl';
+    import { bookmarksUrl, categoryUrl, homeUrl } from '@/lib/publicRoutes';
     import { cn } from '@/lib/utils';
     import {
         appState,
@@ -19,31 +23,20 @@
     import { resetFilters } from '@/stores/articles.svelte.js';
     import { bookmarkIds, loadBookmarks } from '@/stores/bookmarks.svelte.js';
 
-    type Category = {
-        id: number | string;
-        name: string;
-        slug: string;
-        color?: string | null;
-        icon?: string | null;
-    };
-
-    let currentHash = $state('#/');
     let hasShadow = $state(false);
     let searchOpen = $state(false);
     let initialArticleCount = $state<number | null>(null);
 
-    const categories = $derived((appState.categories ?? []) as Category[]);
+    const categories = $derived(appState.categories as ApiCategory[]);
     const bookmarkCount = $derived(bookmarkIds.length);
-    const statsPolling = usePolling(async () => {
+    const currentPathname = $derived(currentPath(page.url ?? homeUrl()));
+    const statsPolling = usePolling(async (): Promise<StatsOverview> => {
         const response = await api.getStats();
 
-        return response.data ?? null;
+        return response.data;
     }, 300000);
     const newArticleDelta = $derived.by(() => {
-        const stats = statsPolling.data as {
-            articles?: { total?: number | null };
-        } | null;
-        const currentTotal = Number(stats?.articles?.total ?? 0);
+        const currentTotal = Number(statsPolling.data?.articles?.total ?? 0);
 
         if (initialArticleCount === null) {
             return 0;
@@ -68,7 +61,6 @@
         }
 
         const syncViewportState = (): void => {
-            currentHash = window.location.hash || '#/';
             hasShadow = window.scrollY > 12;
         };
 
@@ -76,11 +68,9 @@
         window.addEventListener('scroll', syncViewportState, {
             passive: true,
         });
-        window.addEventListener('hashchange', syncViewportState);
 
         return () => {
             window.removeEventListener('scroll', syncViewportState);
-            window.removeEventListener('hashchange', syncViewportState);
         };
     });
 
@@ -108,10 +98,7 @@
     });
 
     $effect(() => {
-        const stats = statsPolling.data as {
-            articles?: { total?: number | null };
-        } | null;
-        const totalArticles = Number(stats?.articles?.total ?? 0);
+        const totalArticles = Number(statsPolling.data?.articles?.total ?? 0);
 
         if (!Number.isFinite(totalArticles) || totalArticles <= 0) {
             return;
@@ -134,7 +121,7 @@
             class="flex items-center gap-4 rounded-[2rem] border border-slate-200/80 bg-white/85 px-3 py-3 shadow-[0_18px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/72"
         >
             <a
-                href="/#/"
+                href={homeUrl()}
                 onclick={goHome}
                 class="group flex shrink-0 items-center gap-3 rounded-[1.6rem] border border-slate-200 bg-[linear-gradient(135deg,rgba(240,249,255,0.95),rgba(255,255,255,0.92))] px-3 py-2.5 text-slate-900 transition hover:border-sky-300 hover:shadow-md dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.94))] dark:text-slate-50"
             >
@@ -164,7 +151,11 @@
                 </div>
             </a>
 
-            <HeaderMenuBlock {categories} {currentHash} onHome={goHome} />
+            <HeaderMenuBlock
+                {categories}
+                currentPath={currentPathname}
+                onHome={goHome}
+            />
 
             <div class="ml-auto flex items-center gap-2">
                 <button
@@ -194,7 +185,7 @@
                 </button>
 
                 <a
-                    href="/#/bookmarks"
+                    href={bookmarksUrl()}
                     class="relative inline-flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-rose-700 dark:hover:bg-rose-950/50 dark:hover:text-rose-300"
                     aria-label="Закладки"
                 >
@@ -286,7 +277,7 @@
                 </button>
 
                 <a
-                    href="/#/bookmarks"
+                    href={bookmarksUrl()}
                     class="flex items-center justify-between rounded-3xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 dark:border-white/10 dark:text-slate-200"
                 >
                     <span>Закладки</span>
@@ -306,7 +297,7 @@
                 </div>
                 <div class="space-y-2">
                     <a
-                        href="/#/"
+                        href={homeUrl()}
                         onclick={goHome}
                         class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5"
                     >
@@ -316,7 +307,7 @@
 
                     {#each categories as category (category.id)}
                         <a
-                            href={`/#/category/${category.slug}`}
+                            href={categoryUrl(category.slug)}
                             class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5"
                         >
                             <span

@@ -257,7 +257,7 @@ it('provides seo fallbacks and content accessors', function () {
     expect($article->meta_title)->toBe('Important Update')
         ->and($article->meta_description)->toStartWith('short short')
         ->and($article->content)->toBe('<p>Full content</p>')
-        ->and($seoData['canonical_url'])->toBe(rtrim((string) config('app.url'), '/').'/#/articles/important-update')
+        ->and($seoData['canonical_url'])->toBe(route('articles.show', ['slug' => 'important-update']))
         ->and($seoData['structured_data'])->toBeArray();
 });
 
@@ -307,22 +307,47 @@ it('increments shares and recalculates engagement score', function () {
         ->and($article->fresh()->engagement_score)->toBe(101.0);
 });
 
-it('search scope only matches title and description fields', function () {
-    $matchingArticle = Article::factory()->create([
+it('search scope matches title, body, author, and source fields', function () {
+    $bodyMatch = Article::factory()->create([
         'title' => 'Energy crisis briefing',
         'short_description' => 'Detailed energy market overview',
         'full_description' => 'Analysis of the current energy market',
         'author' => 'Unrelated Author',
+        'source_name' => 'Daily Wire',
+    ]);
+
+    $authorMatch = Article::factory()->create([
+        'title' => 'Daily summary',
+        'short_description' => 'General digest',
+        'full_description' => 'Nothing about the requested term here',
+        'author' => 'Energy Insider',
+        'source_name' => 'Local Desk',
+    ]);
+
+    $sourceMatch = Article::factory()->create([
+        'title' => 'Market wrap',
+        'short_description' => 'General digest',
+        'full_description' => 'Nothing about the requested term here',
+        'author' => 'Unrelated Author',
+        'source_name' => 'Energy Daily',
     ]);
 
     Article::factory()->create([
         'title' => 'Daily summary',
         'short_description' => 'General digest',
         'full_description' => 'Nothing about the requested term here',
-        'author' => 'Energy Insider',
+        'author' => 'Unrelated Author',
+        'source_name' => 'Local Desk',
     ]);
 
-    expect(Article::query()->search('energy')->pluck('id')->all())->toBe([$matchingArticle->id]);
+    $matchingIds = Article::query()->search('energy')->pluck('id')->all();
+
+    expect($matchingIds)->toHaveCount(3)
+        ->and($matchingIds)->toContain(
+            $bodyMatch->id,
+            $authorMatch->id,
+            $sourceMatch->id,
+        );
 });
 
 it('decrements tag usage counts when an article is deleted', function () {

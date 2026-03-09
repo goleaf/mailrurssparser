@@ -1,15 +1,13 @@
-import type { LinkComponentBaseProps } from '@inertiajs/core';
 import { clsx } from 'clsx';
 import type { ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { HrefLike } from '@/types/inertia';
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export function toUrl(
-    href: NonNullable<LinkComponentBaseProps['href']>,
-): string {
+export function toUrl(href: HrefLike): string {
     return typeof href === 'string' ? href : href.url;
 }
 

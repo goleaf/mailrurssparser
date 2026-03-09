@@ -1,6 +1,7 @@
 <script lang="ts">
     import { showToast } from '@/components/ui/Toast.svelte';
     import { getArticleContentTypeLabel } from '@/lib/articleEnums';
+    import { articleUrl, categoryUrl, tagUrl } from '@/lib/publicRoutes';
     import { cn } from '@/lib/utils';
     import { toggleBookmark, isBookmarked } from '@/stores/bookmarks.svelte.js';
 
@@ -80,7 +81,7 @@
     <div class="relative overflow-hidden">
         {#if article.image_url}
             <a
-                href={`/#/articles/${article.slug}`}
+                href={articleUrl(article.slug)}
                 class="bg-slate-200 dark:bg-slate-700"
             >
                 <img
@@ -109,7 +110,7 @@
             class="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3"
         >
             <a
-                href={`/#/category/${article.category.slug}`}
+                href={categoryUrl(article.category.slug)}
                 class="rounded-full px-3 py-1.5 text-[0.68rem] font-bold tracking-[0.18em] uppercase text-white shadow"
                 style={`background-color:${article.category.color ?? '#3B82F6'}`}
             >
@@ -151,7 +152,7 @@
             <span>Поток</span>
         </div>
 
-        <a href={`/#/articles/${article.slug}`}>
+        <a href={articleUrl(article.slug)}>
             <h2
                 class="mb-3 line-clamp-3 text-[1.02rem] leading-tight font-bold text-slate-950 transition-colors hover:text-sky-700 dark:text-white dark:hover:text-sky-300"
             >
@@ -171,7 +172,7 @@
             <div class="mb-4 flex flex-wrap gap-2">
                 {#each article.tags.slice(0, 2) as tag (tag.id)}
                     <a
-                        href={`/#/tag/${tag.slug}`}
+                        href={tagUrl(tag.slug)}
                         class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[0.72rem] font-medium text-slate-500 transition-colors hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-sky-900/30 dark:hover:text-sky-200"
                     >
                         #{tag.name}

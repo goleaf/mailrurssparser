@@ -11,18 +11,17 @@ class SeoController extends Controller
 {
     public function sitemap(): Response
     {
-        $baseUrl = rtrim((string) config('app.url'), '/');
         $urls = [
             $this->urlTag(
-                loc: $baseUrl.'/#/',
+                loc: route('home'),
                 changefreq: 'hourly',
                 priority: '1.0',
             ),
         ];
 
-        Category::query()->get(['slug'])->each(function (Category $category) use (&$urls, $baseUrl): void {
+        Category::query()->get(['slug'])->each(function (Category $category) use (&$urls): void {
             $urls[] = $this->urlTag(
-                loc: $baseUrl.'/#/category/'.$category->slug,
+                loc: route('category.show', ['slug' => $category->slug]),
                 changefreq: 'hourly',
                 priority: '0.7',
             );
@@ -32,11 +31,11 @@ class SeoController extends Controller
             ->published()
             ->select(['id', 'slug', 'published_at', 'updated_at'])
             ->orderBy('id')
-            ->chunkById(500, function (Collection $articles) use (&$urls, $baseUrl): void {
+            ->chunkById(500, function (Collection $articles) use (&$urls): void {
                 foreach ($articles as $article) {
                     $lastModified = $article->updated_at?->toAtomString() ?? $article->published_at?->toAtomString();
                     $urls[] = $this->urlTag(
-                        loc: $baseUrl.'/#/articles/'.$article->slug,
+                        loc: route('articles.show', ['slug' => $article->slug]),
                         lastmod: $lastModified,
                         priority: '0.8',
                     );
@@ -56,15 +55,14 @@ class SeoController extends Controller
 
     public function rss(): Response
     {
-        $baseUrl = rtrim((string) config('app.url'), '/');
         $items = Article::query()
             ->published()
             ->with('category')
             ->latest('published_at')
             ->limit(50)
             ->get()
-            ->map(function (Article $article) use ($baseUrl): string {
-                $link = $baseUrl.'/#/articles/'.$article->slug;
+            ->map(function (Article $article): string {
+                $link = route('articles.show', ['slug' => $article->slug]);
                 $pubDate = $article->published_at?->toRfc2822String() ?? now()->toRfc2822String();
 
                 return '<item>'
@@ -81,7 +79,7 @@ class SeoController extends Controller
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'
             .'<rss version="2.0"><channel>'
             .'<title>'.$this->escapeXml((string) config('app.name', 'Новостной портал')).'</title>'
-            .'<link>'.$this->escapeXml($baseUrl).'</link>'
+            .'<link>'.$this->escapeXml(route('home')).'</link>'
             .'<description>'.$this->escapeXml('Последние новости портала').'</description>'
             .'<language>ru</language>'
             .'<lastBuildDate>'.$this->escapeXml(now()->toRfc2822String()).'</lastBuildDate>'

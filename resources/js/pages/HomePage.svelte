@@ -20,6 +20,14 @@
     import { setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
     import { getArticleContentTypeFilterLabel } from '@/lib/articleEnums';
+    import {
+        absolutePublicUrl,
+        articleUrl,
+        bookmarksUrl,
+        homeUrl,
+        searchUrl,
+        statsUrl,
+    } from '@/lib/publicRoutes';
     import { appState, initApp } from '@/stores/app.svelte.js';
     import {
         activeFiltersCount,
@@ -289,10 +297,7 @@
             description:
                 'Редакционная лента новостей с быстрым поиском, фильтрами по рубрикам и живой статистикой.',
             type: 'website',
-            url:
-                typeof window !== 'undefined'
-                    ? `${window.location.origin}/#/`
-                    : undefined,
+            url: absolutePublicUrl(homeUrl()),
             tags: categories.slice(0, 8).map((category) => category.name),
         });
     });
@@ -398,21 +403,21 @@
 
                     <div class="flex flex-wrap gap-3">
                         <a
-                            href="/#/search"
+                            href={searchUrl()}
                             class="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                         >
                             Открыть поиск
                             <ArrowUpRight class="size-4" />
                         </a>
                         <a
-                            href="/#/stats"
+                            href={statsUrl()}
                             class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
                         >
                             Публичная статистика
                             <TrendingUp class="size-4" />
                         </a>
                         <a
-                            href="/#/bookmarks"
+                            href={bookmarksUrl()}
                             class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
                         >
                             Закладки
@@ -506,7 +511,7 @@
                         </div>
                     {:else if leadStory}
                         <a
-                            href={`/#/articles/${leadStory.slug}`}
+                            href={articleUrl(leadStory.slug)}
                             class="group relative block min-h-[24rem] overflow-hidden rounded-[2.2rem] border border-slate-200 bg-slate-950 text-white shadow-[0_25px_80px_-50px_rgba(15,23,42,0.65)] dark:border-white/10"
                         >
                             {#if leadStory.image_url}
@@ -625,7 +630,7 @@
                                 </div>
                             </div>
                             <a
-                                href="/#/stats"
+                                href={statsUrl()}
                                 class="text-sm font-medium text-sky-700 transition hover:text-sky-800 dark:text-sky-300"
                             >
                                 Все метрики

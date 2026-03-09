@@ -6,6 +6,7 @@
     import ArticleCard from '@/components/article/ArticleCard.svelte';
     import SkeletonCard from '@/components/SkeletonCard.svelte';
     import * as api from '@/lib/api';
+    import { homeUrl, searchUrl } from '@/lib/publicRoutes';
     import {
         loadBookmarks,
         toggleBookmark,
@@ -214,13 +215,13 @@
                     </p>
                     <div class="mt-6 flex flex-wrap justify-center gap-3">
                         <a
-                            href="/#/"
+                            href={homeUrl()}
                             class="inline-flex items-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                         >
                             Перейти к новостям
                         </a>
                         <a
-                            href="/#/search"
+                            href={searchUrl()}
                             class="inline-flex items-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                         >
                             Открыть поиск

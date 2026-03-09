@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Article;
+
 return [
 
     /*
@@ -12,11 +14,12 @@ return [
     | to the search service. You should adjust this based on your needs.
     |
     | Supported: "algolia", "meilisearch", "typesense",
-    |            "database", "collection", "null"
+    |            "database", "collection", "null", "tntsearch"
     |
     */
 
-    'driver' => env('SCOUT_DRIVER', 'tntsearch'),
+    'driver' => env('SCOUT_DRIVER')
+        ?: (env('DB_CONNECTION') === 'sqlite' ? 'tntsearch' : 'database'),
 
     /*
     |--------------------------------------------------------------------------
@@ -116,10 +119,27 @@ return [
         'id' => env('ALGOLIA_APP_ID', ''),
         'secret' => env('ALGOLIA_SECRET', ''),
         'index-settings' => [
-            // 'users' => [
-            //     'searchableAttributes' => ['id', 'name', 'email'],
-            //     'attributesForFaceting'=> ['filterOnly(email)'],
-            // ],
+            Article::class => [
+                'searchableAttributes' => [
+                    'unordered(title)',
+                    'unordered(short_description)',
+                    'unordered(full_description_plain)',
+                    'unordered(author)',
+                    'unordered(source_name)',
+                ],
+                'attributesForFaceting' => [
+                    'filterOnly(status)',
+                    'filterOnly(content_type)',
+                    'filterOnly(is_breaking)',
+                    'filterOnly(is_pinned)',
+                ],
+                'customRanking' => [
+                    'desc(is_breaking)',
+                    'desc(is_pinned)',
+                    'desc(engagement_score)',
+                    'desc(published_at_timestamp)',
+                ],
+            ],
         ],
     ],
 

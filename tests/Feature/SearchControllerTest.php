@@ -2,6 +2,7 @@
 
 use App\Models\Article;
 use App\Models\Category;
+use App\Models\SubCategory;
 use App\Models\Tag;
 
 it('validates the search term', function () {
@@ -20,9 +21,15 @@ it('returns search results with query and total meta', function () {
     }
 
     $category = Category::factory()->create(['name' => 'Politics', 'slug' => 'politics']);
+    $subCategory = SubCategory::factory()->create([
+        'category_id' => $category->id,
+        'name' => 'Local',
+        'slug' => 'local',
+    ]);
 
     $article = Article::factory()->create([
         'category_id' => $category->id,
+        'sub_category_id' => $subCategory->id,
         'title' => 'Hello world',
         'short_description' => 'Hello description',
         'status' => 'published',
@@ -36,6 +43,7 @@ it('returns search results with query and total meta', function () {
     ]))
         ->assertSuccessful()
         ->assertJsonPath('data.0.id', $article->id)
+        ->assertJsonPath('data.0.sub_category.slug', 'local')
         ->assertJsonPath('meta.query', 'Hello')
         ->assertJsonPath('meta.total', 1);
 });

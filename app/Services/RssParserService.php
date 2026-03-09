@@ -21,6 +21,7 @@ use Illuminate\Http\Client\Request as HttpClientRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -99,6 +100,11 @@ class RssParserService
         'Ю' => 'Yu',
         'Я' => 'Ya',
     ];
+
+    /**
+     * @var Collection<int, Category>|null
+     */
+    private ?Collection $categoryCatalog = null;
 
     public function __construct(private ?SourceArticleParserService $sourceArticleParser = null)
     {
@@ -1885,7 +1891,9 @@ class RssParserService
 
         $updates = [];
         $itemCategories = $this->extractCategories($item);
-        $subCategory = $this->resolveItemSubCategory($feed, $itemCategories);
+        $resolvedCategory = $this->resolveItemCategory($feed, $itemCategories);
+        $resolvedCategoryId = $resolvedCategory?->id ?? $feed->category_id;
+        $subCategory = $this->resolveItemSubCategory($feed, $itemCategories, $resolvedCategory);
         $link = $this->extractLink($item);
         $guid = $this->extractGuid($item);
         $description = $this->extractDescription($item);
@@ -1905,8 +1913,12 @@ class RssParserService
             $updates['rss_feed_id'] = $feed->id;
         }
 
-        if ($subCategory?->id !== null && $article->sub_category_id !== $subCategory->id) {
-            $updates['sub_category_id'] = $subCategory->id;
+        if ($article->category_id !== $resolvedCategoryId) {
+            $updates['category_id'] = $resolvedCategoryId;
+        }
+
+        if ($article->sub_category_id !== $subCategory?->id) {
+            $updates['sub_category_id'] = $subCategory?->id;
         }
 
         if ($this->isBlankArticleAttribute($article->short_description) && $description !== '') {
@@ -1974,10 +1986,12 @@ class RssParserService
             : (string) config('rss.article.default_author', 'Редакция');
         $author = $this->extractAuthor($item)
             ?? ($defaultAuthor !== '' ? $defaultAuthor : $sourceName);
-        $subCategory = $this->resolveItemSubCategory($feed, $itemCategories);
+        $resolvedCategory = $this->resolveItemCategory($feed, $itemCategories);
+        $resolvedCategoryId = $resolvedCategory?->id ?? $categoryId;
+        $subCategory = $this->resolveItemSubCategory($feed, $itemCategories, $resolvedCategory);
 
         $articleData = [
-            'category_id' => $categoryId,
+            'category_id' => $resolvedCategoryId,
             'sub_category_id' => $subCategory?->id,
             'rss_feed_id' => $rssFeedId,
             'title' => $title,
@@ -2008,60 +2022,81 @@ class RssParserService
     /**
      * @param  array<int, string>  $itemCategories
      */
-    private function resolveItemSubCategory(RssFeed $feed, array $itemCategories): ?SubCategory
+    private function resolveItemCategory(RssFeed $feed, array $itemCategories): ?Category
     {
-        $resolvedName = $this->resolveItemSubCategoryName($feed, $itemCategories);
+        $feedCategory = $this->resolveFeedCategory($feed);
 
-        if ($resolvedName !== null) {
-            return $this->resolveSubCategoryByName($feed, $resolvedName);
+        if (! $feedCategory instanceof Category) {
+            return null;
         }
 
-        return $this->resolveFeedSubCategory($feed);
+        $itemCategoryPaths = $this->extractItemCategoryPaths($itemCategories);
+
+        foreach ($itemCategoryPaths as $itemCategoryPath) {
+            if ($this->categoryMatchesValue($feedCategory, $itemCategoryPath['category_name'])) {
+                return $feedCategory;
+            }
+        }
+
+        if (! $this->isAggregateCategory($feedCategory)) {
+            return $feedCategory;
+        }
+
+        foreach ($itemCategoryPaths as $itemCategoryPath) {
+            $resolvedCategory = $this->findCategoryByValue($itemCategoryPath['category_name']);
+
+            if ($resolvedCategory instanceof Category) {
+                return $resolvedCategory;
+            }
+        }
+
+        return $feedCategory;
     }
 
     /**
      * @param  array<int, string>  $itemCategories
      */
-    private function resolveItemSubCategoryName(RssFeed $feed, array $itemCategories): ?string
+    private function resolveItemSubCategory(
+        RssFeed $feed,
+        array $itemCategories,
+        ?Category $resolvedCategory = null,
+    ): ?SubCategory {
+        $resolvedCategory ??= $this->resolveItemCategory($feed, $itemCategories);
+
+        if (! $resolvedCategory instanceof Category) {
+            return null;
+        }
+
+        $resolvedName = $this->resolveItemSubCategoryName($itemCategories, $resolvedCategory);
+
+        if ($resolvedName !== null) {
+            return $this->resolveSubCategoryByName($resolvedCategory->id, $resolvedName);
+        }
+
+        return $this->resolveFeedSubCategory($feed, $resolvedCategory);
+    }
+
+    /**
+     * @param  array<int, string>  $itemCategories
+     */
+    private function resolveItemSubCategoryName(array $itemCategories, Category $resolvedCategory): ?string
     {
-        $categoryName = $feed->relationLoaded('category')
-            ? ($feed->category?->name ?? '')
-            : (string) Category::query()->whereKey($feed->category_id)->value('name');
-        $categorySlug = $feed->relationLoaded('category')
-            ? ($feed->category?->slug ?? '')
-            : (string) Category::query()->whereKey($feed->category_id)->value('slug');
-        $aggregateCategory = in_array(Str::lower($categorySlug), ['all', 'main'], true);
+        foreach ($this->extractItemCategoryPaths($itemCategories) as $itemCategoryPath) {
+            $subCategoryName = $itemCategoryPath['sub_category_name'];
 
-        foreach ($itemCategories as $itemCategory) {
-            $normalizedItemCategory = trim($itemCategory);
-
-            if ($normalizedItemCategory === '') {
+            if ($subCategoryName === null) {
                 continue;
             }
 
-            if ($aggregateCategory) {
-                return $normalizedItemCategory;
-            }
-
-            if (! str_contains($normalizedItemCategory, ':')) {
-                continue;
-            }
-
-            [$prefix, $suffix] = array_map('trim', explode(':', $normalizedItemCategory, 2));
-
-            if ($suffix === '') {
-                continue;
-            }
-
-            if ($categoryName !== '' && Str::lower($prefix) === Str::lower($categoryName)) {
-                return $suffix;
+            if ($this->categoryMatchesValue($resolvedCategory, $itemCategoryPath['category_name'])) {
+                return $subCategoryName;
             }
         }
 
         return null;
     }
 
-    private function resolveSubCategoryByName(RssFeed $feed, string $subCategoryName): ?SubCategory
+    private function resolveSubCategoryByName(int $categoryId, string $subCategoryName): ?SubCategory
     {
         $normalizedName = trim($subCategoryName);
 
@@ -2072,7 +2107,7 @@ class RssParserService
         $subCategorySlug = Str::slug(strtr($normalizedName, self::RU_TRANSLIT));
 
         return $this->firstOrCreateSubCategory(
-            $feed->category_id,
+            $categoryId,
             $normalizedName,
             $subCategorySlug !== '' ? $subCategorySlug : null,
         );
@@ -2152,18 +2187,21 @@ class RssParserService
         return $slug;
     }
 
-    private function resolveFeedSubCategory(RssFeed $feed): ?SubCategory
+    private function resolveFeedSubCategory(RssFeed $feed, ?Category $resolvedCategory = null): ?SubCategory
     {
         /** @var array<string, mixed> $extraSettings */
         $extraSettings = is_array($feed->extra_settings) ? $feed->extra_settings : [];
         $subCategoryName = trim((string) ($extraSettings['sub_category_name'] ?? ''));
         $subCategorySlug = trim((string) ($extraSettings['sub_category_slug'] ?? ''));
+        $resolvedCategory ??= $this->resolveFeedCategory($feed);
+
+        if (! $resolvedCategory instanceof Category) {
+            return null;
+        }
 
         if ($subCategoryName === '' && str_contains($feed->title, ':')) {
             [$feedCategoryName, $feedSubCategoryName] = array_map('trim', explode(':', $feed->title, 2));
-            $categoryName = $feed->relationLoaded('category')
-                ? ($feed->category?->name ?? '')
-                : (string) Category::query()->whereKey($feed->category_id)->value('name');
+            $categoryName = $resolvedCategory->name ?? '';
 
             if (
                 $feedSubCategoryName !== ''
@@ -2183,10 +2221,148 @@ class RssParserService
         }
 
         return $this->firstOrCreateSubCategory(
-            $feed->category_id,
+            $resolvedCategory->id,
             $subCategoryName,
             $subCategorySlug !== '' ? $subCategorySlug : null,
         );
+    }
+
+    private function resolveFeedCategory(RssFeed $feed): ?Category
+    {
+        if ($feed->relationLoaded('category') && $feed->category instanceof Category) {
+            return $feed->category;
+        }
+
+        $category = $this->findCategoryById(is_numeric($feed->category_id) ? (int) $feed->category_id : null);
+
+        if ($category instanceof Category) {
+            $feed->setRelation('category', $category);
+        }
+
+        return $category;
+    }
+
+    private function findCategoryById(?int $categoryId): ?Category
+    {
+        if ($categoryId === null) {
+            return null;
+        }
+
+        return $this->categoryCatalog()
+            ->first(fn (Category $category): bool => (int) $category->id === $categoryId);
+    }
+
+    private function findCategoryByValue(string $value): ?Category
+    {
+        $normalizedValue = trim($value);
+
+        if ($normalizedValue === '') {
+            return null;
+        }
+
+        return $this->categoryCatalog()
+            ->first(fn (Category $category): bool => $this->categoryMatchesValue($category, $normalizedValue));
+    }
+
+    private function categoryMatchesValue(Category $category, string $value): bool
+    {
+        $normalizedValue = $this->normalizeTaxonomyValue($value);
+
+        if ($normalizedValue === '') {
+            return false;
+        }
+
+        $normalizedSlug = $this->makeTaxonomySlug($value);
+
+        return collect([
+            $category->name,
+            $category->slug,
+            $category->rss_key,
+        ])
+            ->filter(fn (mixed $candidate): bool => is_string($candidate) && trim($candidate) !== '')
+            ->contains(function (string $candidate) use ($normalizedSlug, $normalizedValue): bool {
+                $normalizedCandidate = $this->normalizeTaxonomyValue($candidate);
+
+                if ($normalizedCandidate === $normalizedValue) {
+                    return true;
+                }
+
+                if ($normalizedSlug === '') {
+                    return false;
+                }
+
+                return $this->makeTaxonomySlug($candidate) === $normalizedSlug;
+            });
+    }
+
+    private function isAggregateCategory(Category $category): bool
+    {
+        return in_array(Str::lower((string) $category->slug), ['all', 'main'], true);
+    }
+
+    /**
+     * @param  array<int, string>  $itemCategories
+     * @return array<int, array{raw: string, category_name: string, sub_category_name: string|null}>
+     */
+    private function extractItemCategoryPaths(array $itemCategories): array
+    {
+        return collect($itemCategories)
+            ->map(function (string $itemCategory): ?array {
+                $normalizedItemCategory = trim($itemCategory);
+
+                if ($normalizedItemCategory === '') {
+                    return null;
+                }
+
+                if (! str_contains($normalizedItemCategory, ':')) {
+                    return [
+                        'raw' => $normalizedItemCategory,
+                        'category_name' => $normalizedItemCategory,
+                        'sub_category_name' => null,
+                    ];
+                }
+
+                [$categoryName, $subCategoryName] = array_map('trim', explode(':', $normalizedItemCategory, 2));
+
+                if ($categoryName === '') {
+                    return [
+                        'raw' => $normalizedItemCategory,
+                        'category_name' => $normalizedItemCategory,
+                        'sub_category_name' => null,
+                    ];
+                }
+
+                return [
+                    'raw' => $normalizedItemCategory,
+                    'category_name' => $categoryName,
+                    'sub_category_name' => $subCategoryName !== '' ? $subCategoryName : null,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return Collection<int, Category>
+     */
+    private function categoryCatalog(): Collection
+    {
+        if ($this->categoryCatalog instanceof Collection) {
+            return $this->categoryCatalog;
+        }
+
+        return $this->categoryCatalog = Category::query()->get();
+    }
+
+    private function normalizeTaxonomyValue(string $value): string
+    {
+        return Str::lower(trim(Utf8Normalizer::normalizeString($value) ?? $value));
+    }
+
+    private function makeTaxonomySlug(string $value): string
+    {
+        return Str::slug(strtr(trim($value), self::RU_TRANSLIT));
     }
 
     private function guessImportance(string $title, string $desc): int

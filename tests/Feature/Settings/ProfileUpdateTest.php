@@ -1,102 +1,14 @@
 <?php
 
-use App\Models\User;
-use App\Services\SessionKey;
-use Inertia\Testing\AssertableInertia as Assert;
+use Illuminate\Support\Facades\Route;
 
-test('profile page is displayed', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->get(route('profile.edit'));
-
-    $response->assertOk();
+test('public frontend profile routes are not registered', function () {
+    expect(Route::has('profile.edit'))->toBeFalse()
+        ->and(Route::has('profile.update'))->toBeFalse()
+        ->and(Route::has('profile.destroy'))->toBeFalse();
 });
 
-test('profile page exposes status from the enum-backed session key', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->withSession([SessionKey::Status->value => 'verification-link-sent'])
-        ->get(route('profile.edit'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/Profile')
-            ->hasFlash('status', 'verification-link-sent'),
-        );
-});
-
-test('profile information can be updated', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->patch(route('profile.update'), [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'))
-        ->assertInertiaFlash('toast.type', 'success')
-        ->assertInertiaFlash('toast.message', 'Profile updated.');
-
-    $user->refresh();
-
-    expect($user->name)->toBe('Test User');
-    expect($user->email)->toBe('test@example.com');
-    expect($user->email_verified_at)->toBeNull();
-});
-
-test('email verification status is unchanged when the email address is unchanged', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->patch(route('profile.update'), [
-            'name' => 'Test User',
-            'email' => $user->email,
-        ]);
-
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
-
-    expect($user->refresh()->email_verified_at)->not->toBeNull();
-});
-
-test('user can delete their account', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->delete(route('profile.destroy'), [
-            'password' => 'password',
-        ]);
-
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('home'));
-
-    $this->assertGuest();
-    expect($user->fresh())->toBeNull();
-});
-
-test('correct password must be provided to delete account', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->from(route('profile.edit'))
-        ->delete(route('profile.destroy'), [
-            'password' => 'wrong-password',
-        ]);
-
-    $response
-        ->assertSessionHasErrors('password')
-        ->assertRedirect(route('profile.edit'));
-
-    expect($user->fresh())->not->toBeNull();
+test('legacy profile settings page redirects to the filament admin panel', function () {
+    $this->get('/settings/profile')
+        ->assertRedirect('/admin');
 });

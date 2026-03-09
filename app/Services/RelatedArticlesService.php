@@ -140,7 +140,7 @@ class RelatedArticlesService
 
         return Article::query()
             ->published()
-            ->with(['category', 'tags'])
+            ->with(['category', 'subCategory', 'tags'])
             ->inCategory($article->category_id)
             ->whereKeyNot($article->getKey())
             ->when($excludeIds !== [], fn (Builder $query) => $query->whereNotIn('id', $excludeIds))

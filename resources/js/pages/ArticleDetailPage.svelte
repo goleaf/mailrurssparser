@@ -8,6 +8,13 @@
     import { injectJsonLd, setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
     import { getArticleContentTypeLabel } from '@/lib/articleEnums';
+    import {
+        absolutePublicUrl,
+        articleUrl,
+        categoryUrl,
+        homeUrl,
+        tagUrl,
+    } from '@/lib/publicRoutes';
     import { cn } from '@/lib/utils';
     import {
         isBookmarked,
@@ -98,18 +105,6 @@
                   year: 'numeric',
               }).format(new Date(article.published_at))
             : '',
-    );
-
-    const rssParsedDate = $derived(
-        article?.rss_parsed_at
-            ? new Intl.DateTimeFormat('ru-RU', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-              }).format(new Date(article.rss_parsed_at))
-            : 'Нет данных',
     );
 
     const sanitizedContent = $derived(
@@ -230,17 +225,20 @@
 
         try {
             const response = await api.shareArticle(article.id, platform);
-            const shareUrl = response.data?.share_url as string | undefined;
+            const shareUrl = response.data?.share_url ?? undefined;
+            const sharesCount =
+                response.data?.total ?? article.shares_count ?? 0;
 
             article = {
                 ...article,
-                shares_count: response.data?.total ?? article.shares_count ?? 0,
+                shares_count: sharesCount,
             };
 
             if (platform === 'copy') {
                 const urlToCopy =
-                    shareUrl ||
-                    `${window.location.origin}/#/articles/${article.slug}`;
+                    shareUrl ??
+                    absolutePublicUrl(articleUrl(article.slug)) ??
+                    articleUrl(article.slug);
 
                 if (typeof navigator !== 'undefined' && navigator.clipboard) {
                     await navigator.clipboard.writeText(urlToCopy);
@@ -295,10 +293,7 @@
             title: article.meta_title || article.title,
             description: metaDescription,
             image: article.image_url || undefined,
-            url:
-                typeof window !== 'undefined'
-                    ? `${window.location.origin}/#/articles/${article.slug}`
-                    : undefined,
+            url: absolutePublicUrl(articleUrl(article.slug)),
             type: 'article',
             publishedAt: article.published_at || undefined,
             author: article.author || undefined,
@@ -367,7 +362,7 @@
                 Возможно, материал был удалён или ссылка устарела.
             </p>
             <a
-                href="/#/"
+                href={homeUrl()}
                 class="mt-8 inline-flex rounded-full bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
             >
                 Вернуться к новостям
@@ -397,14 +392,14 @@
                         class="mb-5 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400"
                     >
                         <a
-                            href="/#/"
+                            href={homeUrl()}
                             class="transition hover:text-slate-900 dark:hover:text-white"
                         >
                             Главная
                         </a>
                         <span>→</span>
                         <a
-                            href={`/#/category/${article.category.slug}`}
+                            href={categoryUrl(article.category.slug)}
                             class="transition hover:text-slate-900 dark:hover:text-white"
                         >
                             {article.category.name}
@@ -484,7 +479,7 @@
                         <div class="mt-5 flex flex-wrap gap-2">
                             {#each article.tags as tag (tag.id)}
                                 <a
-                                    href={`/#/tag/${tag.slug}`}
+                                    href={tagUrl(tag.slug)}
                                     class="rounded-full border border-slate-200/80 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-white/10 dark:text-slate-200"
                                     style={`background-color: ${tag.color ? `${tag.color}1E` : '#E2E8F0'}`}
                                 >
@@ -675,73 +670,6 @@
                         </button>
                     </section>
 
-                    <footer
-                        class="rounded-[2rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.94))] p-6 shadow-[0_30px_90px_-65px_rgba(15,23,42,0.46)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.84))]"
-                    >
-                        <div
-                            class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300"
-                        >
-                            Метаданные статьи
-                        </div>
-
-                        {#if article.tags?.length}
-                            <div class="mt-4 flex flex-wrap gap-2">
-                                {#each article.tags as tag (tag.id)}
-                                    <a
-                                        href={`/#/tag/${tag.slug}`}
-                                        class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-white/10 dark:text-slate-200"
-                                    >
-                                        #{tag.name}
-                                    </a>
-                                {/each}
-                            </div>
-                        {/if}
-
-                        <dl
-                            class="mt-6 grid gap-4 text-sm text-slate-500 sm:grid-cols-2 dark:text-slate-400"
-                        >
-                            <div>
-                                <dt
-                                    class="font-medium text-slate-900 dark:text-white"
-                                >
-                                    Опубликовано
-                                </dt>
-                                <dd class="mt-1">
-                                    {publishedDate || article.published_at_date}
-                                </dd>
-                            </div>
-                            <div>
-                                <dt
-                                    class="font-medium text-slate-900 dark:text-white"
-                                >
-                                    RSS парсинг
-                                </dt>
-                                <dd class="mt-1">{rssParsedDate}</dd>
-                            </div>
-                            {#if displaySourceName}
-                                <div>
-                                    <dt
-                                        class="font-medium text-slate-900 dark:text-white"
-                                    >
-                                        Источник
-                                    </dt>
-                                    <dd class="mt-1">
-                                        {displaySourceName}
-                                    </dd>
-                                </div>
-                            {/if}
-                            <div>
-                                <dt
-                                    class="font-medium text-slate-900 dark:text-white"
-                                >
-                                    RSS-лента
-                                </dt>
-                                <dd class="mt-1">
-                                    {article.rss_feed?.title || 'Нет данных'}
-                                </dd>
-                            </div>
-                        </dl>
-                    </footer>
                 </div>
 
                 <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">

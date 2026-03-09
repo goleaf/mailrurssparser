@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { articleUrl } from '@/lib/publicRoutes';
+
     type ArticleCategory =
         | {
               icon?: string | null;
@@ -32,7 +34,7 @@
 <article
     class="group flex items-center gap-3 rounded-[1.4rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]"
 >
-    <a href={`/#/articles/${article.slug}`} class="shrink-0">
+    <a href={articleUrl(article.slug)} class="shrink-0">
         {#if article.image_url}
             <img
                 src={article.image_url}
@@ -51,7 +53,7 @@
     </a>
 
     <div class="min-w-0 flex-1">
-        <a href={`/#/articles/${article.slug}`}>
+        <a href={articleUrl(article.slug)}>
             <h3
                 class="line-clamp-3 text-sm leading-snug font-semibold text-slate-900 transition-colors hover:text-sky-700 dark:text-white dark:hover:text-sky-300"
             >

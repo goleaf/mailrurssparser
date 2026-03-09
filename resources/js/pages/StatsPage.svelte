@@ -17,6 +17,7 @@
         StatsOverview as Overview,
         StatsPopularRow as PopularRow,
     } from '@/lib/api';
+    import { articleUrl, tagUrl, visitPublic } from '@/lib/publicRoutes';
     import { cn } from '@/lib/utils';
 
     type TrendSummary = {
@@ -378,11 +379,7 @@
     }
 
     function navigateToTag(slug: string): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        window.location.hash = `/tag/${slug}`;
+        visitPublic(tagUrl(slug));
     }
 
     async function loadOverviewData(): Promise<void> {
@@ -896,7 +893,7 @@
                                 </div>
                                 {#if item.top_article}
                                     <a
-                                        href={`/#/articles/${item.top_article.slug}`}
+                                        href={articleUrl(item.top_article.slug)}
                                         class="mt-2 block text-xs text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
                                     >
                                         Топ материал: {item.top_article.title}
@@ -1149,7 +1146,7 @@
                                         </td>
                                         <td class="py-4 pr-4">
                                             <a
-                                                href={`/#/articles/${row.slug}`}
+                                                href={articleUrl(row.slug)}
                                                 class="font-medium text-slate-900 transition hover:text-sky-600 dark:text-white dark:hover:text-sky-300"
                                             >
                                                 {row.title}

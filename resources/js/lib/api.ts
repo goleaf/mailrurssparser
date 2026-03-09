@@ -117,6 +117,7 @@ export type ApiArticleListItem = {
     reading_time?: number | null;
     published_at?: string | null;
     category: ApiArticleCategory;
+    sub_category?: ApiSubCategory | null;
     tags?: ApiTag[];
 };
 

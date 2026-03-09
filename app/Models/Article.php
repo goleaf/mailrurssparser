@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Laravel\Scout\Attributes\SearchUsingFullText;
+use Laravel\Scout\Attributes\SearchUsingPrefix;
 use Laravel\Scout\Searchable;
 
 class Article extends Model implements HasRichContent
@@ -288,12 +290,31 @@ class Article extends Model implements HasRichContent
             return $query;
         }
 
-        $like = '%'.$term.'%';
+        $driver = $query->getConnection()->getDriverName();
+        $likeOperator = $driver === 'pgsql' ? 'ilike' : 'like';
+        $like = '%'.self::escapeLikeTerm($term).'%';
 
-        return $query->where(function (Builder $query) use ($like): void {
-            $query->where('title', 'like', $like)
-                ->orWhere('short_description', 'like', $like)
-                ->orWhere('full_description', 'like', $like);
+        return $query->where(function (Builder $query) use ($driver, $likeOperator, $like, $term): void {
+            if (self::supportsFullTextDriver($driver)) {
+                $query->whereFullText(
+                    ['title', 'short_description', 'full_description', 'author', 'source_name'],
+                    $term,
+                );
+            } else {
+                $query->where('title', $likeOperator, $like)
+                    ->orWhere('short_description', $likeOperator, $like)
+                    ->orWhere('full_description', $likeOperator, $like)
+                    ->orWhere('author', $likeOperator, $like)
+                    ->orWhere('source_name', $likeOperator, $like);
+
+                return;
+            }
+
+            $query->orWhere('title', $likeOperator, $like)
+                ->orWhere('short_description', $likeOperator, $like)
+                ->orWhere('full_description', $likeOperator, $like)
+                ->orWhere('author', $likeOperator, $like)
+                ->orWhere('source_name', $likeOperator, $like);
         });
     }
 
@@ -323,16 +344,41 @@ class Article extends Model implements HasRichContent
         return $query->where('importance', '>=', $min);
     }
 
+    #[SearchUsingPrefix(['id', 'slug'])]
+    #[SearchUsingFullText(['title', 'short_description', 'full_description', 'author', 'source_name'])]
     public function toSearchableArray(): array
     {
-        return [
+        $searchable = [
             'id' => $this->id,
+            'slug' => $this->slug,
             'title' => $this->title,
             'short_description' => $this->short_description,
-            'full_description' => strip_tags((string) $this->full_description),
-            'published_at' => $this->published_at?->timestamp,
-            'category' => $this->relationLoaded('category') ? $this->category?->name : $this->category()->value('name'),
+            'full_description' => (string) ($this->full_description ?? $this->rss_content ?? ''),
+            'author' => $this->author,
+            'source_name' => $this->source_name,
         ];
+
+        if (config('scout.driver') !== 'database') {
+            $searchable['full_description_plain'] = strip_tags(
+                (string) ($this->full_description ?? $this->rss_content ?? ''),
+            );
+            $searchable['published_at_timestamp'] = $this->published_at?->timestamp;
+            $searchable['status'] = $this->status?->value ?? $this->status;
+            $searchable['content_type'] = $this->content_type?->value ?? $this->content_type;
+            $searchable['is_breaking'] = $this->is_breaking;
+            $searchable['is_pinned'] = $this->is_pinned;
+            $searchable['engagement_score'] = $this->engagement_score;
+        }
+
+        return $searchable;
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        return $this->status === ArticleStatus::Published
+            && $this->published_at !== null
+            && $this->published_at->lte(now())
+            && $this->deleted_at === null;
     }
 
     public function getReadingTimeTextAttribute(): string
@@ -372,6 +418,16 @@ class Article extends Model implements HasRichContent
             Str::lower((string) config('rss.feed_host', implode('.', ['news', 'mail', 'ru']))),
             Str::lower(implode('.', ['mail', 'ru'])),
         ];
+    }
+
+    private static function supportsFullTextDriver(string $driver): bool
+    {
+        return in_array($driver, ['mysql', 'pgsql'], true);
+    }
+
+    private static function escapeLikeTerm(string $term): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $term);
     }
 
     protected function sourceName(): Attribute
@@ -428,7 +484,7 @@ class Article extends Model implements HasRichContent
                     return null;
                 }
 
-                return rtrim((string) config('app.url'), '/').'/#/category/'.$slug;
+                return route('category.show', ['slug' => $slug]);
             });
     }
 
@@ -458,7 +514,7 @@ class Article extends Model implements HasRichContent
                     return null;
                 }
 
-                return rtrim((string) config('app.url'), '/').'/#/tag/'.$slug;
+                return route('tag.show', ['slug' => $slug]);
             });
     }
 
@@ -569,7 +625,7 @@ class Article extends Model implements HasRichContent
                 '@type' => 'Organization',
                 'name' => $this->source_name ?: config('app.name'),
             ],
-            'url' => rtrim((string) config('app.url'), '/').'/#/articles/'.$this->slug,
+            'url' => route('articles.show', ['slug' => $this->slug]),
             'keywords' => $tagNames,
         ];
     }
@@ -582,7 +638,7 @@ class Article extends Model implements HasRichContent
         return [
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
-            'canonical_url' => $this->canonical_url ?: rtrim((string) config('app.url'), '/').'/#/articles/'.$this->slug,
+            'canonical_url' => $this->canonical_url ?: route('articles.show', ['slug' => $this->slug]),
             'structured_data' => $this->structured_data ?? $this->generateStructuredData(),
             'image_url' => $this->image_url,
         ];

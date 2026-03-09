@@ -1,44 +1,40 @@
-import type { LinkComponentBaseProps } from '@inertiajs/core';
-import { page } from '@inertiajs/svelte';
-import type { Readable } from 'svelte/store';
-import { derived } from 'svelte/store';
 import { toUrl } from '@/lib/utils';
+import type { HrefLike } from '@/types/inertia';
 
 export type CurrentUrlState = {
-    currentUrl: Readable<string>;
     isCurrentUrl: (
-        urlToCheck: NonNullable<LinkComponentBaseProps['href']>,
+        urlToCheck: HrefLike,
         currentUrl: string,
         startsWith?: boolean,
     ) => boolean;
     isCurrentOrParentUrl: (
-        urlToCheck: NonNullable<LinkComponentBaseProps['href']>,
+        urlToCheck: HrefLike,
         currentUrl: string,
     ) => boolean;
     whenCurrentUrl: <TIfTrue, TIfFalse = null>(
-        urlToCheck: NonNullable<LinkComponentBaseProps['href']>,
+        urlToCheck: HrefLike,
         currentUrl: string,
         ifTrue: TIfTrue,
         ifFalse?: TIfFalse,
     ) => TIfTrue | TIfFalse;
 };
 
-const currentUrl = derived(page, ($page) => {
+export function currentPath(url: string): string {
     const origin =
         typeof window === 'undefined'
             ? 'http://localhost'
             : window.location.origin;
 
     try {
-        return new URL($page.url, origin).pathname;
+        return new URL(url, origin).pathname;
     } catch {
-        return $page.url;
+        return url;
     }
-});
+}
 
 export function currentUrlState(): CurrentUrlState {
     function isCurrentUrl(
-        urlToCheck: NonNullable<LinkComponentBaseProps['href']>,
+        urlToCheck: HrefLike,
         current: string,
         startsWith: boolean = false,
     ): boolean {
@@ -60,14 +56,14 @@ export function currentUrlState(): CurrentUrlState {
     }
 
     function isCurrentOrParentUrl(
-        urlToCheck: NonNullable<LinkComponentBaseProps['href']>,
+        urlToCheck: HrefLike,
         current: string,
     ): boolean {
         return isCurrentUrl(urlToCheck, current, true);
     }
 
     function whenCurrentUrl<TIfTrue, TIfFalse = null>(
-        urlToCheck: NonNullable<LinkComponentBaseProps['href']>,
+        urlToCheck: HrefLike,
         current: string,
         ifTrue: TIfTrue,
         ifFalse: TIfFalse = null as TIfFalse,
@@ -76,7 +72,6 @@ export function currentUrlState(): CurrentUrlState {
     }
 
     return {
-        currentUrl,
         isCurrentUrl,
         isCurrentOrParentUrl,
         whenCurrentUrl,

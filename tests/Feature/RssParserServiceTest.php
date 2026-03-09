@@ -363,6 +363,101 @@ XML, 'SimpleXMLElement', LIBXML_NOCDATA);
         ->and($article?->tags->pluck('name')->all())->toContain('Спорт: КХЛ');
 });
 
+it('maps aggregate feed item categories to project categories and subcategories', function () {
+    $aggregateCategory = Category::factory()->create([
+        'name' => 'Главные новости',
+        'slug' => 'main',
+    ]);
+    $societyCategory = Category::factory()->create([
+        'name' => 'Общество',
+        'slug' => 'society',
+    ]);
+
+    $feed = RssFeed::factory()->create([
+        'category_id' => $aggregateCategory->id,
+        'title' => 'Главные новости',
+        'source_name' => '',
+        'extra_settings' => null,
+    ]);
+
+    $item = simplexml_load_string(<<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<item>
+  <title>История дня</title>
+  <link>https://example.test/story-of-day</link>
+  <description><![CDATA[<p>Body text.</p>]]></description>
+  <category>Общество: Жизнь</category>
+  <pubDate>Mon, 01 Jan 2024 12:00:00 +0000</pubDate>
+</item>
+XML, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+    $article = invokeRssMethod(new RssParserService, 'processItem', $item, $feed->category_id, $feed->id, $feed);
+    $subCategory = SubCategory::query()
+        ->where('category_id', $societyCategory->id)
+        ->where('name', 'Жизнь')
+        ->first();
+
+    expect($article)->toBeInstanceOf(Article::class)
+        ->and($article?->category_id)->toBe($societyCategory->id)
+        ->and($subCategory)->not->toBeNull()
+        ->and($subCategory?->slug)->toBe('zhizn')
+        ->and($article?->sub_category_id)->toBe($subCategory?->id)
+        ->and($article?->tags->pluck('name')->all())->toContain('Общество: Жизнь');
+});
+
+it('reassigns duplicate articles to resolved rss taxonomy on subsequent parses', function () {
+    $aggregateCategory = Category::factory()->create([
+        'name' => 'Все новости',
+        'slug' => 'all',
+    ]);
+    $societyCategory = Category::factory()->create([
+        'name' => 'Общество',
+        'slug' => 'society',
+    ]);
+
+    $feed = RssFeed::factory()->create([
+        'category_id' => $aggregateCategory->id,
+        'title' => 'Все новости',
+        'source_name' => '',
+        'extra_settings' => null,
+    ]);
+
+    $article = Article::factory()->create([
+        'category_id' => $aggregateCategory->id,
+        'sub_category_id' => null,
+        'rss_feed_id' => $feed->id,
+        'source_guid' => 'duplicate-story',
+        'source_url' => 'https://example.test/duplicate-story',
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $item = simplexml_load_string(<<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<item>
+  <title>Повторный импорт</title>
+  <guid>duplicate-story</guid>
+  <link>https://example.test/duplicate-story</link>
+  <description><![CDATA[<p>Body text.</p>]]></description>
+  <category>Общество: Жизнь</category>
+  <pubDate>Mon, 01 Jan 2024 12:00:00 +0000</pubDate>
+</item>
+XML, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+    $processed = invokeRssMethod(new RssParserService, 'processItem', $item, $feed->category_id, $feed->id, $feed);
+    $subCategory = SubCategory::query()
+        ->where('category_id', $societyCategory->id)
+        ->where('name', 'Жизнь')
+        ->first();
+
+    $article->refresh();
+
+    expect($processed)->toBeNull()
+        ->and($article->category_id)->toBe($societyCategory->id)
+        ->and($subCategory)->not->toBeNull()
+        ->and($article->sub_category_id)->toBe($subCategory?->id);
+});
+
 it('builds article data using feed extra settings overrides', function () {
     $item = simplexml_load_string(<<<'XML'
 <?xml version="1.0" encoding="UTF-8"?>

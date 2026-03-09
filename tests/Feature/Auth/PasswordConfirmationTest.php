@@ -1,22 +1,12 @@
 <?php
 
-use App\Models\User;
-use Inertia\Testing\AssertableInertia as Assert;
+use Illuminate\Support\Facades\Route;
 
-test('confirm password screen can be rendered', function () {
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user)->get(route('password.confirm'));
-
-    $response->assertOk();
-
-    $response->assertInertia(fn (Assert $page) => $page
-        ->component('auth/ConfirmPassword'),
-    );
+test('public frontend password confirmation route is not registered', function () {
+    expect(Route::has('password.confirm'))->toBeFalse();
 });
 
-test('password confirmation requires authentication', function () {
-    $response = $this->get(route('password.confirm'));
-
-    $response->assertRedirect(route('login'));
+test('legacy password confirmation page redirects to the filament admin login', function () {
+    $this->get('/user/confirm-password')
+        ->assertRedirect(route('filament.admin.auth.login'));
 });

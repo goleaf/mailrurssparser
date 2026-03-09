@@ -202,8 +202,8 @@ it('returns a sitemap xml response', function () {
         ->assertHeaderContains('Cache-Control', 'max-age=3600');
 
     expect($response->getContent())->toContain('<?xml version="1.0" encoding="UTF-8"?>')
-        ->and($response->getContent())->toContain('/#/category/'.$category->slug)
-        ->and($response->getContent())->toContain('/#/articles/'.$article->slug);
+        ->and($response->getContent())->toContain('/category/'.$category->slug)
+        ->and($response->getContent())->toContain('/articles/'.$article->slug);
 });
 
 it('returns a portal rss xml response', function () {
@@ -224,5 +224,5 @@ it('returns a portal rss xml response', function () {
 
     expect($response->getContent())->toContain('<rss version="2.0">')
         ->and($response->getContent())->toContain('<title>Новая статья</title>')
-        ->and($response->getContent())->toContain('/#/articles/'.$article->slug);
+        ->and($response->getContent())->toContain('/articles/'.$article->slug);
 });

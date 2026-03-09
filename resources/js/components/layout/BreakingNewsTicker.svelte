@@ -2,14 +2,10 @@
     import X from 'lucide-svelte/icons/x';
     import { showToast } from '@/components/ui/Toast.svelte';
     import { usePolling } from '@/composables/usePolling.js';
+    import type { ApiArticleListItem } from '@/lib/api';
     import * as api from '@/lib/api';
+    import { articleUrl, homeUrl } from '@/lib/publicRoutes';
     import { appState, initApp, setBreakingNews } from '@/stores/app.svelte.js';
-
-    type BreakingArticle = {
-        id: number | string;
-        title: string;
-        slug?: string | null;
-    };
 
     let dismissed = $state(false);
     let paused = $state(false);
@@ -17,7 +13,7 @@
     let seenBreakingIds = $state<Array<number | string>>([]);
 
     const breakingNews = $derived(
-        (appState.breakingNews ?? []) as BreakingArticle[],
+        appState.breakingNews as ApiArticleListItem[],
     );
     const tickerText = $derived(
         breakingNews.map((article) => article.title).join(' | '),
@@ -25,11 +21,14 @@
     const durationSeconds = $derived(
         Math.max(16, Math.ceil(tickerText.length / 10)),
     );
-    const breakingPolling = usePolling(async () => {
-        const response = await api.getBreaking();
+    const breakingPolling = usePolling(
+        async (): Promise<ApiArticleListItem[]> => {
+            const response = await api.getBreaking();
 
-        return response.data as BreakingArticle[];
-    }, 60000);
+            return response.data;
+        },
+        60000,
+    );
 
     function dismissTicker(): void {
         dismissed = true;
@@ -58,7 +57,7 @@
     });
 
     $effect(() => {
-        const nextItems = breakingPolling.data as BreakingArticle[] | null;
+        const nextItems = breakingPolling.data;
 
         if (!Array.isArray(nextItems)) {
             return;
@@ -123,8 +122,8 @@
                         {#each breakingNews as article, index (article.id)}
                             <a
                                 href={article.slug
-                                    ? `/#/articles/${article.slug}`
-                                    : '/#/'}
+                                    ? articleUrl(article.slug)
+                                    : homeUrl()}
                                 class="hover:underline"
                                 onclick={(event) => {
                                     event.stopPropagation();
@@ -144,8 +143,8 @@
                         {#each [...breakingNews, ...breakingNews] as article, index (`${article.id}-${index}`)}
                             <a
                                 href={article.slug
-                                    ? `/#/articles/${article.slug}`
-                                    : '/#/'}
+                                    ? articleUrl(article.slug)
+                                    : homeUrl()}
                                 class="inline-flex items-center gap-5 hover:underline"
                                 onclick={(event) => {
                                     event.stopPropagation();

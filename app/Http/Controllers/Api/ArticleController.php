@@ -9,6 +9,7 @@ use App\Http\Resources\ArticleListResource;
 use App\Http\Resources\ArticleResource;
 use App\Models\Article;
 use App\Models\Category;
+use App\Services\ArticleSearchService;
 use App\Services\RelatedArticlesService;
 use App\Services\RequestLocationService;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,6 +21,7 @@ use Illuminate\Support\Uri;
 class ArticleController extends Controller
 {
     public function __construct(
+        private readonly ArticleSearchService $articleSearch,
         private readonly RelatedArticlesService $relatedArticles,
         private readonly RequestLocationService $requestLocation,
     ) {}
@@ -99,7 +101,7 @@ class ArticleController extends Controller
             Article::query()
                 ->published()
                 ->featured()
-                ->with(['category', 'tags'])
+                ->with(['category', 'subCategory', 'tags'])
                 ->orderByDesc('published_at')
                 ->limit(10)
                 ->get(),
@@ -112,7 +114,7 @@ class ArticleController extends Controller
             Article::query()
                 ->published()
                 ->breaking()
-                ->with(['category'])
+                ->with(['category', 'subCategory'])
                 ->orderByDesc('published_at')
                 ->limit(5)
                 ->get(),
@@ -128,7 +130,7 @@ class ArticleController extends Controller
                 ->published()
                 ->inCategory($category)
                 ->pinned()
-                ->with(['category', 'tags'])
+                ->with(['category', 'subCategory', 'tags'])
                 ->orderByDesc('published_at')
                 ->get(),
         );
@@ -147,7 +149,7 @@ class ArticleController extends Controller
             Article::query()
                 ->published()
                 ->trending(48)
-                ->with(['category'])
+                ->with(['category', 'subCategory'])
                 ->limit(20)
                 ->get(),
         );
@@ -216,21 +218,7 @@ class ArticleController extends Controller
 
     private function applySearch(Builder $query, string $term): void
     {
-        try {
-            $ids = Article::search($term)
-                ->query(fn (Builder $searchQuery) => $searchQuery->published())
-                ->get()
-                ->modelKeys();
-
-            if ($ids !== []) {
-                $query->whereIn('id', $ids);
-
-                return;
-            }
-        } catch (\Throwable) {
-        }
-
-        $query->search($term);
+        $this->articleSearch->applyTerm($query, $term);
     }
 
     private function hashIp(Request $request): string

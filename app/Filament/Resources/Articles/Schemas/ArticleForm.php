@@ -323,7 +323,7 @@ class ArticleForm
 
                         return new HtmlString(
                             '<div class="space-y-1 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">'
-                            .'<div class="text-sm text-blue-700">'.$host.'/#/articles/'.$slug.'</div>'
+                            .'<div class="text-sm text-blue-700">'.$host.'/articles/'.$slug.'</div>'
                             .'<div class="text-lg font-semibold text-blue-600">'.$title.'</div>'
                             .'<div class="text-sm text-gray-600">'.$description.'</div>'
                             .'</div>',

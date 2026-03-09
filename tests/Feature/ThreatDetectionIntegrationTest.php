@@ -27,10 +27,10 @@ test('threat detection routes are registered behind the admin area', function ()
 
 test('guests cannot access the threat detection dashboard or api', function () {
     $this->get('/admin/threat-detection')
-        ->assertRedirect(route('login'));
+        ->assertRedirect(route('filament.admin.auth.login'));
 
     $this->get('/admin/threat-detection/api/stats')
-        ->assertRedirect(route('login'));
+        ->assertRedirect(route('filament.admin.auth.login'));
 });
 
 test('authenticated users can access the threat detection dashboard and stats api', function () {

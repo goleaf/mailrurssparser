@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { Link, page } from '@inertiajs/svelte';
+    import { onMount } from 'svelte';
     import BreakingNewsTicker from '@/components/layout/BreakingNewsTicker.svelte';
     import Footer from '@/components/layout/Footer.svelte';
     import Header from '@/components/layout/Header.svelte';
-    import { toUrl } from '@/lib/utils';
+    import { replacePublic } from '@/lib/publicRoutes';
     import ArticleDetailPage from '@/pages/ArticleDetailPage.svelte';
     import BookmarksPage from '@/pages/BookmarksPage.svelte';
     import CategoryPage from '@/pages/CategoryPage.svelte';
@@ -13,7 +13,6 @@
     import SearchPage from '@/pages/SearchPage.svelte';
     import StatsPage from '@/pages/StatsPage.svelte';
     import TagPage from '@/pages/TagPage.svelte';
-    import { dashboard, login, register } from '@/routes';
 
     /** Route-level code splitting can be added later if the public shell keeps growing. */
     // const ArticleDetailPage = await import('./ArticleDetailPage.svelte');
@@ -29,14 +28,7 @@
         | { name: 'info'; variant: 'about' | 'contact' | 'privacy' }
         | { name: 'not-found' };
 
-    let {
-        canRegister = true,
-    }: {
-        canRegister?: boolean;
-    } = $props();
-
-    const auth = $derived(($page.props.auth ?? {}) as { user?: unknown });
-    let currentRoute = $state<PublicRoute>({ name: 'home' });
+    let { publicRoute }: { publicRoute: PublicRoute } = $props();
 
     function decodeSegment(segment: string): string {
         try {
@@ -46,9 +38,9 @@
         }
     }
 
-    function parseRoute(hash: string): PublicRoute {
+    function legacyHashToPath(hash: string): string | null {
         const normalizedHash = hash.replace(/^#/, '');
-        const [rawPath = '/'] = normalizedHash.split('?');
+        const [rawPath = '/', rawQuery = ''] = normalizedHash.split('?');
         const path =
             rawPath === ''
                 ? '/'
@@ -57,75 +49,65 @@
                   : `/${rawPath}`;
 
         const segments = path.split('/').filter(Boolean).map(decodeSegment);
+        const query = rawQuery === '' ? '' : `?${rawQuery}`;
 
         if (segments.length === 0) {
-            return { name: 'home' };
-        }
-
-        if (segments[0] === 'category' && segments[1]) {
-            return { name: 'category', slug: segments.slice(1).join('/') };
-        }
-
-        if (segments[0] === 'tag' && segments[1]) {
-            return { name: 'tag', slug: segments.slice(1).join('/') };
-        }
-
-        if (segments[0] === 'articles' && segments[1]) {
-            return { name: 'article', slug: segments.slice(1).join('/') };
-        }
-
-        if (segments[0] === 'search') {
-            return { name: 'search' };
-        }
-
-        if (segments[0] === 'bookmarks') {
-            return { name: 'bookmarks' };
-        }
-
-        if (segments[0] === 'stats') {
-            return { name: 'stats' };
+            return '/';
         }
 
         if (
+            segments[0] === 'category' ||
+            segments[0] === 'tag' ||
+            segments[0] === 'articles'
+        ) {
+            return `/${segments[0]}/${segments.slice(1).join('/')}${query}`;
+        }
+
+        if (
+            segments[0] === 'search' ||
+            segments[0] === 'bookmarks' ||
+            segments[0] === 'stats' ||
             segments[0] === 'about' ||
             segments[0] === 'contact' ||
             segments[0] === 'privacy'
         ) {
-            return {
-                name: 'info',
-                variant: segments[0],
-            };
+            return `/${segments[0]}${query}`;
         }
 
-        return { name: 'not-found' };
+        return null;
     }
 
-    $effect(() => {
+    onMount(() => {
         if (typeof window === 'undefined') {
             return;
         }
 
-        const syncRoute = (): void => {
-            currentRoute = parseRoute(window.location.hash || '#/');
-        };
+        const legacyPath = legacyHashToPath(window.location.hash || '');
 
-        syncRoute();
-        window.addEventListener('hashchange', syncRoute);
+        if (!legacyPath) {
+            return;
+        }
 
-        return () => {
-            window.removeEventListener('hashchange', syncRoute);
-        };
+        const currentPath = `${window.location.pathname}${window.location.search}`;
+
+        if (legacyPath === currentPath) {
+            window.history.replaceState(null, '', legacyPath);
+
+            return;
+        }
+
+        replacePublic(legacyPath);
     });
 
     $effect(() => {
         const routeKey =
-            currentRoute.name === 'category' ||
-            currentRoute.name === 'tag' ||
-            currentRoute.name === 'article'
-                ? `${currentRoute.name}:${currentRoute.slug}`
-                : currentRoute.name === 'info'
-                  ? `${currentRoute.name}:${currentRoute.variant}`
-                  : currentRoute.name;
+            publicRoute.name === 'category' ||
+            publicRoute.name === 'tag' ||
+            publicRoute.name === 'article'
+                ? `${publicRoute.name}:${publicRoute.slug}`
+                : publicRoute.name === 'info'
+                  ? `${publicRoute.name}:${publicRoute.variant}`
+                  : publicRoute.name;
 
         void routeKey;
 
@@ -178,35 +160,12 @@
                 </div>
 
                 <nav class="flex flex-wrap items-center gap-2">
-                    {#if auth.user}
-                        <Link
-                            href={toUrl(dashboard())}
-                            class="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/12"
-                        >
-                            Панель
-                        </Link>
-                        <a
-                            href="/admin"
-                            class="rounded-full border border-sky-400/40 bg-sky-400/12 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/22"
-                        >
-                            Админка
-                        </a>
-                    {:else}
-                        <Link
-                            href={toUrl(login())}
-                            class="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/12"
-                        >
-                            Вход
-                        </Link>
-                        {#if canRegister}
-                            <Link
-                                href={toUrl(register())}
-                                class="rounded-full border border-sky-400/40 bg-sky-400/12 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/22"
-                            >
-                                Регистрация
-                            </Link>
-                        {/if}
-                    {/if}
+                    <a
+                        href="/admin"
+                        class="rounded-full border border-sky-400/40 bg-sky-400/12 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/22"
+                    >
+                        Админка Filament
+                    </a>
                 </nav>
             </div>
         </div>
@@ -216,22 +175,22 @@
     <Header />
 
     <main class="relative">
-        {#if currentRoute.name === 'home'}
+        {#if publicRoute.name === 'home'}
             <HomePage />
-        {:else if currentRoute.name === 'category'}
-            <CategoryPage slug={currentRoute.slug} />
-        {:else if currentRoute.name === 'tag'}
-            <TagPage slug={currentRoute.slug} />
-        {:else if currentRoute.name === 'article'}
-            <ArticleDetailPage slug={currentRoute.slug} />
-        {:else if currentRoute.name === 'search'}
+        {:else if publicRoute.name === 'category'}
+            <CategoryPage slug={publicRoute.slug} />
+        {:else if publicRoute.name === 'tag'}
+            <TagPage slug={publicRoute.slug} />
+        {:else if publicRoute.name === 'article'}
+            <ArticleDetailPage slug={publicRoute.slug} />
+        {:else if publicRoute.name === 'search'}
             <SearchPage />
-        {:else if currentRoute.name === 'bookmarks'}
+        {:else if publicRoute.name === 'bookmarks'}
             <BookmarksPage />
-        {:else if currentRoute.name === 'stats'}
+        {:else if publicRoute.name === 'stats'}
             <StatsPage />
-        {:else if currentRoute.name === 'info'}
-            <PublicInfoPage variant={currentRoute.variant} />
+        {:else if publicRoute.name === 'info'}
+            <PublicInfoPage variant={publicRoute.variant} />
         {:else}
             <PublicNotFoundPage />
         {/if}

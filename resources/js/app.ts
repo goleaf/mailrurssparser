@@ -1,4 +1,3 @@
-import type { VisitOptions } from '@inertiajs/core';
 import { createInertiaApp } from '@inertiajs/svelte';
 import type { ResolvedComponent } from '@inertiajs/svelte';
 import { hydrate, mount } from 'svelte';
@@ -6,14 +5,15 @@ import '../css/app.css';
 import AppRoot from '@/AppRoot.svelte';
 import { initializeTheme } from '@/lib/theme.svelte';
 import { initializeDarkMode } from '@/stores/app.svelte.js';
+import type { InertiaVisitOptions } from '@/types/inertia';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 const pages = import.meta.glob<ResolvedComponent>('./pages/**/*.svelte');
 
 function defaultVisitOptions(
     _href: string,
-    options: VisitOptions,
-): VisitOptions {
+    options: InertiaVisitOptions,
+): InertiaVisitOptions {
     if (options.viewTransition !== undefined) {
         return {};
     }
@@ -96,6 +96,10 @@ function registerServiceWorker(): void {
     });
 }
 
+function shouldHydrate(el: HTMLElement): boolean {
+    return el.dataset.serverRendered === 'true';
+}
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: resolvePage,
@@ -107,7 +111,7 @@ createInertiaApp({
 
         const rootProps = { App, props };
 
-        if (el.dataset.serverRendered === 'true') {
+        if (shouldHydrate(el)) {
             hydrate(AppRoot, { target: el, props: rootProps });
         } else {
             mount(AppRoot, { target: el, props: rootProps });

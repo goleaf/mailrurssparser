@@ -12,12 +12,25 @@ class ReindexArticles extends Command
 {
     protected $signature = 'rss:reindex {--chunk=500} {--category=}';
 
-    protected $description = 'Rebuild TNTSearch full-text index for all articles';
+    protected $description = 'Rebuild the Scout search index for published articles';
 
     public function handle(): int
     {
         $chunk = max(1, (int) $this->option('chunk'));
         $category = $this->option('category');
+
+        if (config('scout.driver') === 'database') {
+            $count = Article::query()
+                ->published()
+                ->when(is_string($category) && $category !== '', function (Builder $query) use ($category): void {
+                    $query->byCategory($category);
+                })
+                ->count();
+
+            $this->info("Scout database engine is active; {$count} articles are already searchable.");
+
+            return SymfonyCommand::SUCCESS;
+        }
 
         Artisan::call('scout:flush', ['model' => Article::class]);
 

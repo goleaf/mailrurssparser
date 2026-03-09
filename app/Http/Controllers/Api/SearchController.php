@@ -10,47 +10,26 @@ use App\Http\Resources\ArticleCollection;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\Tag;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\ArticleSearchService;
 use Illuminate\Support\Str;
 
 class SearchController extends Controller
 {
+    public function __construct(
+        private readonly ArticleSearchService $articleSearch,
+    ) {}
+
     public function index(ArticleSearchRequest $request): ArticleCollection
     {
         $validated = $request->validated();
         $term = $this->normalizeUtf8((string) $validated['q']);
         $perPage = (int) ($validated['per_page'] ?? 20);
-
-        try {
-            $articles = Article::search($term)
-                ->query(function (Builder $query) use ($validated): void {
-                    $query->published()->with(['category', 'tags']);
-                    $this->applySearchFilters($query, $validated);
-                    $this->applySearchSort($query, $validated['sort'] ?? 'relevance', $validated['q']);
-                })
-                ->paginate($perPage);
-
-            if ($articles->total() === 0) {
-                throw new \RuntimeException('Scout returned no results.');
-            }
-        } catch (\Throwable) {
-            $articlesQuery = Article::query()
-                ->published()
-                ->with(['category', 'tags'])
-                ->where(function (Builder $query) use ($term): void {
-                    $like = '%'.$term.'%';
-
-                    $query->where('title', 'like', $like)
-                        ->orWhere('short_description', 'like', $like)
-                        ->orWhere('full_description', 'like', $like)
-                        ->orWhere('author', 'like', $like);
-                });
-
-            $this->applySearchFilters($articlesQuery, $validated);
-            $this->applySearchSort($articlesQuery, $validated['sort'] ?? 'relevance', $term);
-
-            $articles = $articlesQuery->paginate($perPage);
-        }
+        $articles = $this->articleSearch->search(
+            $term,
+            $validated,
+            $validated['sort'] ?? 'relevance',
+            $perPage,
+        );
 
         $articles->appends($request->except('page'));
 
@@ -106,48 +85,6 @@ class SearchController extends Controller
         return response()->json(['excerpt' => $excerpt]);
     }
 
-    /**
-     * @param  array<string, mixed>  $validated
-     */
-    private function applySearchFilters(Builder $query, array $validated): void
-    {
-        $query
-            ->when($validated['category'] ?? null, fn (Builder $query, string $slug) => $query->byCategory($slug))
-            ->when($validated['tag'] ?? null, fn (Builder $query, string $slug) => $query->byTag($slug))
-            ->when($validated['content_type'] ?? null, fn (Builder $query, string $type) => $query->byContentType($type))
-            ->when(($validated['date_from'] ?? null) && ($validated['date_to'] ?? null), fn (Builder $query) => $query->byDateRange($validated['date_from'], $validated['date_to']));
-    }
-
-    private function applySearchSort(Builder $query, string $sort, string $term): void
-    {
-        if ($sort === 'latest') {
-            $query->orderByDesc('published_at');
-
-            return;
-        }
-
-        if ($sort === 'popular') {
-            $query->popular();
-
-            return;
-        }
-
-        $escaped = str_replace(['%', '_'], ['\%', '\_'], $term);
-
-        $query->orderByRaw(
-            'CASE
-                WHEN title = ? THEN 100
-                WHEN title LIKE ? THEN 75
-                WHEN title LIKE ? THEN 50
-                WHEN short_description LIKE ? THEN 30
-                WHEN full_description LIKE ? THEN 20
-                WHEN author LIKE ? THEN 15
-                ELSE 10
-            END DESC',
-            [$term, $term.'%', '%'.$escaped.'%', '%'.$escaped.'%', '%'.$escaped.'%', '%'.$escaped.'%'],
-        )->orderByDesc('published_at');
-    }
-
     private function highlightTerm(string $text, string $term): string
     {
         $text = $this->normalizeUtf8($text);
@@ -170,25 +107,7 @@ class SearchController extends Controller
      */
     private function articleSuggestions(string $term): array
     {
-        try {
-            $articles = Article::search($term)
-                ->query(function (Builder $query): void {
-                    $query->published()->select('id', 'title', 'slug', 'published_at');
-                })
-                ->take(12)
-                ->get();
-
-            if ($articles->isEmpty()) {
-                throw new \RuntimeException('Scout returned no autocomplete suggestions.');
-            }
-        } catch (\Throwable) {
-            $articles = Article::query()
-                ->published()
-                ->select('id', 'title', 'slug', 'published_at')
-                ->latest('published_at')
-                ->limit(60)
-                ->get();
-        }
+        $articles = $this->articleSearch->suggestArticles($term, 12);
 
         return $articles
             ->filter(fn (Article $article): bool => $this->containsTerm($article->title, $term))

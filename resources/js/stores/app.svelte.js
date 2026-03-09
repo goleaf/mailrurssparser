@@ -1,5 +1,18 @@
+/** @import { ApiArticleListItem, ApiCategory, ApiTag } from '@/lib/api' */
+
 import * as api from '@/lib/api';
 
+/** @type {Promise<void> | null} */
+let initPromise = null;
+
+/** @type {{
+    categories: ApiCategory[];
+    trendingTags: ApiTag[];
+    breakingNews: ApiArticleListItem[];
+    initialized: boolean;
+    darkMode: boolean;
+    sidebarOpen: boolean;
+}} */
 export let appState = $state({
     categories: [],
     trendingTags: [],
@@ -8,8 +21,6 @@ export let appState = $state({
     darkMode: false,
     sidebarOpen: false,
 });
-
-let initPromise = null;
 
 function prefersDarkMode() {
     if (typeof window === 'undefined') {
@@ -118,6 +129,7 @@ export function toggleSidebar() {
     appState.sidebarOpen = !appState.sidebarOpen;
 }
 
+/** @param {ApiArticleListItem[]} items */
 export function setBreakingNews(items) {
     appState.breakingNews = Array.isArray(items) ? items : [];
 }

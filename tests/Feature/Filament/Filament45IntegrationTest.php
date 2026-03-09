@@ -98,11 +98,11 @@ it('registers category and tag mentions for article rich content rendering', fun
         ->and($providers[0]->getChar())->toBe('@')
         ->and($providers[0]->getSearchResults('Пол'))->toHaveKey((string) $category->id, 'Политика')
         ->and($providers[0]->getUrl((string) $category->id, $category->name))
-        ->toBe(rtrim((string) config('app.url'), '/').'/#/category/politics')
+        ->toBe(route('category.show', ['slug' => 'politics']))
         ->and($providers[1]->getChar())->toBe('#')
         ->and($providers[1]->getSearchResults('Экск'))->toHaveKey((string) $tag->id, 'Эксклюзив')
         ->and($providers[1]->getUrl((string) $tag->id, $tag->name))
-        ->toBe(rtrim((string) config('app.url'), '/').'/#/tag/exclusive');
+        ->toBe(route('tag.show', ['slug' => 'exclusive']));
 });
 
 it('configures the article editor with rich content and image workflow enhancements', function () {

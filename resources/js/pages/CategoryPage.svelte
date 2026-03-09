@@ -12,6 +12,12 @@
     import SkeletonCard from '@/components/SkeletonCard.svelte';
     import { setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
+    import {
+        absolutePublicUrl,
+        categoryUrl,
+        homeUrl,
+        visitPublic,
+    } from '@/lib/publicRoutes';
     import { cn } from '@/lib/utils';
     import { initApp } from '@/stores/app.svelte.js';
     import { filters } from '@/stores/articles.svelte.js';
@@ -97,18 +103,15 @@
     );
     const currentPage = $derived(Number(pagination?.current_page ?? 1));
     const lastPage = $derived(Number(pagination?.last_page ?? 1));
+
     function navigateToCategory(nextSlug: string | null): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
         if (!nextSlug) {
-            window.location.hash = '/';
+            visitPublic(homeUrl());
 
             return;
         }
 
-        window.location.hash = `/category/${nextSlug}`;
+        visitPublic(categoryUrl(nextSlug));
     }
 
     function applySubCategory(nextSlug: string | null): void {
@@ -185,10 +188,7 @@
                 category?.description ||
                 `Свежая лента материалов раздела ${category?.name ?? 'новостей'}.`,
             type: 'website',
-            url:
-                typeof window !== 'undefined'
-                    ? `${window.location.origin}/#/category/${slug}`
-                    : undefined,
+            url: absolutePublicUrl(categoryUrl(slug)),
             tags: category ? [category.name] : [],
         });
     });
@@ -259,9 +259,8 @@
                         <div
                             class="mb-4 flex flex-wrap items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-white/65"
                         >
-                            <a href="/#/" class="transition hover:text-white"
-                                >Главная</a
-                            >
+                            <a href={homeUrl()} class="transition hover:text-white"
+                                >Главная</a>
                             <span>/</span>
                             <span>{category?.name ?? 'Раздел'}</span>
                             {#if pageFilters.sub}

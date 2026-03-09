@@ -1,8 +1,15 @@
 <script lang="ts">
+    import { router } from '@inertiajs/svelte';
     import Search from 'lucide-svelte/icons/search';
     import X from 'lucide-svelte/icons/x';
     import SearchAutocompletePanel from '@/components/SearchAutocompletePanel.svelte';
     import * as api from '@/lib/api';
+    import {
+        articleUrl,
+        homeUrl,
+        searchUrl,
+        visitPublic,
+    } from '@/lib/publicRoutes';
     import {
         buildSearchAutocompleteItems,
         emptySearchSuggestions,
@@ -69,11 +76,7 @@
     }
 
     function navigateTo(path: string): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        window.location.hash = path.startsWith('/') ? path : `/${path}`;
+        visitPublic(path.startsWith('/') ? path : `/${path}`);
     }
 
     function close(): void {
@@ -95,26 +98,26 @@
 
         rememberSearch(normalized);
         open = false;
-        navigateTo(`/search?q=${encodeURIComponent(normalized)}`);
+        navigateTo(searchUrl(normalized));
     }
 
     function applyCategory(slug: string): void {
         resetFilters();
         setCategory(slug);
         open = false;
-        navigateTo('/');
+        router.visit(homeUrl());
     }
 
     function applyTag(slug: string): void {
         resetFilters();
         toggleTag(slug);
         open = false;
-        navigateTo('/');
+        router.visit(homeUrl());
     }
 
     function openArticle(slug: string): void {
         open = false;
-        navigateTo(`/articles/${slug}`);
+        navigateTo(articleUrl(slug));
     }
 
     function formatArticleDate(value?: string | null): string {

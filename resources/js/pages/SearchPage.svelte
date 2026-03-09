@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { page } from '@inertiajs/svelte';
     import Search from 'lucide-svelte/icons/search';
     import Sparkles from 'lucide-svelte/icons/sparkles';
     import X from 'lucide-svelte/icons/x';
@@ -11,6 +12,16 @@
     import { setSeoMeta } from '@/composables/useSeo.js';
     import * as api from '@/lib/api';
     import { searchArticleContentTypeOptions } from '@/lib/articleEnums';
+    import {
+        absolutePublicUrl,
+        articleUrl,
+        categoryUrl,
+        replacePublic,
+        searchQueryFromUrl,
+        searchUrl,
+        tagUrl,
+        visitPublic,
+    } from '@/lib/publicRoutes';
     import {
         buildSearchAutocompleteItems,
         emptySearchSuggestions,
@@ -98,13 +109,13 @@
     let suggestions = $state<SearchSuggestions>({ ...emptySearchSuggestions });
     let emptyStateSuggestions = $state<SearchSuggestionItem[]>([]);
     let highlights = $state<HighlightItem[]>([]);
-    let hashListenerAttached = false;
     let activeSuggestionIndex = $state(-1);
     let autocompleteAbortController: AbortController | null = null;
     let autocompleteRequestVersion = 0;
     const searchFilters = filters as SearchFilters;
 
     const categories = $derived((appState.categories ?? []) as Category[]);
+    const currentPageUrl = $derived(page.url ?? searchUrl());
     const totalResults = $derived(
         Number(
             pagination?.total ?? pagination?.total_results ?? results.length,
@@ -170,33 +181,8 @@
         localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
     }
 
-    function parseSearchQuery(): string {
-        if (typeof window === 'undefined') {
-            return '';
-        }
-
-        const [, rawQuery = ''] = window.location.hash.split('?');
-        const params = new URLSearchParams(rawQuery);
-
-        return params.get('q')?.trim() ?? '';
-    }
-
-    function updateSearchHash(value: string): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        const nextHash =
-            value.trim().length > 0
-                ? `#/search?q=${encodeURIComponent(value.trim())}`
-                : '#/search';
-
-        if (window.location.hash !== nextHash) {
-            window.location.hash =
-                value.trim().length > 0
-                    ? `/search?q=${encodeURIComponent(value.trim())}`
-                    : '/search';
-        }
+    function updateSearchUrl(value: string): void {
+        replacePublic(searchUrl(value));
     }
 
     function clearResults(): void {
@@ -287,12 +273,18 @@
         });
     }
 
-    async function doSearch(nextQuery: string, page = 1): Promise<void> {
+    async function doSearch(
+        nextQuery: string,
+        page = 1,
+        syncUrl = true,
+    ): Promise<void> {
         const normalized = nextQuery.trim();
 
         if (normalized.length < 2) {
             clearResults();
-            updateSearchHash('');
+            if (syncUrl) {
+                updateSearchUrl('');
+            }
             loading = false;
             suggestionsLoading = false;
             suggestions = { ...emptySearchSuggestions };
@@ -301,6 +293,7 @@
         }
 
         loading = true;
+        searchFilters.page = page;
 
         try {
             const response = await api.search(normalized, {
@@ -319,7 +312,9 @@
             activeQuery = normalized;
             query = normalized;
             rememberSearch(normalized);
-            updateSearchHash(normalized);
+            if (syncUrl) {
+                updateSearchUrl(normalized);
+            }
             suggestions = { ...emptySearchSuggestions };
             activeSuggestionIndex = -1;
             await loadHighlights(normalized, results);
@@ -338,8 +333,8 @@
         }
     }
 
-    function submitSearch(): void {
-        void doSearch(query, 1);
+    function submitSearch(nextQuery = query): void {
+        void doSearch(nextQuery, 1);
     }
 
     function clearSearch(): void {
@@ -349,25 +344,7 @@
         suggestionsLoading = false;
         suggestions = { ...emptySearchSuggestions };
         clearResults();
-        updateSearchHash('');
-    }
-
-    function handleHashChange(): void {
-        const nextQuery = parseSearchQuery();
-
-        if (!nextQuery) {
-            query = '';
-            clearResults();
-
-            return;
-        }
-
-        if (nextQuery === activeQuery && nextQuery === query) {
-            return;
-        }
-
-        query = nextQuery;
-        void doSearch(nextQuery, 1);
+        updateSearchUrl('');
     }
 
     function handleCategoryChange(event: Event): void {
@@ -434,33 +411,21 @@
     }
 
     function navigateToCategory(slug: string): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        window.location.hash = `/category/${slug}`;
+        visitPublic(categoryUrl(slug));
     }
 
     function navigateToTag(slug: string): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        window.location.hash = `/tag/${slug}`;
+        visitPublic(tagUrl(slug));
     }
 
     function openArticle(slug: string): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        window.location.hash = `/articles/${slug}`;
+        visitPublic(articleUrl(slug));
     }
 
     function selectAutocompleteItem(item: SearchAutocompleteItem): void {
         switch (item.kind) {
             case 'search':
-                submitSearch();
+                submitSearch(item.query);
 
                 return;
             case 'article':
@@ -582,25 +547,28 @@
 
     onMount(() => {
         void initApp();
+    });
 
-        const nextQuery = parseSearchQuery();
+    $effect(() => {
+        const nextQuery = searchQueryFromUrl(currentPageUrl);
 
-        if (nextQuery) {
-            query = nextQuery;
-            void doSearch(nextQuery, 1);
-        }
-
-        if (!hashListenerAttached && typeof window !== 'undefined') {
-            window.addEventListener('hashchange', handleHashChange);
-            hashListenerAttached = true;
-        }
-
-        return () => {
-            if (hashListenerAttached && typeof window !== 'undefined') {
-                window.removeEventListener('hashchange', handleHashChange);
-                hashListenerAttached = false;
+        if (!nextQuery) {
+            if (query === '' && activeQuery === '' && results.length === 0) {
+                return;
             }
-        };
+
+            query = '';
+            clearResults();
+
+            return;
+        }
+
+        if (nextQuery === activeQuery && nextQuery === query) {
+            return;
+        }
+
+        query = nextQuery;
+        void doSearch(nextQuery, 1, false);
     });
 
     $effect(() => {
@@ -610,10 +578,7 @@
                 ? `Результаты поиска по запросу «${activeQuery}» в новостном портале.`
                 : 'Поиск по материалам новостного портала.',
             type: 'website',
-            url:
-                typeof window !== 'undefined'
-                    ? `${window.location.origin}${window.location.hash || '#/search'}`
-                    : undefined,
+            url: absolutePublicUrl(searchUrl(activeQuery)),
             tags: [activeQuery].filter(Boolean),
         });
     });
@@ -723,7 +688,9 @@
                             <button
                                 type="button"
                                 class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-                                onclick={submitSearch}
+                                onclick={() => {
+                                    submitSearch();
+                                }}
                             >
                                 Искать
                             </button>
@@ -734,8 +701,8 @@
                             {suggestions}
                             loading={suggestionsLoading}
                             activeIndex={activeSuggestionIndex}
-                            onSearchSubmit={() => {
-                                submitSearch();
+                            onSearchSubmit={(nextQuery) => {
+                                submitSearch(nextQuery);
                             }}
                             onArticleSelect={openArticle}
                             onCategorySelect={navigateToCategory}
@@ -975,7 +942,7 @@
                         {#if highlights.length > 0}
                             {#each highlights as item (String(item.articleId))}
                                 <a
-                                    href={`/#/articles/${item.slug}`}
+                                    href={articleUrl(item.slug)}
                                     class="block rounded-2xl border border-slate-200 p-4 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
                                 >
                                     <div

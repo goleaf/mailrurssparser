@@ -1,52 +1,13 @@
 <?php
 
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
 
-test('password update page is displayed', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->get(route('user-password.edit'));
-
-    $response->assertOk();
+test('public frontend password settings routes are not registered', function () {
+    expect(Route::has('user-password.edit'))->toBeFalse()
+        ->and(Route::has('user-password.update'))->toBeFalse();
 });
 
-test('password can be updated', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->from(route('user-password.edit'))
-        ->put(route('user-password.update'), [
-            'current_password' => 'password',
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
-        ]);
-
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('user-password.edit'))
-        ->assertInertiaFlash('toast.type', 'success')
-        ->assertInertiaFlash('toast.message', 'Password updated.');
-
-    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
-});
-
-test('correct password must be provided to update password', function () {
-    $user = User::factory()->create();
-
-    $response = $this
-        ->actingAs($user)
-        ->from(route('user-password.edit'))
-        ->put(route('user-password.update'), [
-            'current_password' => 'wrong-password',
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
-        ]);
-
-    $response
-        ->assertSessionHasErrors('current_password')
-        ->assertRedirect(route('user-password.edit'));
+test('legacy password settings page redirects to the filament admin panel', function () {
+    $this->get('/settings/password')
+        ->assertRedirect('/admin');
 });

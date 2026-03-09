@@ -2,6 +2,7 @@
 
 use App\Models\Article;
 use App\Models\Category;
+use App\Models\SubCategory;
 use App\Models\Tag;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
@@ -63,6 +64,41 @@ it('filters the index by category, tags, content type, importance, and excludes 
         ->assertJsonPath('meta.total_results', 1)
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', $matchingArticle->id);
+});
+
+it('filters the index by sub category and returns the serialized sub category payload', function () {
+    $category = Category::factory()->create(['slug' => 'society']);
+    $matchingSubCategory = SubCategory::factory()->create([
+        'category_id' => $category->id,
+        'name' => 'Жизнь',
+        'slug' => 'zhizn',
+    ]);
+    $otherSubCategory = SubCategory::factory()->create([
+        'category_id' => $category->id,
+        'name' => 'Город',
+        'slug' => 'gorod',
+    ]);
+
+    $matchingArticle = Article::factory()->create([
+        'category_id' => $category->id,
+        'sub_category_id' => $matchingSubCategory->id,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    Article::factory()->create([
+        'category_id' => $category->id,
+        'sub_category_id' => $otherSubCategory->id,
+        'status' => 'published',
+        'published_at' => now()->subHours(2),
+    ]);
+
+    $this->getJson('/api/v1/articles?category=society&sub=zhizn&per_page=10')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $matchingArticle->id)
+        ->assertJsonPath('data.0.sub_category.id', $matchingSubCategory->id)
+        ->assertJsonPath('data.0.sub_category.slug', 'zhizn');
 });
 
 it('returns featured and breaking article collections', function () {

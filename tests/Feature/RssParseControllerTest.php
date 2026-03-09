@@ -12,7 +12,7 @@ afterEach(function () {
 
 it('requires authentication for the rss dashboard', function () {
     $this->get(route('rss.index'))
-        ->assertRedirect(route('login'));
+        ->assertRedirect(route('filament.admin.auth.login'));
 });
 
 it('renders the rss dashboard for authenticated users', function () {

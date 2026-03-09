@@ -1,7 +1,7 @@
 <script lang="ts">
-    import type { LinkComponentBaseProps, Method } from '@inertiajs/core';
     import { Link } from '@inertiajs/svelte';
     import type { Snippet } from 'svelte';
+    import type { HrefLike, HttpMethod } from '@/types/inertia';
 
     let {
         href,
@@ -11,9 +11,9 @@
         children,
         ...rest
     }: {
-        href: LinkComponentBaseProps['href'];
+        href: HrefLike;
         tabindex?: number;
-        method?: Method;
+        method?: HttpMethod;
         as?: keyof HTMLElementTagNameMap;
         children?: Snippet;
         [key: string]: unknown;

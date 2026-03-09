@@ -66,7 +66,7 @@ class TagController extends Controller
         $query = Article::query()
             ->published()
             ->byTag($slug)
-            ->with(['category', 'tags'])
+            ->with(['category', 'subCategory', 'tags'])
             ->when(($validated['date_from'] ?? null) && ($validated['date_to'] ?? null), fn (Builder $query) => $query->byDateRange($validated['date_from'], $validated['date_to']))
             ->when($validated['date'] ?? null, fn (Builder $query, string $date) => $query->byDate($date))
             ->orderByDesc('published_at');

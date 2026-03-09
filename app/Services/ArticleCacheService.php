@@ -54,7 +54,7 @@ class ArticleCacheService
             return Article::query()
                 ->published()
                 ->breaking()
-                ->with(['category', 'tags'])
+                ->with(['category', 'subCategory', 'tags'])
                 ->orderByDesc('published_at')
                 ->limit(10)
                 ->get();
@@ -67,7 +67,7 @@ class ArticleCacheService
             return Article::query()
                 ->published()
                 ->featured()
-                ->with(['category', 'tags'])
+                ->with(['category', 'subCategory', 'tags'])
                 ->orderByDesc('published_at')
                 ->limit(10)
                 ->get();

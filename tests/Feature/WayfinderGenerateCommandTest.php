@@ -22,14 +22,7 @@ it('generates routes and actions with form variants into a temporary path', func
 
     expect($exitCode)->toBe(SymfonyCommand::SUCCESS)
         ->and($outputPath.'/routes/index.ts')->toBeFile()
-        ->and($outputPath.'/routes/profile/index.ts')->toBeFile()
-        ->and($outputPath.'/actions/App/Http/Controllers/Settings/ProfileController.ts')->toBeFile();
-
-    $profileController = File::get(
-        $outputPath.'/actions/App/Http/Controllers/Settings/ProfileController.ts',
-    );
-
-    expect($profileController)
-        ->toContain('update.form = updateForm')
-        ->toContain('destroy.form = destroyForm');
+        ->and($outputPath.'/routes/filament/admin/auth/index.ts')->toBeFile()
+        ->and($outputPath.'/routes/profile/index.ts')->not->toBeFile()
+        ->and($outputPath.'/actions/App/Http/Controllers/Settings/ProfileController.ts')->not->toBeFile();
 });

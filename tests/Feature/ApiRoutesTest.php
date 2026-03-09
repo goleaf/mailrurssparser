@@ -49,7 +49,16 @@ it('registers seo and spa web routes', function () {
         ->and(Route::has('rss-feed'))->toBeTrue()
         ->and(Route::has('robots'))->toBeTrue()
         ->and(Route::has('offline'))->toBeTrue()
-        ->and(Route::has('spa'))->toBeTrue();
+        ->and(Route::has('spa'))->toBeTrue()
+        ->and(Route::has('dashboard'))->toBeFalse()
+        ->and(Route::has('login'))->toBeFalse()
+        ->and(Route::has('register'))->toBeFalse()
+        ->and(Route::has('password.request'))->toBeFalse()
+        ->and(Route::has('password.confirm'))->toBeFalse()
+        ->and(Route::has('verification.notice'))->toBeFalse()
+        ->and(Route::has('profile.edit'))->toBeFalse()
+        ->and(Route::has('user-password.edit'))->toBeFalse()
+        ->and(Route::has('two-factor.show'))->toBeFalse();
 });
 
 it('keeps the vendor omni locate dashboard routes disabled', function () {

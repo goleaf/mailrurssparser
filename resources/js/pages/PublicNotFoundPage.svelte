@@ -1,5 +1,6 @@
 <script lang="ts">
     import AppHead from '@/components/AppHead.svelte';
+    import { homeUrl, searchUrl } from '@/lib/publicRoutes';
 </script>
 
 <AppHead title="Страница не найдена" />
@@ -30,13 +31,13 @@
 
             <div class="mt-8 flex flex-wrap justify-center gap-3">
                 <a
-                    href="/#/"
+                    href={homeUrl()}
                     class="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                 >
                     На главную
                 </a>
                 <a
-                    href="/#/search"
+                    href={searchUrl()}
                     class="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
                 >
                     Открыть поиск

@@ -1,101 +1,18 @@
 <?php
 
-use App\Models\User;
-use App\Services\SessionKey;
-use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Support\Facades\Notification;
-use Inertia\Testing\AssertableInertia as Assert;
+use Illuminate\Support\Facades\Route;
 
-test('reset password link screen can be rendered', function () {
-    $response = $this->get(route('password.request'));
-
-    $response->assertOk();
+test('public frontend password reset routes are not registered', function () {
+    expect(Route::has('password.request'))->toBeFalse()
+        ->and(Route::has('password.email'))->toBeFalse()
+        ->and(Route::has('password.update'))->toBeFalse()
+        ->and(Route::has('password.reset'))->toBeFalse();
 });
 
-test('reset password link can be requested', function () {
-    Notification::fake();
+test('legacy password reset pages redirect to the filament admin login', function () {
+    $this->get('/forgot-password')
+        ->assertRedirect(route('filament.admin.auth.login'));
 
-    $user = User::factory()->create();
-
-    $this->from(route('password.request'))
-        ->post(route('password.email'), ['email' => $user->email])
-        ->assertRedirect(route('password.request'));
-
-    $this->get(route('password.request'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/ForgotPassword')
-            ->hasFlash('status'),
-        );
-
-    Notification::assertSentTo($user, ResetPassword::class);
-});
-
-test('reset password screen can be rendered', function () {
-    Notification::fake();
-
-    $user = User::factory()->create();
-
-    $this->post(route('password.email'), ['email' => $user->email]);
-
-    Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-        $response = $this->get(route('password.reset', $notification->token));
-
-        $response->assertOk();
-
-        return true;
-    });
-});
-
-test('password can be reset with valid token', function () {
-    Notification::fake();
-
-    $user = User::factory()->create();
-
-    $this->post(route('password.email'), ['email' => $user->email]);
-
-    Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
-        $response = $this->post(route('password.update'), [
-            'token' => $notification->token,
-            'email' => $user->email,
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('login'));
-
-        $this->get(route('login'))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('auth/Login')
-                ->hasFlash('status'),
-            );
-
-        return true;
-    });
-});
-
-test('forgot password screen exposes flashed status', function () {
-    $this->withSession([SessionKey::Status->value => 'Reset link sent'])
-        ->get(route('password.request'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/ForgotPassword')
-            ->hasFlash('status', 'Reset link sent'),
-        );
-});
-
-test('password cannot be reset with invalid token', function () {
-    $user = User::factory()->create();
-
-    $response = $this->post(route('password.update'), [
-        'token' => 'invalid-token',
-        'email' => $user->email,
-        'password' => 'newpassword123',
-        'password_confirmation' => 'newpassword123',
-    ]);
-
-    $response->assertSessionHasErrors('email');
+    $this->get('/reset-password/test-token')
+        ->assertRedirect(route('filament.admin.auth.login'));
 });
