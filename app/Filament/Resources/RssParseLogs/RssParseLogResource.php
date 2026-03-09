@@ -11,10 +11,8 @@ use App\Filament\Resources\RssParseLogs\Schemas\RssParseLogInfolist;
 use App\Filament\Resources\RssParseLogs\Tables\RssParseLogsTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssParseLog;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -32,8 +30,6 @@ class RssParseLogResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Ingestion;
 
     protected static ?int $navigationSort = 4;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
     public static function form(Schema $schema): Schema
     {

@@ -2,7 +2,12 @@
 
 @import 'tw-animate-css';
 
+@plugin "daisyui" {
+    themes: light --default, dark --prefersdark;
+}
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/robsontenorio/mary/src/View/Components/**/*.php';
 @source '../../storage/framework/views/*.php';
 
 @custom-variant dark (&:is(.dark *));
@@ -169,6 +174,42 @@
     body {
         @apply bg-background text-foreground;
     }
+}
+
+@layer components {
+    .portal-shell {
+        @apply min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.18),_transparent_32%),linear-gradient(180deg,_rgba(15,23,42,0.04),_rgba(15,23,42,0))] bg-base-200;
+    }
+
+    .portal-surface {
+        @apply border border-base-300/70 bg-base-100/90 shadow-sm backdrop-blur-sm;
+    }
+
+    .portal-hero {
+        @apply overflow-hidden rounded-[2rem] border border-base-300/70 bg-[linear-gradient(135deg,_rgba(2,132,199,0.18),_rgba(16,185,129,0.12),_rgba(248,250,252,0.92))] p-8 shadow-xl shadow-slate-900/5;
+    }
+
+    .portal-prose {
+        @apply max-w-none text-base leading-8 text-base-content/90;
+    }
+
+    .portal-prose p {
+        @apply mb-5;
+    }
+
+    .portal-prose h2,
+    .portal-prose h3,
+    .portal-prose h4 {
+        @apply mb-4 mt-8 text-balance font-black text-base-content;
+    }
+}
+
+.mary-table-pagination span[aria-current='page'] > span {
+    @apply bg-primary text-base-100;
+}
+
+.mary-table-pagination button {
+    @apply cursor-pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {

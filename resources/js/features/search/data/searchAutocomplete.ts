@@ -17,7 +17,7 @@ export type SearchSuggestionArticle = {
     id: number | string;
     title: string;
     slug: string;
-    published_at?: string | null;
+    publishedAt?: string | null;
 };
 
 export type SearchSuggestions = {

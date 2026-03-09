@@ -5,7 +5,6 @@ namespace App\Filament\Pages;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
-use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -18,8 +17,6 @@ class ParseHistory extends Page
     use WithPagination;
 
     protected static ?string $navigationLabel = 'История парсинга';
-
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clock';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Ingestion;
 

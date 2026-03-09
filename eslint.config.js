@@ -1,23 +1,11 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier/flat';
 import importPlugin from 'eslint-plugin-import';
-import svelte from 'eslint-plugin-svelte';
 import ts from 'typescript-eslint';
 
 export default ts.config(
     js.configs.recommended,
     ...ts.configs.recommended,
-    ...svelte.configs['flat/recommended'],
-    {
-        files: ['**/*.svelte', '**/*.svelte.js', '**/*.svelte.ts'],
-        languageOptions: {
-            parserOptions: {
-                parser: ts.parser,
-                extraFileExtensions: ['.svelte'],
-                projectService: true,
-            },
-        },
-    },
     {
         files: ['**/*.{js,ts}'],
         languageOptions: {
@@ -78,12 +66,10 @@ export default ts.config(
             'vendor',
             'node_modules',
             'public',
-            'bootstrap/ssr',
             'eslint.config.js',
             'tailwind.config.js',
             'vite.config.ts',
             'resources/js/actions/**',
-            'resources/js/components/ui/*',
             'resources/js/routes/**',
         ],
     },

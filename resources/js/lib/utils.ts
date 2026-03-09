@@ -1,7 +1,8 @@
 import { clsx } from 'clsx';
 import type { ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import type { HrefLike } from '@/types/inertia';
+
+export type HrefLike = string | { url: string };
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));

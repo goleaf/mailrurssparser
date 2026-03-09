@@ -58,18 +58,19 @@ it('skips stale assets protected by config', function () {
 
 it('deletes stale assets and creates a backup by default', function () {
     $this->travelTo(now()->setTime(12, 0, 0));
+    $expectedBackupDirectory = now()->format('Ymd_His_u');
 
     assetCleanerPutFile('build/assets/legacy-delete.js', 'console.log("delete");');
 
     $this->artisan('assets:delete --force')
         ->expectsOutputToContain('Deleted 1 stale assets')
-        ->expectsOutputToContain('storage/app/private/asset-cleaner/20260308_120000_000000')
+        ->expectsOutputToContain("storage/app/private/asset-cleaner/{$expectedBackupDirectory}")
         ->assertExitCode(SymfonyCommand::SUCCESS);
 
     expect(public_path('build/assets/legacy-delete.js'))->not->toBeFile();
 
     Storage::disk(StorageDisk::Local)->assertExists(
-        'asset-cleaner/20260308_120000_000000/build/assets/legacy-delete.js',
+        "asset-cleaner/{$expectedBackupDirectory}/build/assets/legacy-delete.js",
     );
 });
 

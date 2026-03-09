@@ -56,7 +56,7 @@ return [
         'cache' => env('DEBUGBAR_COLLECTORS_CACHE', true),
         'models' => env('DEBUGBAR_COLLECTORS_MODELS', true),
         'livewire' => env('DEBUGBAR_COLLECTORS_LIVEWIRE', true),
-        'inertia' => env('DEBUGBAR_COLLECTORS_INERTIA', true),
+        'inertia' => env('DEBUGBAR_COLLECTORS_INERTIA', false),
         'jobs' => env('DEBUGBAR_COLLECTORS_JOBS', true),
         'pennant' => env('DEBUGBAR_COLLECTORS_PENNANT', true),
         'http_client' => env('DEBUGBAR_COLLECTORS_HTTP_CLIENT', true),
@@ -123,9 +123,6 @@ return [
             'exclude_paths' => [
                 'vendor/filament',
             ],
-        ],
-        'inertia' => [
-            'pages' => env('DEBUGBAR_OPTIONS_VIEWS_INERTIA_PAGES', 'js/pages'),
         ],
         'route' => [
             'label' => env('DEBUGBAR_OPTIONS_ROUTE_LABEL', true),

@@ -5,7 +5,6 @@ namespace App\Filament\Pages;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssFeed;
 use App\Services\RssParserService;
-use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
@@ -14,8 +13,6 @@ use UnitEnum;
 class ManageRssFeeds extends Page
 {
     protected static ?string $navigationLabel = 'RSS Менеджер';
-
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rss';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Ingestion;
 

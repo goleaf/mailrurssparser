@@ -1,41 +1,44 @@
 <?php
 
-use Inertia\Testing\AssertableInertia as Assert;
+use App\Models\Article;
+use App\Models\Category;
 
-test('home page can be rendered', function () {
+test('home page renders the blade news portal', function () {
     $response = $this->get(route('home'));
 
-    $response->assertOk();
-
-    $response->assertInertia(fn (Assert $page) => $page
-        ->component('Welcome')
-        ->where('name', config('app.name'))
-        ->where('publicRoute.name', 'home')
-        ->missing('auth')
-        ->missing('canRegister')
-        ->missing('sidebarOpen'),
-    );
+    $response->assertOk()
+        ->assertViewIs('public.home')
+        ->assertSeeText('Живая повестка')
+        ->assertSeeText('Простая новостная витрина с лентой, срочными материалами и статистикой редакции.');
 });
 
-test('public category page is rendered through inertia', function () {
-    $response = $this->get('/category/world');
+test('public category page renders server-side article content', function () {
+    $category = Category::factory()->create([
+        'name' => 'Мир',
+        'slug' => 'world',
+    ]);
 
-    $response->assertOk();
+    $article = Article::factory()
+        ->published()
+        ->forCategory($category)
+        ->create([
+            'title' => 'Главная мировая новость',
+            'slug' => 'global-headline',
+            'short_description' => 'Краткое описание мировой новости.',
+        ]);
 
-    $response->assertInertia(fn (Assert $page) => $page
-        ->component('Welcome')
-        ->where('publicRoute.name', 'category')
-        ->where('publicRoute.slug', 'world'),
-    );
+    $response = $this->get(route('category.show', ['slug' => $category->slug]));
+
+    $response->assertOk()
+        ->assertViewIs('public.category')
+        ->assertSeeText($category->name)
+        ->assertSeeText($article->title);
 });
 
-test('unknown public path returns the welcome shell as not found', function () {
+test('unknown public path returns the blade not found page', function () {
     $response = $this->get('/missing-public-page');
 
-    $response->assertNotFound();
-
-    $response->assertInertia(fn (Assert $page) => $page
-        ->component('Welcome')
-        ->where('publicRoute.name', 'not-found'),
-    );
+    $response->assertNotFound()
+        ->assertViewIs('public.not-found')
+        ->assertSeeText('Страница не найдена');
 });

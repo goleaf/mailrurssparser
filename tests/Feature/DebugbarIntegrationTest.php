@@ -9,11 +9,14 @@ it('installs debugbar 4 as a development dependency', function () {
         ->toBeTrue();
 });
 
-it('configures debugbar for this inertia svelte frontend', function () {
-    expect(config('debugbar.options.inertia.pages'))
-        ->toBe('js/pages')
+it('configures debugbar for the blade and livewire frontend stack', function () {
+    expect(config('debugbar.collectors.livewire'))
+        ->toBeTrue()
+        ->and(config('debugbar.collectors.inertia'))
+        ->toBeFalse()
         ->and(config('debugbar.except'))
         ->toContain('_boost/browser-logs')
+        ->toContain('livewire-*/livewire.js')
         ->and(config('debugbar.options.views.exclude_paths'))
         ->toContain('vendor/filament');
 });

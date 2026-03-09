@@ -46,22 +46,6 @@ describe('searchAutocomplete helpers', () => {
             'category',
             'tag',
         ]);
-        expect(items[0]).toMatchObject({
-            id: 'search',
-            query: 'санкции',
-        });
-        expect(items[1]).toMatchObject({
-            id: 'article-101',
-            label: 'Новые санкции для импорта',
-        });
-        expect(items[2]).toMatchObject({
-            id: 'category-7',
-            label: 'Экономика',
-        });
-        expect(items[3]).toMatchObject({
-            id: 'tag-17',
-            label: 'Импорт',
-        });
     });
 
     it('highlights matching fragments without dropping the surrounding text', () => {

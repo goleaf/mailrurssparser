@@ -9,10 +9,8 @@ use App\Filament\Resources\Articles\Schemas\ArticleForm;
 use App\Filament\Resources\Articles\Tables\ArticlesTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Article;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -33,8 +31,6 @@ class ArticleResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Editorial;
 
     protected static ?int $navigationSort = 1;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNewspaper;
 
     public static function form(Schema $schema): Schema
     {

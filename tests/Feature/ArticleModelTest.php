@@ -115,11 +115,13 @@ it('applies rolling breaking and recent windows', function () {
 
     $recentArticle = Article::factory()->create([
         'status' => 'published',
+        'is_breaking' => false,
         'published_at' => now()->minus(hours: 5),
     ]);
 
     $staleArticle = Article::factory()->create([
         'status' => 'published',
+        'is_breaking' => false,
         'published_at' => now()->minus(hours: 7),
     ]);
 

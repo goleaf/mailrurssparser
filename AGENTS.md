@@ -11,7 +11,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 
 - php - 8.5.2
 - filament/filament (FILAMENT) - v5
-- inertiajs/inertia-laravel (INERTIA_LARAVEL) - v3
 - laravel/fortify (FORTIFY) - v1
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0
@@ -25,7 +24,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/sail (SAIL) - v1
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
-- @inertiajs/svelte (INERTIA_SVELTE) - v3
 - tailwindcss (TAILWINDCSS) - v4
 - @laravel/vite-plugin-wayfinder (WAYFINDER_VITE) - v0
 - eslint (ESLINT) - v9
@@ -36,11 +34,11 @@ This application is a Laravel application and its main Laravel ecosystems packag
 This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
 
 - `wayfinder-development` — Activates whenever referencing backend routes in frontend components. Use when importing from @/actions or @/routes, calling Laravel routes from TypeScript, or working with Wayfinder route functions.
+- `livewire-development` — Develops reactive Livewire 4 components. Activates when creating, updating, or modifying Livewire components; working with wire:model, wire:click, wire:loading, or any wire: directives; adding real-time updates, loading states, or reactivity; debugging component behavior; writing Livewire tests; or when the user mentions Livewire, component, counter, or reactive UI.
 - `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, browser testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
-- `inertia-svelte-development` — Develops Inertia.js v3 Svelte client-side applications. Activates when creating Svelte pages, forms, or navigation; using Link, Form, or router; working with deferred props, prefetching, or polling; or when user mentions Svelte with Inertia, Svelte pages, Svelte forms, or Svelte navigation.
 - `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
-- `news-portal-frontend` — Works on this repository&#039;s public news portal frontend, including the hash-routed Welcome shell, homepage design, article/category/tag/search pages, and the shared public stores.
 - `laravel-herd-worktree` — Use when creating, inspecting, or removing Laravel Herd worktrees for this repository, including isolated .env setup, SQLite cloning, and Herd site naming.
+- `news-portal-frontend` — Works on this repository&#039;s public Blade + Mary UI news portal frontend, including the homepage, article/category/tag/search pages, and the shared layout and partials.
 
 ## Conventions
 
@@ -164,27 +162,6 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
 - Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
 
-=== inertia-laravel/core rules ===
-
-# Inertia
-
-- Inertia creates fully client-side rendered SPAs without modern SPA complexity, leveraging existing server-side patterns.
-- Components live in `resources/js/pages` (unless specified in `vite.config.js`). Use `Inertia::render()` for server-side routing instead of Blade views.
-- IMPORTANT: Activate `inertia-svelte-development` when working with Inertia Svelte client-side patterns.
-- ALWAYS use `search-docs` tool for version-specific Inertia documentation and updated code examples.
-- This repository serves the public frontend through the Inertia `Welcome` page for both the `home` route (`/`) and the `spa` catch-all route (`/{any}`) defined in `routes/web.php`.
-- Keep `sitemap.xml`, `rss.xml`, and `offline.html` as dedicated Laravel routes. Public news, category, tag, article, search, bookmark, and stats pages should stay in the client hash router unless a backend route is truly required.
-- Prefer `Route::inertia()` for simple page routes, and keep the `home` and `spa` route names stable because tests and auth redirects depend on them.
-- If you change the props passed to `Welcome`, keep them serializable and available anywhere the public shell is rendered.
-- Prefer extending the existing `/api/v1/...` endpoints for public content data instead of introducing extra server-rendered Inertia pages.
-- When changing public routing or the rendered Inertia page, update focused Pest coverage such as `tests/Feature/ExampleTest.php` and `tests/Feature/ApiRoutesTest.php`.
-
-# Inertia v3
-
-- Use current Inertia v3 features. Check the documentation before making changes to ensure the correct approach.
-- New features: deferred props, infinite scroll, merging props, polling, prefetching, once props, flash data.
-- When using deferred props, add an empty state with a pulsing or animated skeleton.
-
 === laravel/core rules ===
 
 # Do Things the Laravel Way
@@ -275,12 +252,21 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 - In this repository, prefer named route imports from `@/routes` for navigation and controller imports from `@/actions/...` for form submissions or grouped controller actions.
 - Normalize Wayfinder route objects to strings with `toUrl()` from `resources/js/lib/utils.ts` whenever a component prop, keyed `{#each}` block, or helper expects a plain URL string.
 - Breadcrumbs and nav item `href` values may stay as Wayfinder objects in shared data structures, because layouts and helpers already normalize them downstream.
-- For Svelte `<Form>` usage, follow the existing pattern of generated controller helpers such as `ProfileController.update.form()` instead of hand-writing action and method attributes.
-- Avoid hardcoding internal app URLs like dashboard, login, register, profile, password, or verification routes when a generated helper already exists.
+- For TypeScript form helpers, follow the existing pattern of generated controller helpers such as `RssParseController.parseAll.form()` instead of hard-coding action and method strings.
+- Avoid hardcoding internal app URLs like admin login, RSS actions, newsletter, or public API paths when a generated helper already exists.
 - Invokable Controllers: `import StorePost from '@/actions/.../StorePostController'; StorePost()`.
 - Parameter Binding: Detects route keys (`{post:slug}`) — `show({ slug: "my-post" })`.
 - Query Merging: `show(1, { mergeQuery: { page: 2, sort: null } })` merges with current URL, `null` removes params.
-- Inertia: Use `.form()` with `<Form>` component or `form.submit(store())` with useForm.
+- Generated form helpers may still use `.form()` when a JavaScript-driven screen needs them.
+
+=== livewire/core rules ===
+
+# Livewire
+
+- Livewire allows you to build dynamic, reactive interfaces using only PHP — no JavaScript required.
+- Instead of writing frontend code in JavaScript frameworks, you use Alpine.js to build the UI when client-side interactions are required.
+- State lives on the server; the UI reflects it. Validate and authorize in actions (they're like HTTP requests).
+- IMPORTANT: Activate `livewire-development` every time you're working with Livewire-related tasks.
 
 === pint/core rules ===
 
@@ -299,30 +285,10 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 - CRITICAL: ALWAYS use `search-docs` tool for version-specific Pest documentation and updated code examples.
 - IMPORTANT: Activate `pest-testing` every time you're working with a Pest or testing-related task.
 - Keep the current expectation-chaining style for feature tests. Prefer `expect(...)->toBe...()->and(...)` over switching between multiple assertion styles in the same test.
-- For Inertia page responses, follow the existing `assertInertia(fn (Assert $page) => ...)` pattern instead of asserting only status codes.
+- For public Blade responses, assert the response status, important content, and relevant route-driven links instead of checking only status codes.
 - For route registration checks, keep using direct `Route::has(...)` expectations in focused feature tests instead of broader end-to-end requests when route existence is what matters.
 - For Boost discovery tests, use `Symfony\Component\Process\Process` with `APP_ENV=local` when you need to assert the real generated guideline or skill context outside the testing environment.
 - Prefer focused Pest execution like `php artisan test --compact tests/Feature/Boost/ProjectAiContextTest.php` or a small set of related files, matching this repository's fast feedback loop.
-
-=== inertia-svelte/core rules ===
-
-# Inertia + Svelte
-
-- IMPORTANT: Activate `inertia-svelte-development` when working with Inertia Svelte client-side patterns.
-- This app uses a hybrid public frontend: Laravel routes `/` and `/{any}` both render the Inertia `Welcome` page, and public navigation after first load is handled by the hash router in `resources/js/pages/Welcome.svelte`.
-- Do not add Laravel routes for public hash pages like `/#/category/...`, `/#/tag/...`, `/#/articles/...`, `/#/search`, or `/#/stats` unless the backend route is truly required. Extend the route parser in `resources/js/pages/Welcome.svelte` and the matching page component instead.
-- Prefer the existing public stores and helpers before creating new state layers:
-  - `resources/js/stores/articles.svelte.js`
-  - `resources/js/stores/app.svelte.js`
-  - `resources/js/stores/bookmarks.svelte.js`
-  - `resources/js/lib/api.js`
-- Keep article filter payloads aligned with the backend request validation. In particular, `tags` must be sent as an array to the article index API.
-- Keep page resolution lazy via `import.meta.glob()` and mirror any bootstrap changes in both `resources/js/app.ts` and `resources/js/ssr.ts`.
-- Preserve the current bootstrap contract in `resources/js/app.ts`: the client mounts through `AppRoot.svelte`, and hydration is selected via `el.dataset.serverRendered === 'true'`.
-- `resources/js/AppRoot.svelte` is not optional wrapper chrome. It initializes app-level state, owns the toast/update UI, and listens for the `sw:update-ready` browser event from the service worker registration flow.
-- When changing Inertia bootstrapping, update both `resources/js/app.ts` and `resources/js/ssr.ts`.
-- Preserve the current public-shell pattern: `Welcome.svelte` is the router shell, while `HomePage.svelte`, `CategoryPage.svelte`, `TagPage.svelte`, `ArticleDetailPage.svelte`, `SearchPage.svelte`, `BookmarksPage.svelte`, `StatsPage.svelte`, and the public info pages render the actual content.
-- Verify public frontend changes with `npm run types:check`, `npm run lint:check`, and `npm run build:ssr`. When routing or Laravel page responses change, also run a focused Pest test.
 
 === tailwindcss/core rules ===
 
@@ -333,9 +299,9 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
 - Prefer updating shared theme tokens in `resources/css/app.css` through the existing Tailwind v4 `@theme inline` variables and app color custom properties instead of scattering one-off raw color values.
 - The public news UI already leans on slate, sky, emerald, and red accents with layered gradients, translucent borders, large radii, and `backdrop-blur-*` surfaces. Extend that visual language before introducing a different palette or flatter layout style.
-- For conditional class composition in Svelte components, follow the existing `cn()` helper pattern from `resources/js/lib/utils.ts`.
+- For conditional class composition in JavaScript or TypeScript helpers, follow the existing `cn()` helper pattern from `resources/js/lib/utils.ts` when it keeps class strings readable.
 - Keep dark mode support aligned with the existing `dark:` variants and shared CSS variables in `resources/css/app.css`; new public-facing UI should not work only in light mode.
-- Prefer utility classes over component-local `<style>` blocks. Reserve local CSS for cases that are genuinely utility-unfriendly, like the custom ticker keyframes in `resources/js/components/layout/BreakingNewsTicker.svelte`.
+- Prefer utility classes over component-local `<style>` blocks. Reserve local CSS for cases that are genuinely utility-unfriendly, such as shared portal-shell helpers and Mary pagination tweaks in `resources/css/app.css`.
 - Dynamic category or feed colors may use inline `style=` values when they come from API data, but keep layout, spacing, borders, shadows, and typography in Tailwind utilities.
 
 </laravel-boost-guidelines>

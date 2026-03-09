@@ -1,18 +1,17 @@
 <?php
 
-it('keeps a legacy hash redirect in the welcome shell', function () {
-    $welcomePage = file_get_contents(resource_path('js/pages/Welcome.svelte'));
-    $appBootstrap = file_get_contents(resource_path('js/app.ts'));
+it('removes the legacy hash-shell bootstrap from the public frontend', function () {
+    $appBootstrap = file_get_contents(resource_path('js/app.js'));
 
-    expect($welcomePage)->not->toBeFalse()
-        ->and($welcomePage)->toContain(
-            'function legacyHashToPath(hash: string): string | null {',
-            "const legacyPath = legacyHashToPath(window.location.hash || '');",
-            'replacePublic(legacyPath);',
-        )
+    expect(resource_path('js/pages/Welcome.svelte'))->not->toBeFile()
+        ->and(resource_path('js/app.ts'))->not->toBeFile()
         ->and($appBootstrap)->not->toBeFalse()
         ->and($appBootstrap)->toContain(
-            'function shouldHydrate(el: HTMLElement): boolean {',
-            "return el.dataset.serverRendered === 'true';",
-        );
+            "document.addEventListener('DOMContentLoaded'",
+            'import.meta.glob([',
+            'resolvePortalTheme(',
+        )
+        ->and($appBootstrap)->not->toContain('window.location.hash')
+        ->not->toContain('serverRendered')
+        ->not->toContain('createInertiaApp');
 });

@@ -11,10 +11,8 @@ use App\Filament\Resources\NewsletterSubscribers\Schemas\NewsletterSubscriberInf
 use App\Filament\Resources\NewsletterSubscribers\Tables\NewsletterSubscribersTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\NewsletterSubscriber;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
@@ -31,8 +29,6 @@ class NewsletterSubscriberResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Audience;
 
     protected static ?int $navigationSort = 1;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;
 
     public static function form(Schema $schema): Schema
     {

@@ -11,10 +11,10 @@
     "sail": false,
     "skills": [
         "wayfinder-development",
+        "livewire-development",
         "pest-testing",
-        "inertia-svelte-development",
         "tailwindcss-development",
-        "news-portal-frontend",
-        "laravel-herd-worktree"
+        "laravel-herd-worktree",
+        "news-portal-frontend"
     ]
 }

@@ -9,10 +9,8 @@ use App\Filament\Resources\Categories\Schemas\CategoryForm;
 use App\Filament\Resources\Categories\Tables\CategoriesTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Category;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -30,8 +28,6 @@ class CategoryResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Taxonomy;
 
     protected static ?int $navigationSort = 1;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolder;
 
     public static function form(Schema $schema): Schema
     {

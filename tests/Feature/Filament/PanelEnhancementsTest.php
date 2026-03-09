@@ -1,11 +1,22 @@
 <?php
 
+use App\Filament\Pages\ManageRssFeeds;
+use App\Filament\Pages\ParseHistory;
 use App\Filament\Resources\Articles\ArticleResource;
 use App\Filament\Resources\Articles\Pages\EditArticle;
 use App\Filament\Resources\Articles\Pages\ListArticles;
+use App\Filament\Resources\ArticleViews\ArticleViewResource;
+use App\Filament\Resources\Bookmarks\BookmarkResource;
+use App\Filament\Resources\Categories\CategoryResource;
 use App\Filament\Resources\Categories\Pages\ListCategories;
+use App\Filament\Resources\Metrics\MetricResource;
+use App\Filament\Resources\NewsletterSubscribers\NewsletterSubscriberResource;
 use App\Filament\Resources\RssFeeds\Pages\ListRssFeeds;
+use App\Filament\Resources\RssFeeds\RssFeedResource;
+use App\Filament\Resources\RssParseLogs\RssParseLogResource;
+use App\Filament\Resources\SubCategories\SubCategoryResource;
 use App\Filament\Resources\Tags\Pages\ListTags;
+use App\Filament\Resources\Tags\TagResource;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Article;
 use App\Models\Tag;
@@ -15,6 +26,8 @@ use App\Services\ArticleStatus;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Filament\Schemas\Components\Tabs;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -26,6 +39,21 @@ dataset('cms_list_pages', [
     ListCategories::class,
     ListTags::class,
     ListRssFeeds::class,
+]);
+
+dataset('grouped_navigation_items', [
+    'article resource' => [ArticleResource::class, AdminNavigationGroup::Editorial],
+    'category resource' => [CategoryResource::class, AdminNavigationGroup::Taxonomy],
+    'tag resource' => [TagResource::class, AdminNavigationGroup::Taxonomy],
+    'subcategory resource' => [SubCategoryResource::class, AdminNavigationGroup::Taxonomy],
+    'rss feed resource' => [RssFeedResource::class, AdminNavigationGroup::Ingestion],
+    'rss parse log resource' => [RssParseLogResource::class, AdminNavigationGroup::Ingestion],
+    'manage rss feeds page' => [ManageRssFeeds::class, AdminNavigationGroup::Ingestion],
+    'parse history page' => [ParseHistory::class, AdminNavigationGroup::Ingestion],
+    'newsletter subscriber resource' => [NewsletterSubscriberResource::class, AdminNavigationGroup::Audience],
+    'article view resource' => [ArticleViewResource::class, AdminNavigationGroup::Audience],
+    'bookmark resource' => [BookmarkResource::class, AdminNavigationGroup::Audience],
+    'metric resource' => [MetricResource::class, AdminNavigationGroup::Analytics],
 ]);
 
 it('registers configured article resource views for the admin panel', function () {
@@ -45,6 +73,35 @@ it('registers configured article resource views for the admin panel', function (
         ->toBeTrue()
         ->and(str_ends_with(ArticleResource::getUrl(configuration: 'published'), '/admin/published-articles'))
         ->toBeTrue();
+});
+
+it('keeps admin navigation groups iconized and labeled through the enum', function () {
+    expect(class_implements(AdminNavigationGroup::class))
+        ->toHaveKey(HasLabel::class)
+        ->toHaveKey(HasIcon::class)
+        ->and(collect(AdminNavigationGroup::cases())->every(
+            fn (AdminNavigationGroup $group): bool => filled($group->getIcon()),
+        ))
+        ->toBeTrue();
+});
+
+it('removes item icons when the navigation group already provides the icon', function (
+    string $navigationItemClass,
+    AdminNavigationGroup $navigationGroup,
+) {
+    expect($navigationItemClass::getNavigationGroup())
+        ->toBe($navigationGroup)
+        ->and($navigationGroup->getIcon())
+        ->not()->toBeNull()
+        ->and($navigationItemClass::getNavigationIcon())
+        ->toBeNull();
+})->with('grouped_navigation_items');
+
+it('renders the admin dashboard without group and item icon conflicts', function () {
+    $this->actingAs(User::factory()->create(['email_verified_at' => now()]));
+
+    $this->get(route('filament.admin.pages.dashboard'))
+        ->assertSuccessful();
 });
 
 it('scopes configured article resource queries by status', function () {

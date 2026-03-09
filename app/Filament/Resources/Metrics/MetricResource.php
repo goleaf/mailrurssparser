@@ -11,10 +11,8 @@ use App\Filament\Resources\Metrics\Schemas\MetricInfolist;
 use App\Filament\Resources\Metrics\Tables\MetricsTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Metric;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -32,8 +30,6 @@ class MetricResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Analytics;
 
     protected static ?int $navigationSort = 1;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBarSquare;
 
     public static function form(Schema $schema): Schema
     {

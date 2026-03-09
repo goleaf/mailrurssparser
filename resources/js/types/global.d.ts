@@ -13,19 +13,3 @@ declare module 'vite/client' {
         ) => Record<string, T>;
     }
 }
-
-declare module '@inertiajs/core' {
-    export interface InertiaConfig {
-        flashDataType: {
-            status?: string;
-            toast?: {
-                message: string;
-                type?: 'success' | 'error' | 'info' | 'warning';
-            };
-        };
-        sharedPageProps: {
-            name: string;
-            [key: string]: unknown;
-        };
-    }
-}

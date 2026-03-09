@@ -2,7 +2,6 @@
 
 use App\Http\Middleware\ApplyApiRequestContext;
 use App\Http\Middleware\HandleAppearance;
-use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\TriggerSchedulerFromWebRequests;
 use App\Models\Article;
 use App\Models\Category;
@@ -38,7 +37,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             HandleAppearance::class,
-            HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             ThreatDetectionMiddleware::class,
             TriggerSchedulerFromWebRequests::class,

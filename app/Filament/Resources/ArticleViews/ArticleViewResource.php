@@ -11,10 +11,8 @@ use App\Filament\Resources\ArticleViews\Schemas\ArticleViewInfolist;
 use App\Filament\Resources\ArticleViews\Tables\ArticleViewsTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\ArticleView;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -32,8 +30,6 @@ class ArticleViewResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Audience;
 
     protected static ?int $navigationSort = 2;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEye;
 
     public static function form(Schema $schema): Schema
     {

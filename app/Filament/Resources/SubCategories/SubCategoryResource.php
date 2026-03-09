@@ -11,10 +11,8 @@ use App\Filament\Resources\SubCategories\Schemas\SubCategoryInfolist;
 use App\Filament\Resources\SubCategories\Tables\SubCategoriesTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\SubCategory;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -32,8 +30,6 @@ class SubCategoryResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Taxonomy;
 
     protected static ?int $navigationSort = 3;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolder;
 
     public static function form(Schema $schema): Schema
     {

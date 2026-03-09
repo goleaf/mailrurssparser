@@ -9,10 +9,8 @@ use App\Filament\Resources\Tags\Schemas\TagForm;
 use App\Filament\Resources\Tags\Tables\TagsTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Tag;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -30,8 +28,6 @@ class TagResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Taxonomy;
 
     protected static ?int $navigationSort = 2;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
 
     public static function form(Schema $schema): Schema
     {

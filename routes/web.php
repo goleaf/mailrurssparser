@@ -1,15 +1,10 @@
 <?php
 
+use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\RssParseController;
 use App\Http\Controllers\SeoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Inertia\Response;
-
-$renderPublicPage = static fn (array $publicRoute): Response => Inertia::render('Welcome', [
-    'publicRoute' => $publicRoute,
-]);
 
 Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 Route::get('rss.xml', [SeoController::class, 'rss'])->name('rss-feed');
@@ -22,42 +17,17 @@ Route::view('offline.html', 'offline')->name('offline');
 Route::get('scheduler/pulse', fn () => response()->noContent()->header('Cache-Control', 'no-store, no-cache, must-revalidate'))
     ->name('scheduler.pulse');
 
-Route::get('/', static fn () => $renderPublicPage([
-    'name' => 'home',
-]))->name('home');
-Route::get('category/{slug}', static fn (string $slug) => $renderPublicPage([
-    'name' => 'category',
-    'slug' => $slug,
-]))->name('category.show');
-Route::get('tag/{slug}', static fn (string $slug) => $renderPublicPage([
-    'name' => 'tag',
-    'slug' => $slug,
-]))->name('tag.show');
-Route::get('articles/{slug}', static fn (string $slug) => $renderPublicPage([
-    'name' => 'article',
-    'slug' => $slug,
-]))->name('articles.show');
-Route::get('search', static fn () => $renderPublicPage([
-    'name' => 'search',
-]))->name('search');
-Route::get('bookmarks', static fn () => $renderPublicPage([
-    'name' => 'bookmarks',
-]))->name('bookmarks');
-Route::get('stats', static fn () => $renderPublicPage([
-    'name' => 'stats',
-]))->name('stats');
-Route::get('about', static fn () => $renderPublicPage([
-    'name' => 'info',
-    'variant' => 'about',
-]))->name('about');
-Route::get('contact', static fn () => $renderPublicPage([
-    'name' => 'info',
-    'variant' => 'contact',
-]))->name('contact');
-Route::get('privacy', static fn () => $renderPublicPage([
-    'name' => 'info',
-    'variant' => 'privacy',
-]))->name('privacy');
+Route::get('/', [PublicSiteController::class, 'home'])->name('home');
+Route::get('category/{slug}', [PublicSiteController::class, 'category'])->name('category.show');
+Route::get('tag/{slug}', [PublicSiteController::class, 'tag'])->name('tag.show');
+Route::get('articles/{slug}', [PublicSiteController::class, 'article'])->name('articles.show');
+Route::get('search', [PublicSiteController::class, 'search'])->name('search');
+Route::get('bookmarks', [PublicSiteController::class, 'bookmarks'])->name('bookmarks');
+Route::post('bookmarks/{article}', [PublicSiteController::class, 'toggleBookmark'])->name('bookmarks.toggle');
+Route::get('stats', [PublicSiteController::class, 'stats'])->name('stats');
+Route::get('about', static fn (Request $request, PublicSiteController $controller) => $controller->info($request, 'about'))->name('about');
+Route::get('contact', static fn (Request $request, PublicSiteController $controller) => $controller->info($request, 'contact'))->name('contact');
+Route::get('privacy', static fn (Request $request, PublicSiteController $controller) => $controller->info($request, 'privacy'))->name('privacy');
 
 Route::get('dashboard', static fn () => redirect('/admin'));
 Route::get('login', static fn () => redirect()->route('filament.admin.auth.login'));
@@ -83,8 +53,4 @@ Route::prefix('admin/rss')
         Route::post('/parse-category/{slug}', [RssParseController::class, 'parseCategory'])->name('parse-category');
     });
 
-Route::fallback(static function (Request $request) use ($renderPublicPage) {
-    return $renderPublicPage([
-        'name' => 'not-found',
-    ])->toResponse($request)->setStatusCode(404);
-})->name('spa');
+Route::fallback([PublicSiteController::class, 'notFound'])->name('spa');

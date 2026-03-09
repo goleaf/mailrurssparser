@@ -11,7 +11,6 @@ use App\Filament\Resources\RssFeeds\Tables\RssFeedsTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
-use BackedEnum;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn as RepeatableTableColumn;
@@ -20,7 +19,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\EmptyState;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -39,8 +37,6 @@ class RssFeedResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Ingestion;
 
     protected static ?int $navigationSort = 1;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRss;
 
     public static function form(Schema $schema): Schema
     {

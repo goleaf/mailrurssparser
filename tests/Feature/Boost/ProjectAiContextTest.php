@@ -2,7 +2,7 @@
 
 use Symfony\Component\Process\Process;
 
-function localBoostGuideline(string $key): array
+function localBoostGuideline(string $key): ?array
 {
     $process = new Process([
         'php',
@@ -24,7 +24,7 @@ function localBoostGuideline(string $key): array
     return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR)['guideline'];
 }
 
-function localBoostSkill(string $name): array
+function localBoostSkill(string $name): ?array
 {
     $process = new Process([
         'php',
@@ -34,12 +34,12 @@ function localBoostSkill(string $name): array
         $app = require 'bootstrap/app.php';
         $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
         $skill = $app->make(Laravel\Boost\Install\SkillComposer::class)->skills()->get($argv[1]);
-        echo json_encode(['skill' => [
-            'name' => $skill?->name,
-            'package' => $skill?->package,
-            'path' => $skill?->path,
-            'description' => $skill?->description,
-            'custom' => $skill?->custom,
+        echo json_encode(['skill' => $skill === null ? null : [
+            'name' => $skill->name,
+            'package' => $skill->package,
+            'path' => $skill->path,
+            'description' => $skill->description,
+            'custom' => $skill->custom,
         ]], JSON_THROW_ON_ERROR);
         PHP,
         $name,
@@ -52,7 +52,7 @@ function localBoostSkill(string $name): array
     return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR)['skill'];
 }
 
-function localPackageSpecificBoostSkill(string $name): array
+function localPackageSpecificBoostSkill(string $name): ?array
 {
     $process = new Process([
         'php',
@@ -65,12 +65,12 @@ function localPackageSpecificBoostSkill(string $name): array
         $method = new ReflectionMethod($composer, 'discoverPackageSpecificUserSkills');
         $method->setAccessible(true);
         $skill = $method->invoke($composer)->get($argv[1]);
-        echo json_encode(['skill' => [
-            'name' => $skill?->name,
-            'package' => $skill?->package,
-            'path' => $skill?->path,
-            'description' => $skill?->description,
-            'custom' => $skill?->custom,
+        echo json_encode(['skill' => $skill === null ? null : [
+            'name' => $skill->name,
+            'package' => $skill->package,
+            'path' => $skill->path,
+            'description' => $skill->description,
+            'custom' => $skill->custom,
         ]], JSON_THROW_ON_ERROR);
         PHP,
         $name,
@@ -82,20 +82,6 @@ function localPackageSpecificBoostSkill(string $name): array
 
     return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR)['skill'];
 }
-
-it('uses the project override for the inertia laravel guideline', function () {
-    $guideline = localBoostGuideline('inertia-laravel/core');
-
-    expect($guideline)
-        ->not()->toBeNull()
-        ->and($guideline['custom'])
-        ->toBeTrue()
-        ->and($guideline['path'])
-        ->toEndWith('/.ai/guidelines/inertia-laravel/core.blade.php')
-        ->and($guideline['content'])
-        ->toContain('public frontend through the Inertia `Welcome` page')
-        ->toContain('tests/Feature/ExampleTest.php');
-});
 
 it('uses the project override for the herd guideline', function () {
     $guideline = localBoostGuideline('herd');
@@ -122,7 +108,7 @@ it('uses the project override for the wayfinder guideline', function () {
         ->toEndWith('/.ai/guidelines/wayfinder/core.blade.php')
         ->and($guideline['content'])
         ->toContain('Normalize Wayfinder route objects to strings with `toUrl()`')
-        ->toContain('RssParseController.parseAll.form()')
+        ->toContain('TypeScript form helpers')
         ->toContain('admin login');
 });
 
@@ -136,7 +122,7 @@ it('uses the project override for the pest guideline', function () {
         ->and($guideline['path'])
         ->toEndWith('/.ai/guidelines/pest/core.blade.php')
         ->and($guideline['content'])
-        ->toContain('assertInertia(fn (Assert $page) => ...)')
+        ->toContain('public Blade responses')
         ->toContain('Symfony\Component\Process\Process')
         ->toContain('APP_ENV=local');
 });
@@ -153,23 +139,7 @@ it('uses the project override for the tailwind guideline', function () {
         ->and($guideline['content'])
         ->toContain('resources/css/app.css')
         ->toContain('existing `cn()` helper pattern')
-        ->toContain('BreakingNewsTicker.svelte');
-});
-
-it('uses the project override for the inertia svelte guideline', function () {
-    $guideline = localBoostGuideline('inertia-svelte/core');
-
-    expect($guideline)
-        ->not()->toBeNull()
-        ->and($guideline['custom'])
-        ->toBeTrue()
-        ->and($guideline['path'])
-        ->toEndWith('/.ai/guidelines/inertia-svelte/core.blade.php')
-        ->and($guideline['content'])
-        ->toContain('hybrid public frontend')
-        ->toContain('resources/js/pages/Welcome.svelte')
-        ->toContain('AppRoot.svelte')
-        ->toContain('sw:update-ready');
+        ->toContain('Mary pagination tweaks');
 });
 
 it('discovers the custom news portal frontend boost skill', function () {
@@ -184,7 +154,7 @@ it('discovers the custom news portal frontend boost skill', function () {
         ->and($skill['path'])
         ->toEndWith('/.ai/skills/news-portal-frontend')
         ->and($skill['description'])
-        ->toContain('public news portal frontend');
+        ->toContain('Blade + Mary UI news portal frontend');
 });
 
 it('discovers the custom laravel herd worktree boost skill', function () {
@@ -202,22 +172,13 @@ it('discovers the custom laravel herd worktree boost skill', function () {
         ->toContain('Laravel Herd worktrees');
 });
 
-it('discovers the versioned inertia svelte news portal frontend boost skill', function () {
-    $skill = localPackageSpecificBoostSkill('news-portal-frontend');
-
-    expect($skill)
-        ->not()->toBeNull()
-        ->and($skill['custom'])
-        ->toBeTrue()
-        ->and($skill['package'])
-        ->toBe('inertia-svelte')
-        ->and($skill['path'])
-        ->toEndWith('/.ai/inertia-svelte/3/skill/news-portal-frontend')
-        ->and($skill['description'])
-        ->toContain('public news portal frontend');
+it('does not keep custom inertia guidance after removing the inertia and svelte stack', function () {
+    expect(localBoostGuideline('inertia-laravel/core'))->toBeNull()
+        ->and(localBoostGuideline('inertia-svelte/core'))->toBeNull()
+        ->and(localPackageSpecificBoostSkill('news-portal-frontend'))->toBeNull();
 });
 
-it('regenerates agent guidance with the custom inertia context', function () {
+it('regenerates agent guidance with the custom blade and Mary UI context', function () {
     foreach (['AGENTS.md', 'CLAUDE.md'] as $filename) {
         $contents = file_get_contents(base_path($filename));
 
@@ -228,15 +189,15 @@ it('regenerates agent guidance with the custom inertia context', function () {
             ->toContain('=== wayfinder/core rules ===')
             ->toContain('Normalize Wayfinder route objects to strings with `toUrl()`')
             ->toContain('=== pest/core rules ===')
-            ->toContain('assertInertia(fn (Assert $page) => ...)')
+            ->toContain('public Blade responses')
             ->toContain('=== tailwindcss/core rules ===')
             ->toContain('resources/css/app.css')
-            ->toContain('=== inertia-laravel/core rules ===')
-            ->toContain('public frontend through the Inertia `Welcome` page')
-            ->toContain('=== inertia-svelte/core rules ===')
-            ->toContain('hybrid public frontend')
-            ->toContain('AppRoot.svelte')
             ->toContain('news-portal-frontend')
-            ->toContain('laravel-herd-worktree');
+            ->toContain('laravel-herd-worktree')
+            ->not->toContain('=== inertia-laravel/core rules ===')
+            ->not->toContain('=== inertia-svelte/core rules ===')
+            ->not->toContain('assertInertia(fn (Assert $page) => ...)')
+            ->not->toContain('AppRoot.svelte')
+            ->not->toContain('BreakingNewsTicker.svelte');
     }
 });
