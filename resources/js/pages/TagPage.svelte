@@ -1,14 +1,21 @@
 <script lang="ts">
-    import AppHead from '@/components/AppHead.svelte';
-    import ArticleCard from '@/components/article/ArticleCard.svelte';
-    import Pagination from '@/components/Pagination.svelte';
-    import SidebarNewsletterBox from '@/components/sidebar/SidebarNewsletterBox.svelte';
-    import SidebarPopularArticles from '@/components/sidebar/SidebarPopularArticles.svelte';
-    import SkeletonCard from '@/components/SkeletonCard.svelte';
-    import * as api from '@/lib/api';
-    import { tagUrl, visitPublic } from '@/lib/publicRoutes';
+    import {
+        ArticleCard,
+        Pagination,
+        SidebarNewsletterBox,
+        SidebarPopularArticles,
+        SkeletonCard,
+    } from '@/features/articles';
+    import {
+        AppHead,
+        appInitialized,
+        appTrendingTags,
+        initApp,
+        tagUrl,
+        visitPublic,
+    } from '@/features/portal';
+    import * as api from '@/features/portal';
     import { cn } from '@/lib/utils';
-    import { appState, initApp } from '@/stores/app.svelte.js';
 
     type Tag = {
         id: number | string;
@@ -56,6 +63,14 @@
         last_page?: number;
         total?: number;
         total_results?: number;
+    };
+    type TagPageRequest = {
+        slug: string;
+        sort: (typeof sortTabs)[number]['key'];
+        date_from: string | null;
+        date_to: string | null;
+        page: number;
+        per_page: number;
     };
 
     const sortTabs = [
@@ -105,7 +120,7 @@
             return calculated.slice(0, 8);
         }
 
-        return ((appState.trendingTags ?? []) as Tag[])
+        return (($appTrendingTags ?? []) as Tag[])
             .filter((item) => item.slug !== slug)
             .slice(0, 8);
     });
@@ -120,6 +135,14 @@
     );
     const currentPage = $derived(Number(pagination?.current_page ?? 1));
     const lastPage = $derived(Number(pagination?.last_page ?? 1));
+    const pageRequest = $derived.by((): TagPageRequest => ({
+        slug,
+        sort,
+        date_from: dateFrom,
+        date_to: dateTo,
+        page,
+        per_page: 20,
+    }));
     const heroStats = $derived([
         {
             label: 'Использований',
@@ -156,20 +179,20 @@
         page = 1;
     }
 
-    async function loadPage(currentSlug: string): Promise<void> {
+    async function loadPage(request: TagPageRequest): Promise<void> {
         loading = true;
         error = null;
 
         try {
             const [tagResponse, articlesResponse] = await Promise.all([
-                api.getTag(currentSlug),
+                api.getTag(request.slug),
                 api.getArticles({
-                    tag: currentSlug,
-                    date_from: dateFrom,
-                    date_to: dateTo,
-                    sort,
-                    page,
-                    per_page: 20,
+                    tag: request.slug,
+                    date_from: request.date_from,
+                    date_to: request.date_to,
+                    sort: request.sort,
+                    page: request.page,
+                    per_page: request.per_page,
                 }),
             ]);
 
@@ -190,22 +213,15 @@
     }
 
     $effect(() => {
-        void initApp();
+        if (!$appInitialized) {
+            void initApp();
+        }
     });
 
     $effect(() => {
-        const currentSlug = slug;
-        const currentSort = sort;
-        const currentDateFrom = dateFrom;
-        const currentDateTo = dateTo;
-        const currentPageNumber = page;
+        const request = pageRequest;
 
-        void currentSort;
-        void currentDateFrom;
-        void currentDateTo;
-        void currentPageNumber;
-
-        void loadPage(currentSlug);
+        void loadPage(request);
     });
 </script>
 
@@ -404,7 +420,11 @@
                     </div>
                 {/if}
 
-                <Pagination {currentPage} {lastPage} onChange={changePage} />
+                <Pagination
+                    {currentPage}
+                    {lastPage}
+                    onChange={changePage}
+                />
             </section>
 
             <aside class="space-y-5">

@@ -3,8 +3,11 @@
     import { onMount } from 'svelte';
     import Toast, { showToast } from '@/components/ui/Toast.svelte';
     import type { ToastType } from '@/components/ui/Toast.svelte';
-    import { isPublicInertiaPath, visitPublic } from '@/lib/publicRoutes';
-    import { initApp } from '@/stores/app.svelte.js';
+    import {
+        initApp,
+        isPublicInertiaPath,
+        visitPublic,
+    } from '@/features/portal';
 
     type AppRootProps = {
         App: any;

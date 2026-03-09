@@ -1,12 +1,12 @@
 <script lang="ts">
     import ArrowUpRight from 'lucide-svelte/icons/arrow-up-right';
-    import AppHead from '@/components/AppHead.svelte';
     import {
+        AppHead,
         contactUrl,
         homeUrl,
         searchUrl,
         statsUrl,
-    } from '@/lib/publicRoutes';
+    } from '@/features/portal';
 
     type InfoVariant = 'about' | 'contact' | 'privacy';
 

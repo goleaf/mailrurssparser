@@ -1,0 +1,365 @@
+<script lang="ts">
+    import ArrowUpRight from 'lucide-svelte/icons/arrow-up-right';
+    import Newspaper from 'lucide-svelte/icons/newspaper';
+    import Sparkles from 'lucide-svelte/icons/sparkles';
+    import TrendingUp from 'lucide-svelte/icons/trending-up';
+    import { createEventDispatcher } from 'svelte';
+    import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
+    import { ArticleCardCompact } from '@/features/articles';
+
+    type Category = {
+        id: number | string;
+        name: string;
+        slug: string;
+        color?: string | null;
+        icon?: string | null;
+    };
+
+    type Tag = {
+        id: number | string;
+        name: string;
+        slug: string;
+    };
+
+    type Article = {
+        id: number | string;
+        title: string;
+        slug: string;
+        short_description?: string | null;
+        image_url?: string | null;
+        is_breaking?: boolean;
+        views_count?: number | null;
+        reading_time?: number | null;
+        published_at?: string | null;
+        category: Category;
+        tags?: Tag[];
+    };
+
+    type OverviewStat = {
+        label: string;
+        value: string | number;
+        caption: string;
+        icon: any;
+    };
+
+    const dispatch = createEventDispatcher<{
+        clear: null;
+    }>();
+
+    let {
+        briefingDate,
+        totalResults,
+        activeFilterTotal,
+        selectedFilters,
+        overviewStats,
+        highlightsLoading,
+        leadStory,
+        trendingPreview,
+        searchHref,
+        statsHref,
+        bookmarksHref,
+        articleHref,
+    }: {
+        briefingDate: string;
+        totalResults: number;
+        activeFilterTotal: number;
+        selectedFilters: string[];
+        overviewStats: OverviewStat[];
+        highlightsLoading: boolean;
+        leadStory: Article | null;
+        trendingPreview: Article[];
+        searchHref: string;
+        statsHref: string;
+        bookmarksHref: string;
+        articleHref: (slug: string) => string;
+    } = $props();
+</script>
+
+<section
+    class="relative overflow-hidden rounded-[2.6rem] border border-slate-200/80 bg-white/88 p-6 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.45)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8 lg:p-10"
+>
+    <div
+        class="absolute right-0 top-0 h-44 w-44 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-500/20"
+    ></div>
+    <div
+        class="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-amber-200/70 blur-3xl dark:bg-amber-500/10"
+    ></div>
+
+    <div
+        class="relative grid gap-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]"
+    >
+        <div class="space-y-6">
+            <div class="flex flex-wrap items-center gap-3">
+                <div
+                    class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.26em] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300"
+                >
+                    <Sparkles class="size-4" />
+                    Утренний выпуск
+                </div>
+                <div
+                    class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-medium text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
+                >
+                    {briefingDate}
+                </div>
+                <div
+                    class="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
+                >
+                    {totalResults} материалов в открытой ленте
+                </div>
+            </div>
+
+            <div class="max-w-3xl">
+                <h1
+                    class="max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl dark:text-white"
+                >
+                    Важные темы дня, быстрый обзор и глубокая навигация по
+                    потоку.
+                </h1>
+                <p
+                    class="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg"
+                >
+                    Публичная часть собрана как редакционная витрина: главный
+                    материал, быстрые сигналы по рубрикам, тренды чтения и
+                    фильтры, которые не мешают читать поток.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <a
+                    href={searchHref}
+                    class="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                >
+                    Открыть поиск
+                    <ArrowUpRight class="size-4" />
+                </a>
+                <a
+                    href={statsHref}
+                    class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                >
+                    Публичная статистика
+                    <TrendingUp class="size-4" />
+                </a>
+                <a
+                    href={bookmarksHref}
+                    class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                >
+                    Закладки
+                    <Newspaper class="size-4" />
+                </a>
+            </div>
+
+            {#if activeFilterTotal > 0}
+                <div
+                    class="rounded-[2rem] border border-slate-200 bg-slate-50/90 p-4 dark:border-white/10 dark:bg-white/5"
+                >
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-3"
+                    >
+                        <div>
+                            <div
+                                class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400"
+                            >
+                                Активные фильтры
+                            </div>
+                            <div
+                                class="mt-2 text-sm font-medium text-slate-900 dark:text-white"
+                            >
+                                {activeFilterTotal} выбрано в ленте
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                            onclick={() => {
+                                dispatch('clear', null);
+                            }}
+                        >
+                            Сбросить всё
+                        </button>
+                    </div>
+
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        {#each selectedFilters as filterValue (`filter-${filterValue}`)}
+                            <span
+                                class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-white dark:text-slate-950"
+                            >
+                                {filterValue}
+                            </span>
+                        {/each}
+                    </div>
+                </div>
+            {/if}
+
+            <div class="grid gap-3 sm:grid-cols-3">
+                {#each overviewStats as item (item.label)}
+                    <div
+                        class="rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.9))] p-4 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.78))]"
+                    >
+                        <div class="flex items-center justify-between gap-3">
+                            <div
+                                class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                            >
+                                {item.label}
+                            </div>
+                            <div
+                                class="rounded-2xl bg-slate-100 p-2 text-slate-700 dark:bg-white/10 dark:text-slate-200"
+                            >
+                                <item.icon class="size-4" />
+                            </div>
+                        </div>
+                        <div
+                            class="mt-4 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white"
+                        >
+                            {item.value}
+                        </div>
+                        <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                            {item.caption}
+                        </div>
+                    </div>
+                {/each}
+            </div>
+        </div>
+
+        <div class="space-y-5">
+            {#if highlightsLoading}
+                <div
+                    class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900"
+                >
+                    <Skeleton class="h-[22rem] w-full rounded-[1.5rem]" />
+                </div>
+            {:else if leadStory}
+                <a
+                    href={articleHref(leadStory.slug)}
+                    class="group relative block min-h-[24rem] overflow-hidden rounded-[2.2rem] border border-slate-200 bg-slate-950 text-white shadow-[0_25px_80px_-50px_rgba(15,23,42,0.65)] dark:border-white/10"
+                >
+                    {#if leadStory.image_url}
+                        <img
+                            src={leadStory.image_url}
+                            alt={leadStory.title}
+                            class="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                        />
+                    {:else}
+                        <div
+                            class="absolute inset-0 bg-linear-to-br from-sky-500 via-slate-900 to-slate-950"
+                        ></div>
+                    {/if}
+
+                    <div
+                        class="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/70 to-slate-900/15"
+                    ></div>
+                    <div
+                        class="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-sky-500/20 to-transparent opacity-80"
+                    ></div>
+
+                    <div
+                        class="relative flex min-h-[24rem] flex-col justify-between p-6 sm:p-7"
+                    >
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span
+                                    class="rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm"
+                                    style={`background-color: ${leadStory.category.color ?? '#0EA5E9'};`}
+                                >
+                                    {leadStory.category.name}
+                                </span>
+                                <span
+                                    class="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white/85"
+                                >
+                                    Главный материал
+                                </span>
+                                {#if leadStory.is_breaking}
+                                    <span
+                                        class="rounded-full bg-rose-500 px-3 py-1 text-xs font-semibold text-white"
+                                    >
+                                        Срочно
+                                    </span>
+                                {/if}
+                            </div>
+                            <span
+                                class="rounded-full border border-white/15 bg-black/15 px-3 py-1 text-xs font-medium text-white/70"
+                            >
+                                Открыть материал
+                            </span>
+                        </div>
+
+                        <div>
+                            <div
+                                class="text-xs font-semibold uppercase tracking-[0.24em] text-white/60"
+                            >
+                                Редакционный фокус
+                            </div>
+                            <h2
+                                class="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-white"
+                            >
+                                {leadStory.title}
+                            </h2>
+                            {#if leadStory.short_description}
+                                <p
+                                    class="mt-4 max-w-xl text-sm leading-6 text-white/80"
+                                >
+                                    {leadStory.short_description}
+                                </p>
+                            {/if}
+
+                            <div
+                                class="mt-5 flex flex-wrap items-center gap-4 text-sm text-white/70"
+                            >
+                                <span>👁 {leadStory.views_count ?? 0}</span>
+                                <span>⏱ {leadStory.reading_time ?? 1} мин</span>
+                                {#if leadStory.published_at}
+                                    <span>{leadStory.published_at}</span>
+                                {/if}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            {:else}
+                <div
+                    class="rounded-[2rem] border border-dashed border-slate-300 bg-white/80 p-6 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400"
+                >
+                    Пока нет материалов для главного блока.
+                </div>
+            {/if}
+
+            <div
+                class="rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.8))]"
+            >
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400"
+                        >
+                            В тренде
+                        </div>
+                        <div
+                            class="mt-1 text-xl font-semibold text-slate-950 dark:text-white"
+                        >
+                            Что читают прямо сейчас
+                        </div>
+                    </div>
+                    <a
+                        href={statsHref}
+                        class="text-sm font-medium text-sky-700 transition hover:text-sky-800 dark:text-sky-300"
+                    >
+                        Все метрики
+                    </a>
+                </div>
+
+                <div class="mt-5 space-y-3">
+                    {#if highlightsLoading}
+                        {#each Array.from({ length: 3 }) as _, index (`trending-loading-${index}`)}
+                            <div
+                                class="h-26 animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5"
+                            ></div>
+                        {/each}
+                    {:else}
+                        {#each trendingPreview as article (article.id)}
+                            <ArticleCardCompact {article} />
+                        {/each}
+                    {/if}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

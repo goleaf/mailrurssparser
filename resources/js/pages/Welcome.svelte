@@ -1,9 +1,11 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import BreakingNewsTicker from '@/components/layout/BreakingNewsTicker.svelte';
-    import Footer from '@/components/layout/Footer.svelte';
-    import Header from '@/components/layout/Header.svelte';
-    import { replacePublic } from '@/lib/publicRoutes';
+    import {
+        BreakingNewsTicker,
+        Footer,
+        Header,
+        replacePublic,
+    } from '@/features/portal';
     import ArticleDetailPage from '@/pages/ArticleDetailPage.svelte';
     import BookmarksPage from '@/pages/BookmarksPage.svelte';
     import CategoryPage from '@/pages/CategoryPage.svelte';

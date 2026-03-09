@@ -1,6 +1,5 @@
 <script lang="ts">
-    import AppHead from '@/components/AppHead.svelte';
-    import { homeUrl, searchUrl } from '@/lib/publicRoutes';
+    import { AppHead, homeUrl, searchUrl } from '@/features/portal';
 </script>
 
 <AppHead title="Страница не найдена" />

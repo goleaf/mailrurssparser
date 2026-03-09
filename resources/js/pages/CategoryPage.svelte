@@ -1,26 +1,31 @@
 <script lang="ts">
-    import AppHead from '@/components/AppHead.svelte';
-    import ArticleCard from '@/components/article/ArticleCard.svelte';
-    import ArticleCardCompact from '@/components/article/ArticleCardCompact.svelte';
-    import FilterBar from '@/components/FilterBar.svelte';
-    import Pagination from '@/components/Pagination.svelte';
-    import SidebarCategoryTree from '@/components/sidebar/SidebarCategoryTree.svelte';
-    import SidebarDateCalendar from '@/components/sidebar/SidebarDateCalendar.svelte';
-    import SidebarNewsletterBox from '@/components/sidebar/SidebarNewsletterBox.svelte';
-    import SidebarPopularArticles from '@/components/sidebar/SidebarPopularArticles.svelte';
-    import SidebarTagCloud from '@/components/sidebar/SidebarTagCloud.svelte';
-    import SkeletonCard from '@/components/SkeletonCard.svelte';
     import { setSeoMeta } from '@/composables/useSeo.js';
-    import * as api from '@/lib/api';
+    import {
+        ArticleCard,
+        ArticleCardCompact,
+        FilterBar,
+        filters,
+        Pagination,
+        setCategory,
+        setPage,
+        setSubCategory,
+        SidebarCategoryTree,
+        SidebarDateCalendar,
+        SidebarNewsletterBox,
+        SidebarPopularArticles,
+        SidebarTagCloud,
+        SkeletonCard,
+    } from '@/features/articles';
     import {
         absolutePublicUrl,
+        AppHead,
         categoryUrl,
         homeUrl,
+        initApp,
         visitPublic,
-    } from '@/lib/publicRoutes';
+    } from '@/features/portal';
+    import * as api from '@/features/portal';
     import { cn } from '@/lib/utils';
-    import { initApp } from '@/stores/app.svelte.js';
-    import { filters } from '@/stores/articles.svelte.js';
 
     type SubCategory = {
         id: number | string;
@@ -82,6 +87,20 @@
         page: number;
         per_page: number;
     };
+    type CategoryArticleRequest = {
+        slug: string;
+        sub: string | null;
+        tags: string[];
+        content_type: string | null;
+        importance_min: number | null;
+        date: string | null;
+        date_from: string | null;
+        date_to: string | null;
+        sort: string;
+        search: string;
+        page: number;
+        per_page: number;
+    };
 
     let { slug }: { slug: string } = $props();
 
@@ -92,7 +111,7 @@
     let pagination = $state<PaginationMeta | null>(null);
     let error = $state<string | null>(null);
 
-    const pageFilters = filters as PageFilters;
+    const pageFilters = $derived($filters as PageFilters);
     const totalResults = $derived(
         Number(
             pagination?.total ??
@@ -103,6 +122,20 @@
     );
     const currentPage = $derived(Number(pagination?.current_page ?? 1));
     const lastPage = $derived(Number(pagination?.last_page ?? 1));
+    const articleRequest = $derived.by((): CategoryArticleRequest => ({
+        slug,
+        sub: pageFilters.sub,
+        tags: [...pageFilters.tags],
+        content_type: pageFilters.content_type,
+        importance_min: pageFilters.importance_min,
+        date: pageFilters.date,
+        date_from: pageFilters.date_from,
+        date_to: pageFilters.date_to,
+        sort: pageFilters.sort,
+        search: pageFilters.search,
+        page: pageFilters.page,
+        per_page: pageFilters.per_page,
+    }));
 
     function navigateToCategory(nextSlug: string | null): void {
         if (!nextSlug) {
@@ -115,8 +148,7 @@
     }
 
     function applySubCategory(nextSlug: string | null): void {
-        pageFilters.sub = nextSlug;
-        pageFilters.page = 1;
+        setSubCategory(nextSlug);
     }
 
     function changePage(page: number): void {
@@ -124,38 +156,38 @@
             return;
         }
 
-        pageFilters.page = page;
+        setPage(page);
 
         if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
 
-    async function loadPage(currentSlug: string): Promise<void> {
+    async function loadPage(request: CategoryArticleRequest): Promise<void> {
         loading = true;
         error = null;
 
         try {
             const [categoryResponse, pinnedResponse, articlesResponse] =
                 await Promise.all([
-                    api.getCategory(currentSlug),
-                    api.getPinnedArticles(currentSlug).catch(() => ({
+                    api.getCategory(request.slug),
+                    api.getPinnedArticles(request.slug).catch(() => ({
                         data: [],
                         status: 0,
                     })),
                     api.getArticles({
-                        category: currentSlug,
-                        sub: pageFilters.sub,
-                        tags: pageFilters.tags,
-                        content_type: pageFilters.content_type,
-                        importance_min: pageFilters.importance_min,
-                        date: pageFilters.date,
-                        date_from: pageFilters.date_from,
-                        date_to: pageFilters.date_to,
-                        search: pageFilters.search,
-                        sort: pageFilters.sort,
-                        page: pageFilters.page,
-                        per_page: pageFilters.per_page,
+                        category: request.slug,
+                        sub: request.sub,
+                        tags: request.tags,
+                        content_type: request.content_type,
+                        importance_min: request.importance_min,
+                        date: request.date,
+                        date_from: request.date_from,
+                        date_to: request.date_to,
+                        search: request.search,
+                        sort: request.sort,
+                        page: request.page,
+                        per_page: request.per_page,
                     }),
                 ]);
 
@@ -194,14 +226,15 @@
     });
 
     $effect(() => {
-        pageFilters.category = slug;
-        pageFilters.page = 1;
+        if (pageFilters.category === null) {
+            setCategory(slug);
+        }
     });
 
     $effect(() => {
         const activeCategory = pageFilters.category;
 
-        if (activeCategory === slug) {
+        if (!activeCategory || activeCategory === slug) {
             return;
         }
 
@@ -209,32 +242,9 @@
     });
 
     $effect(() => {
-        const currentSlug = slug;
-        const activeSub = pageFilters.sub;
-        const activeTags = pageFilters.tags.join(',');
-        const activeContentType = pageFilters.content_type;
-        const activeImportance = pageFilters.importance_min;
-        const activeDate = pageFilters.date;
-        const activeDateFrom = pageFilters.date_from;
-        const activeDateTo = pageFilters.date_to;
-        const activeSort = pageFilters.sort;
-        const activeSearch = pageFilters.search;
-        const activePage = pageFilters.page;
-        const activePerPage = pageFilters.per_page;
+        const request = articleRequest;
 
-        void activeSub;
-        void activeTags;
-        void activeContentType;
-        void activeImportance;
-        void activeDate;
-        void activeDateFrom;
-        void activeDateTo;
-        void activeSort;
-        void activeSearch;
-        void activePage;
-        void activePerPage;
-
-        void loadPage(currentSlug);
+        void loadPage(request);
     });
 </script>
 
@@ -470,7 +480,11 @@
                     </div>
                 {/if}
 
-                <Pagination {currentPage} {lastPage} onChange={changePage} />
+                <Pagination
+                    {currentPage}
+                    {lastPage}
+                    onChange={changePage}
+                />
             </section>
         </div>
     </div>

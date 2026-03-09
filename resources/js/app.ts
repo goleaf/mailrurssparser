@@ -3,8 +3,8 @@ import type { ResolvedComponent } from '@inertiajs/svelte';
 import { hydrate, mount } from 'svelte';
 import '../css/app.css';
 import AppRoot from '@/AppRoot.svelte';
+import { initializeDarkMode } from '@/features/portal';
 import { initializeTheme } from '@/lib/theme.svelte';
-import { initializeDarkMode } from '@/stores/app.svelte.js';
 import type { InertiaVisitOptions } from '@/types/inertia';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
