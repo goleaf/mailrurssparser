@@ -124,8 +124,7 @@ describe('articles store', () => {
             error: null,
         });
         expect(get(listState).articles.map((article) => article.id)).toEqual([
-            1,
-            2,
+            1, 2,
         ]);
     });
 });

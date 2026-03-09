@@ -94,6 +94,7 @@ describe('SearchHeroPanel', () => {
             tag: null as string | null,
         };
 
+        // Keep the test at the same boundary the container uses in production.
         const rendered = render(SearchHeroPanel, {
             props,
             events: {
@@ -158,10 +159,14 @@ describe('SearchHeroPanel', () => {
             }),
         );
         await user.click(
-            within(autocompleteList).getByRole('option', { name: /Экономика/i }),
+            within(autocompleteList).getByRole('option', {
+                name: /Экономика/i,
+            }),
         );
         await user.click(
-            within(autocompleteList).getByRole('option', { name: /^# Импорт$/i }),
+            within(autocompleteList).getByRole('option', {
+                name: /^# Импорт$/i,
+            }),
         );
         await user.click(
             within(autocompleteList).getByRole('option', {
@@ -176,7 +181,9 @@ describe('SearchHeroPanel', () => {
         });
         expect(submittedQueries).toContain('санкции');
 
-        await user.click(screen.getByRole('button', { name: 'Очистить поиск' }));
+        await user.click(
+            screen.getByRole('button', { name: 'Очистить поиск' }),
+        );
         await rendered.rerender({ ...props });
 
         expect(

@@ -8,9 +8,9 @@ import {
 
 describe('searchAutocomplete helpers', () => {
     it('waits for a meaningful query and keeps the result order stable', () => {
-        expect(buildSearchAutocompleteItems('с', emptySearchSuggestions)).toEqual(
-            [],
-        );
+        expect(
+            buildSearchAutocompleteItems('с', emptySearchSuggestions),
+        ).toEqual([]);
         expect(hasSearchSuggestions(emptySearchSuggestions)).toBe(false);
 
         const suggestions = {
@@ -65,12 +65,12 @@ describe('searchAutocomplete helpers', () => {
     });
 
     it('highlights matching fragments without dropping the surrounding text', () => {
-        expect(highlightAutocompleteText('Новые Санкции ЕС', 'санкции')).toEqual(
-            [
-                { text: 'Новые ', highlighted: false },
-                { text: 'Санкции', highlighted: true },
-                { text: ' ЕС', highlighted: false },
-            ],
-        );
+        expect(
+            highlightAutocompleteText('Новые Санкции ЕС', 'санкции'),
+        ).toEqual([
+            { text: 'Новые ', highlighted: false },
+            { text: 'Санкции', highlighted: true },
+            { text: ' ЕС', highlighted: false },
+        ]);
     });
 });

@@ -47,6 +47,77 @@ it('defines feature barrel files for the public frontend', function (): void {
     }
 });
 
+it('keeps frontend tooling and file naming conventions explicit', function (): void {
+    $packageJson = json_decode(file_get_contents(base_path('package.json')), true, 512, JSON_THROW_ON_ERROR);
+    $scripts = $packageJson['scripts'] ?? [];
+    $devDependencies = $packageJson['devDependencies'] ?? [];
+
+    expect($scripts)
+        ->toHaveKey('lint:check')
+        ->toHaveKey('format:check')
+        ->toHaveKey('test')
+        ->toHaveKey('test:watch');
+
+    expect($scripts['lint:check'])->toBe('eslint resources/js');
+    expect($scripts['format:check'])->toBe('prettier --check resources/');
+    expect($scripts['test'])->toBe('vitest run');
+    expect($scripts['test:watch'])->toBe('vitest');
+
+    expect($devDependencies)
+        ->toHaveKey('eslint-plugin-svelte')
+        ->toHaveKey('prettier-plugin-svelte')
+        ->toHaveKey('vitest')
+        ->toHaveKey('@testing-library/svelte')
+        ->toHaveKey('@testing-library/jest-dom');
+
+    $pageFinder = (new Symfony\Component\Finder\Finder)
+        ->files()
+        ->in(resource_path('js/pages'))
+        ->name('*.svelte');
+
+    foreach ($pageFinder as $pageFile) {
+        expect($pageFile->getFilename())->toMatch('/^[A-Z][A-Za-z0-9]*\\.svelte$/');
+    }
+
+    $featureComponentFinder = (new Symfony\Component\Finder\Finder)
+        ->files()
+        ->in(resource_path('js/features'))
+        ->name('*.svelte')
+        ->filter(function (SplFileInfo $file): bool {
+            $pathname = str_replace('\\', '/', $file->getPathname());
+
+            return str_contains($pathname, '/components/')
+                || str_contains($pathname, '/containers/');
+        });
+
+    foreach ($featureComponentFinder as $componentFile) {
+        expect($componentFile->getFilename())->toMatch('/^[A-Z][A-Za-z0-9]*\\.svelte$/');
+    }
+
+    expect(basename(resource_path('js/AppRoot.svelte')))->toMatch('/^[A-Z][A-Za-z0-9]*\\.svelte$/');
+
+    $storeFinder = (new Symfony\Component\Finder\Finder)
+        ->files()
+        ->in(resource_path('js/features'))
+        ->name('*.svelte.js')
+        ->filter(function (SplFileInfo $file): bool {
+            return str_contains(str_replace('\\', '/', $file->getPathname()), '/state/');
+        });
+
+    foreach ($storeFinder as $storeFile) {
+        expect($storeFile->getFilename())->toMatch('/^[a-z][A-Za-z0-9]*\\.svelte\\.js$/');
+    }
+
+    $testFinder = (new Symfony\Component\Finder\Finder)
+        ->files()
+        ->in(resource_path('js'))
+        ->name('*.test.ts');
+
+    foreach ($testFinder as $testFile) {
+        expect($testFile->getFilename())->toMatch('/^[A-Za-z][A-Za-z0-9]*\\.test\\.ts$/');
+    }
+});
+
 it('keeps large Inertia page files as thin wrappers around feature containers', function (): void {
     $wrappers = [
         'js/pages/HomePage.svelte' => 'HomePageContainer',
@@ -64,6 +135,52 @@ it('keeps large Inertia page files as thin wrappers around feature containers', 
             ->not->toContain('Promise.allSettled')
             ->not->toContain('window.addEventListener');
     }
+});
+
+it('keeps the stats page split into a data container and focused presentational panels', function (): void {
+    $container = file_get_contents(resource_path('js/features/stats/containers/StatsPageContainer.svelte'));
+
+    expect($container)
+        ->toContain('StatsHeroPanel')
+        ->toContain('StatsOverviewGrid')
+        ->toContain('StatsViewsChartPanel')
+        ->toContain('StatsCategoryBreakdownPanel')
+        ->toContain('StatsArticlesChartPanel')
+        ->toContain('StatsTrendingTagsPanel')
+        ->toContain('StatsPopularTable')
+        ->toContain('StatsFeedStatusTable')
+        ->not->toContain('Пульс редакции и поведение аудитории')
+        ->not->toContain('Самые читаемые статьи')
+        ->not->toContain('Статус парсинга');
+
+    $panelFiles = [
+        resource_path('js/features/stats/components/StatsHeroPanel.svelte'),
+        resource_path('js/features/stats/components/StatsOverviewGrid.svelte'),
+        resource_path('js/features/stats/components/StatsViewsChartPanel.svelte'),
+        resource_path('js/features/stats/components/StatsCategoryBreakdownPanel.svelte'),
+        resource_path('js/features/stats/components/StatsArticlesChartPanel.svelte'),
+        resource_path('js/features/stats/components/StatsTrendingTagsPanel.svelte'),
+        resource_path('js/features/stats/components/StatsPopularTable.svelte'),
+        resource_path('js/features/stats/components/StatsFeedStatusTable.svelte'),
+    ];
+
+    foreach ($panelFiles as $panelFile) {
+        expect(file_get_contents($panelFile))
+            ->not->toContain("import * as api from '@/features/portal'")
+            ->not->toContain('await api.');
+    }
+
+    expect(file_get_contents(resource_path('js/features/stats/components/StatsViewsChartPanel.svelte')))
+        ->toContain('createEventDispatcher')
+        ->toContain("dispatch('periodchange'");
+
+    expect(file_get_contents(resource_path('js/features/stats/components/StatsTrendingTagsPanel.svelte')))
+        ->toContain('createEventDispatcher')
+        ->toContain("dispatch('tagselect'");
+
+    expect(file_get_contents(resource_path('js/features/stats/components/StatsPopularTable.svelte')))
+        ->toContain('createEventDispatcher')
+        ->toContain("dispatch('periodchange'");
 });
 
 it('updates shared frontend state without direct array mutation helpers', function (): void {
