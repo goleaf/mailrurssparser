@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ArticleViews;
 
+use BackedEnum;
 use App\Filament\Resources\ArticleViews\Pages\CreateArticleView;
 use App\Filament\Resources\ArticleViews\Pages\EditArticleView;
 use App\Filament\Resources\ArticleViews\Pages\ListArticleViews;
@@ -13,6 +14,7 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\ArticleView;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -28,6 +30,8 @@ class ArticleViewResource extends Resource
     protected static ?string $navigationLabel = 'Просмотры статей';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Audience;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEye;
 
     protected static ?int $navigationSort = 2;
 

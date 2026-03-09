@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Categories;
 
+use BackedEnum;
 use App\Filament\Resources\Categories\Pages\CreateCategory;
 use App\Filament\Resources\Categories\Pages\EditCategory;
 use App\Filament\Resources\Categories\Pages\ListCategories;
@@ -11,6 +12,7 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Category;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -26,6 +28,8 @@ class CategoryResource extends Resource
     protected static ?string $navigationLabel = 'Рубрики';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Taxonomy;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolder;
 
     protected static ?int $navigationSort = 1;
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Metrics;
 
+use BackedEnum;
 use App\Filament\Resources\Metrics\Pages\CreateMetric;
 use App\Filament\Resources\Metrics\Pages\EditMetric;
 use App\Filament\Resources\Metrics\Pages\ListMetrics;
@@ -13,6 +14,7 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Metric;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -28,6 +30,8 @@ class MetricResource extends Resource
     protected static ?string $navigationLabel = 'Метрики';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Analytics;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBarSquare;
 
     protected static ?int $navigationSort = 1;
 

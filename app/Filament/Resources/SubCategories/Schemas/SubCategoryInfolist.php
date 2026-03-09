@@ -4,7 +4,9 @@ namespace App\Filament\Resources\SubCategories\Schemas;
 
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 class SubCategoryInfolist
 {
@@ -12,23 +14,44 @@ class SubCategoryInfolist
     {
         return $schema
             ->components([
-                TextEntry::make('category.name')
-                    ->label('Category'),
-                TextEntry::make('name'),
-                TextEntry::make('slug'),
-                TextEntry::make('description')
-                    ->placeholder('-')
-                    ->columnSpanFull(),
-                IconEntry::make('is_active')
-                    ->boolean(),
-                TextEntry::make('created_at')
-                    ->dateTime()
-                    ->placeholder('-'),
-                TextEntry::make('updated_at')
-                    ->dateTime()
-                    ->placeholder('-'),
-                TextEntry::make('order')
-                    ->numeric(),
+                Section::make('Подкатегория')
+                    ->description('Основные данные подрубрики и её позиция внутри категории.')
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('category.name')
+                            ->label('Рубрика')
+                            ->badge()
+                            ->icon(Heroicon::OutlinedFolder)
+                            ->placeholder('Без рубрики'),
+                        TextEntry::make('name')
+                            ->label('Название')
+                            ->weight('bold'),
+                        TextEntry::make('slug')
+                            ->label('Slug'),
+                        TextEntry::make('order')
+                            ->label('Порядок')
+                            ->numeric(),
+                        TextEntry::make('description')
+                            ->label('Описание')
+                            ->placeholder('—')
+                            ->columnSpanFull()
+                            ->wrap(),
+                    ]),
+                Section::make('Публикация')
+                    ->columns(2)
+                    ->schema([
+                        IconEntry::make('is_active')
+                            ->label('Активна')
+                            ->boolean(),
+                        TextEntry::make('created_at')
+                            ->label('Создана')
+                            ->dateTime('d.m.Y H:i:s')
+                            ->placeholder('—'),
+                        TextEntry::make('updated_at')
+                            ->label('Обновлена')
+                            ->dateTime('d.m.Y H:i:s')
+                            ->placeholder('—'),
+                    ]),
             ]);
     }
 }

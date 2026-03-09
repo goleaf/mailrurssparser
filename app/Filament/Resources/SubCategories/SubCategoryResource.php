@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SubCategories;
 
+use BackedEnum;
 use App\Filament\Resources\SubCategories\Pages\CreateSubCategory;
 use App\Filament\Resources\SubCategories\Pages\EditSubCategory;
 use App\Filament\Resources\SubCategories\Pages\ListSubCategories;
@@ -13,6 +14,7 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\SubCategory;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -28,6 +30,8 @@ class SubCategoryResource extends Resource
     protected static ?string $navigationLabel = 'Подкатегории';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Taxonomy;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolderOpen;
 
     protected static ?int $navigationSort = 3;
 

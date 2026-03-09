@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RssFeeds;
 
+use BackedEnum;
 use App\Filament\Resources\RssFeeds\Pages\CreateRssFeed;
 use App\Filament\Resources\RssFeeds\Pages\EditRssFeed;
 use App\Filament\Resources\RssFeeds\Pages\ListRssFeeds;
@@ -19,6 +20,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\EmptyState;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -35,6 +37,8 @@ class RssFeedResource extends Resource
     protected static ?string $navigationLabel = 'RSS-ленты';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Ingestion;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRss;
 
     protected static ?int $navigationSort = 1;
 

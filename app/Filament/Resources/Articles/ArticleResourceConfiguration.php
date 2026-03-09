@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Articles;
 
+use BackedEnum;
 use Filament\Resources\ResourceConfiguration;
 use UnitEnum;
 
@@ -14,6 +15,8 @@ class ArticleResourceConfiguration extends ResourceConfiguration
     protected string|UnitEnum|null $navigationGroup = null;
 
     protected ?int $navigationSort = null;
+
+    protected string|BackedEnum|null $navigationIcon = null;
 
     protected ?string $pluralModelLabel = null;
 
@@ -63,6 +66,18 @@ class ArticleResourceConfiguration extends ResourceConfiguration
     public function getNavigationSort(): ?int
     {
         return $this->navigationSort;
+    }
+
+    public function navigationIcon(string|BackedEnum|null $icon): static
+    {
+        $this->navigationIcon = $icon;
+
+        return $this;
+    }
+
+    public function getNavigationIcon(): string|BackedEnum|null
+    {
+        return $this->navigationIcon;
     }
 
     public function pluralModelLabel(?string $label): static

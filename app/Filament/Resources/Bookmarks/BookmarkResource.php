@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bookmarks;
 
+use BackedEnum;
 use App\Filament\Resources\Bookmarks\Pages\CreateBookmark;
 use App\Filament\Resources\Bookmarks\Pages\EditBookmark;
 use App\Filament\Resources\Bookmarks\Pages\ListBookmarks;
@@ -13,6 +14,7 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Bookmark;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -28,6 +30,8 @@ class BookmarkResource extends Resource
     protected static ?string $navigationLabel = 'Закладки';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Audience;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookmark;
 
     protected static ?int $navigationSort = 3;
 

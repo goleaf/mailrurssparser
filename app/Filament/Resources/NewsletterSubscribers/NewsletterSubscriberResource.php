@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\NewsletterSubscribers;
 
+use BackedEnum;
 use App\Filament\Resources\NewsletterSubscribers\Pages\CreateNewsletterSubscriber;
 use App\Filament\Resources\NewsletterSubscribers\Pages\EditNewsletterSubscriber;
 use App\Filament\Resources\NewsletterSubscribers\Pages\ListNewsletterSubscribers;
@@ -13,6 +14,7 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\NewsletterSubscriber;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
@@ -27,6 +29,8 @@ class NewsletterSubscriberResource extends Resource
     protected static ?string $navigationLabel = 'Подписчики';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Audience;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;
 
     protected static ?int $navigationSort = 1;
 

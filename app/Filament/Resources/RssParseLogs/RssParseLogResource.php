@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RssParseLogs;
 
+use BackedEnum;
 use App\Filament\Resources\RssParseLogs\Pages\CreateRssParseLog;
 use App\Filament\Resources\RssParseLogs\Pages\EditRssParseLog;
 use App\Filament\Resources\RssParseLogs\Pages\ListRssParseLogs;
@@ -13,6 +14,7 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssParseLog;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -28,6 +30,8 @@ class RssParseLogResource extends Resource
     protected static ?string $navigationLabel = 'Логи парсинга';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Ingestion;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
     protected static ?int $navigationSort = 4;
 

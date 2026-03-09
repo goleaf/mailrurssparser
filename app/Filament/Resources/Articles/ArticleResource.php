@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Articles;
 
+use BackedEnum;
 use App\Filament\Resources\Articles\Pages\CreateArticle;
 use App\Filament\Resources\Articles\Pages\EditArticle;
 use App\Filament\Resources\Articles\Pages\ListArticles;
@@ -11,7 +12,9 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Article;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use UnitEnum;
@@ -29,6 +32,8 @@ class ArticleResource extends Resource
     protected static ?string $navigationLabel = 'Все статьи';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Editorial;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNewspaper;
 
     protected static ?int $navigationSort = 1;
 
@@ -111,6 +116,17 @@ class ArticleResource extends Resource
         }
 
         return parent::getNavigationSort();
+    }
+
+    public static function getNavigationIcon(): string|BackedEnum|Htmlable|null
+    {
+        $configuration = static::getConfiguration();
+
+        if ($configuration instanceof ArticleResourceConfiguration && filled($configuration->getNavigationIcon())) {
+            return $configuration->getNavigationIcon();
+        }
+
+        return parent::getNavigationIcon();
     }
 
     public static function getPluralModelLabel(): string

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tags;
 
+use BackedEnum;
 use App\Filament\Resources\Tags\Pages\CreateTag;
 use App\Filament\Resources\Tags\Pages\EditTag;
 use App\Filament\Resources\Tags\Pages\ListTags;
@@ -11,6 +12,7 @@ use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Tag;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -26,6 +28,8 @@ class TagResource extends Resource
     protected static ?string $navigationLabel = 'Теги';
 
     protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Taxonomy;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
 
     protected static ?int $navigationSort = 2;
 
