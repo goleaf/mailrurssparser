@@ -5,6 +5,7 @@ namespace App\Models;
 use Attla\EncodedAttributes\HasEncodedAttributes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -46,6 +47,45 @@ class SubCategory extends Model
     public function articles(): HasMany
     {
         return $this->hasMany(Article::class);
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true)->orderBy('order')->orderBy('name');
+    }
+
+    public function scopeInCategory(Builder $query, Category|int $category): Builder
+    {
+        $categoryId = $category instanceof Category ? $category->getKey() : $category;
+
+        return $query->where('category_id', $categoryId);
+    }
+
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        $term = trim($term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+
+        return $query->where(function (Builder $query) use ($like): void {
+            $query
+                ->where('name', 'like', $like)
+                ->orWhere('slug', 'like', $like)
+                ->orWhere('description', 'like', $like);
+        });
+    }
+
+    public function scopeForAdminIndex(Builder $query): Builder
+    {
+        return $query
+            ->with('category')
+            ->withCount('articles')
+            ->orderBy('order')
+            ->orderBy('name');
     }
 
     protected static function booted(): void

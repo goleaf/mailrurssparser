@@ -3,6 +3,9 @@
 namespace Database\Factories;
 
 use App\Models\Category;
+use App\Models\RssFeed;
+use App\Models\SubCategory;
+use App\Models\User;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -60,5 +63,81 @@ class ArticleFactory extends Factory
             'rss_parsed_at' => fake()->boolean(70) ? fake()->dateTimeBetween('-1 month', 'now') : null,
             'last_edited_at' => fake()->boolean(40) ? fake()->dateTimeBetween('-1 month', 'now') : null,
         ];
+    }
+
+    public function forCategory(Category|int $category): static
+    {
+        $categoryId = $category instanceof Category ? $category->getKey() : $category;
+
+        return $this->state(fn (): array => [
+            'category_id' => $categoryId,
+        ]);
+    }
+
+    public function forSubCategory(SubCategory|int $subCategory): static
+    {
+        return $this->state(function () use ($subCategory): array {
+            if ($subCategory instanceof SubCategory) {
+                return [
+                    'category_id' => $subCategory->category_id,
+                    'sub_category_id' => $subCategory->getKey(),
+                ];
+            }
+
+            return [
+                'sub_category_id' => $subCategory,
+            ];
+        });
+    }
+
+    public function forFeed(RssFeed|int $feed): static
+    {
+        return $this->state(function () use ($feed): array {
+            if ($feed instanceof RssFeed) {
+                return [
+                    'category_id' => $feed->category_id,
+                    'rss_feed_id' => $feed->getKey(),
+                    'source_name' => $feed->source_name !== '' ? $feed->source_name : fake()->company(),
+                ];
+            }
+
+            return [
+                'rss_feed_id' => $feed,
+            ];
+        });
+    }
+
+    public function editedBy(User|int $user): static
+    {
+        $editorId = $user instanceof User ? $user->getKey() : $user;
+
+        return $this->state(fn (): array => [
+            'editor_id' => $editorId,
+            'last_edited_at' => now()->subMinutes(fake()->numberBetween(5, 720)),
+        ]);
+    }
+
+    public function published(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => ArticleStatus::Published->value,
+            'published_at' => fake()->dateTimeBetween('-30 days', '-5 minutes'),
+        ]);
+    }
+
+    public function draft(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => ArticleStatus::Draft->value,
+            'published_at' => null,
+        ]);
+    }
+
+    public function pending(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => ArticleStatus::Pending->value,
+            'published_at' => now()->addHours(fake()->numberBetween(1, 48)),
+        ]);
     }
 }

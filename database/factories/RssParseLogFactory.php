@@ -35,4 +35,30 @@ class RssParseLogFactory extends Factory
             'triggered_by' => fake()->randomElement(['scheduler', 'manual', 'api', 'filament']),
         ];
     }
+
+    public function forFeed(RssFeed|int $feed): static
+    {
+        $feedId = $feed instanceof RssFeed ? $feed->getKey() : $feed;
+
+        return $this->state(fn (): array => [
+            'rss_feed_id' => $feedId,
+        ]);
+    }
+
+    public function failed(): static
+    {
+        return $this->state(function (array $attributes): array {
+            $errorCount = max(1, (int) ($attributes['error_count'] ?? fake()->numberBetween(1, 4)));
+
+            return [
+                'success' => false,
+                'error_count' => $errorCount,
+                'error_message' => fake()->sentence(),
+                'item_errors' => [
+                    fake()->sentence(),
+                    fake()->sentence(),
+                ],
+            ];
+        });
+    }
 }

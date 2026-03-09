@@ -38,4 +38,32 @@ class RssFeedFactory extends Factory
             'extra_settings' => null,
         ];
     }
+
+    public function forCategory(Category|int $category): static
+    {
+        $categoryId = $category instanceof Category ? $category->getKey() : $category;
+
+        return $this->state(fn (): array => [
+            'category_id' => $categoryId,
+        ]);
+    }
+
+    public function active(): static
+    {
+        return $this->state(fn (): array => [
+            'is_active' => true,
+            'last_error' => null,
+            'consecutive_failures' => 0,
+        ]);
+    }
+
+    public function failed(): static
+    {
+        return $this->state(fn (): array => [
+            'is_active' => false,
+            'last_run_error_count' => fake()->numberBetween(1, 4),
+            'consecutive_failures' => fake()->numberBetween(3, 10),
+            'last_error' => fake()->sentence(),
+        ]);
+    }
 }

@@ -61,6 +61,29 @@ class Tag extends Model
         return $query->orderByDesc('usage_count');
     }
 
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        $term = trim($term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+
+        return $query->where(function (Builder $query) use ($like): void {
+            $query
+                ->where('name', 'like', $like)
+                ->orWhere('slug', 'like', $like)
+                ->orWhere('description', 'like', $like);
+        });
+    }
+
+    public function scopeForAdminIndex(Builder $query): Builder
+    {
+        return $query->withCount('articles');
+    }
+
     public function incrementUsage(): void
     {
         $this->increment('usage_count');

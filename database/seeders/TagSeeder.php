@@ -12,6 +12,12 @@ class TagSeeder extends Seeder
      */
     public function run(): void
     {
-        Tag::factory()->count(10)->create();
+        $missing = max(0, 20 - Tag::query()->count());
+
+        if ($missing === 0) {
+            return;
+        }
+
+        Tag::factory()->count($missing)->create();
     }
 }

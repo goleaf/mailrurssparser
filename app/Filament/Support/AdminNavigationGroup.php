@@ -16,12 +16,18 @@ enum AdminNavigationGroup implements HasIcon, HasLabel
 
     case Ingestion;
 
+    case Audience;
+
+    case Analytics;
+
     public function getLabel(): string
     {
         return match ($this) {
             self::Editorial => 'Редакция',
             self::Taxonomy => 'Рубрики и теги',
             self::Ingestion => 'RSS и парсинг',
+            self::Audience => 'Аудитория',
+            self::Analytics => 'Метрики',
         };
     }
 
@@ -31,6 +37,8 @@ enum AdminNavigationGroup implements HasIcon, HasLabel
             self::Editorial => Heroicon::OutlinedNewspaper,
             self::Taxonomy => Heroicon::OutlinedTag,
             self::Ingestion => Heroicon::OutlinedRss,
+            self::Audience => Heroicon::OutlinedUsers,
+            self::Analytics => Heroicon::OutlinedChartBarSquare,
         };
     }
 }

@@ -51,6 +51,14 @@ class Category extends Model
         return $this->hasMany(SubCategory::class);
     }
 
+    public function activeSubCategories(): HasMany
+    {
+        return $this->subCategories()
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->orderBy('name');
+    }
+
     public function articles(): HasMany
     {
         return $this->hasMany(Article::class);
@@ -69,6 +77,30 @@ class Category extends Model
     public function scopeInMenu(Builder $query): Builder
     {
         return $query->where('show_in_menu', true);
+    }
+
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        $term = trim($term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+
+        return $query->where(function (Builder $query) use ($like): void {
+            $query
+                ->where('name', 'like', $like)
+                ->orWhere('slug', 'like', $like)
+                ->orWhere('rss_key', 'like', $like)
+                ->orWhere('meta_title', 'like', $like);
+        });
+    }
+
+    public function scopeForAdminIndex(Builder $query): Builder
+    {
+        return $query->withCount(['articles', 'subCategories', 'rssFeeds']);
     }
 
     protected static function booted(): void

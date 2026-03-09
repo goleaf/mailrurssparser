@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -175,6 +176,11 @@ class Article extends Model implements HasRichContent
     public function bookmarkedBy(): HasMany
     {
         return $this->hasMany(Bookmark::class);
+    }
+
+    public function metrics(): MorphMany
+    {
+        return $this->morphMany(Metric::class, 'measurable');
     }
 
     public function scopePublished(Builder $query): Builder
@@ -342,6 +348,13 @@ class Article extends Model implements HasRichContent
     public function scopeImportant(Builder $query, int $min = 7): Builder
     {
         return $query->where('importance', '>=', $min);
+    }
+
+    public function scopeForAdminIndex(Builder $query): Builder
+    {
+        return $query
+            ->with(['category', 'subCategory', 'tags', 'rssFeed', 'editor'])
+            ->withCount(['views', 'bookmarkedBy', 'relatedArticles']);
     }
 
     #[SearchUsingPrefix(['id', 'slug'])]

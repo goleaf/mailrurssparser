@@ -23,4 +23,13 @@ class BookmarkFactory extends Factory
             'created_at' => fake()->dateTimeBetween('-1 month', 'now'),
         ];
     }
+
+    public function forArticle(Article|int $article): static
+    {
+        $articleId = $article instanceof Article ? $article->getKey() : $article;
+
+        return $this->state(fn (): array => [
+            'article_id' => $articleId,
+        ]);
+    }
 }

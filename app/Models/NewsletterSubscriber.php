@@ -55,6 +55,25 @@ class NewsletterSubscriber extends Model
         return $query->where('confirmed', true)->whereNull('unsubscribed_at');
     }
 
+    public function scopeInCategory(Builder $query, Category|int $category): Builder
+    {
+        $categoryId = $category instanceof Category ? $category->getKey() : $category;
+
+        return $query->whereJsonContains('category_ids', $categoryId);
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function preferredCategoryIds(): array
+    {
+        return collect($this->category_ids ?? [])
+            ->filter(fn (mixed $id): bool => filled($id))
+            ->map(fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
+    }
+
     protected static function booted(): void
     {
         static::creating(function (NewsletterSubscriber $subscriber): void {

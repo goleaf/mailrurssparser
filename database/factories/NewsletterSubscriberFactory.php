@@ -31,4 +31,41 @@ class NewsletterSubscriberFactory extends Factory
             'locale' => fake()->optional()->randomElement(['en', 'ru', 'de', 'fr', 'pl']),
         ];
     }
+
+    /**
+     * @param  list<int>  $categoryIds
+     */
+    public function withCategories(array $categoryIds): static
+    {
+        return $this->state(fn (): array => [
+            'category_ids' => $categoryIds,
+        ]);
+    }
+
+    public function confirmed(): static
+    {
+        return $this->state(fn (): array => [
+            'confirmed' => true,
+            'confirmed_at' => fake()->dateTimeBetween('-30 days', '-1 hour'),
+            'unsubscribed_at' => null,
+        ]);
+    }
+
+    public function unconfirmed(): static
+    {
+        return $this->state(fn (): array => [
+            'confirmed' => false,
+            'confirmed_at' => null,
+            'unsubscribed_at' => null,
+        ]);
+    }
+
+    public function unsubscribed(): static
+    {
+        return $this->state(fn (): array => [
+            'confirmed' => true,
+            'confirmed_at' => fake()->dateTimeBetween('-30 days', '-2 days'),
+            'unsubscribed_at' => fake()->dateTimeBetween('-48 hours', 'now'),
+        ]);
+    }
 }

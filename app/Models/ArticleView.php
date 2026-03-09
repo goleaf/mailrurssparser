@@ -96,4 +96,11 @@ class ArticleView extends Model
             ->whereNotNull('timezone')
             ->where('timezone', '!=', '');
     }
+
+    public function scopeForAdminIndex(Builder $query): Builder
+    {
+        return $query
+            ->with(['article.category', 'article.subCategory', 'article.rssFeed'])
+            ->latest('viewed_at');
+    }
 }

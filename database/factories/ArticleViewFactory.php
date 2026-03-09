@@ -34,4 +34,13 @@ class ArticleViewFactory extends Factory
             'viewed_at' => fake()->dateTimeBetween('-2 days', 'now'),
         ];
     }
+
+    public function forArticle(Article|int $article): static
+    {
+        $articleId = $article instanceof Article ? $article->getKey() : $article;
+
+        return $this->state(fn (): array => [
+            'article_id' => $articleId,
+        ]);
+    }
 }

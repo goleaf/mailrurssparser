@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class RssFeed extends Model
 {
@@ -71,6 +72,11 @@ class RssFeed extends Model
         return $this->hasMany(RssParseLog::class);
     }
 
+    public function metrics(): MorphMany
+    {
+        return $this->morphMany(Metric::class, 'measurable');
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
@@ -104,6 +110,32 @@ class RssFeed extends Model
                     ->whereNull('next_parse_at')
                     ->orWhere('next_parse_at', '<=', now());
             });
+    }
+
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        $term = trim($term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+
+        return $query->where(function (Builder $query) use ($like): void {
+            $query
+                ->where('title', 'like', $like)
+                ->orWhere('url', 'like', $like)
+                ->orWhere('source_name', 'like', $like)
+                ->orWhere('last_error', 'like', $like);
+        });
+    }
+
+    public function scopeForAdminIndex(Builder $query): Builder
+    {
+        return $query
+            ->with('category')
+            ->withCount(['articles', 'parseLogs']);
     }
 
     protected function categoryName(): Attribute

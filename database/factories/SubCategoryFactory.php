@@ -29,4 +29,13 @@ class SubCategoryFactory extends Factory
             'order' => fake()->numberBetween(0, 20),
         ];
     }
+
+    public function forCategory(Category|int $category): static
+    {
+        $categoryId = $category instanceof Category ? $category->getKey() : $category;
+
+        return $this->state(fn (): array => [
+            'category_id' => $categoryId,
+        ]);
+    }
 }

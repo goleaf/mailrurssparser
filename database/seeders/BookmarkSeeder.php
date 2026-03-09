@@ -3,10 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Article;
-use App\Models\ArticleView;
+use App\Models\Bookmark;
 use Illuminate\Database\Seeder;
 
-class ArticleViewSeeder extends Seeder
+class BookmarkSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -18,14 +18,13 @@ class ArticleViewSeeder extends Seeder
             ->limit(20)
             ->get()
             ->each(function (Article $article): void {
-                ArticleView::factory()
-                    ->count(5)
+                Bookmark::factory()
+                    ->count(3)
                     ->forArticle($article)
                     ->create();
 
                 $article->forceFill([
-                    'views_count' => $article->views()->count(),
-                    'unique_views_count' => $article->views()->distinct('session_hash')->count('session_hash'),
+                    'bookmarks_count' => $article->bookmarkedBy()->count(),
                 ])->save();
             });
     }
