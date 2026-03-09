@@ -9,18 +9,31 @@ use App\Filament\Resources\Bookmarks\Pages\ViewBookmark;
 use App\Filament\Resources\Bookmarks\Schemas\BookmarkForm;
 use App\Filament\Resources\Bookmarks\Schemas\BookmarkInfolist;
 use App\Filament\Resources\Bookmarks\Tables\BookmarksTable;
+use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Bookmark;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class BookmarkResource extends Resource
 {
     protected static ?string $model = Bookmark::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $modelLabel = 'закладка';
+
+    protected static ?string $pluralModelLabel = 'закладки';
+
+    protected static ?string $navigationLabel = 'Закладки';
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Audience;
+
+    protected static ?int $navigationSort = 3;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookmark;
 
     public static function form(Schema $schema): Schema
     {
@@ -42,6 +55,11 @@ class BookmarkResource extends Resource
         return [
             //
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->forAdminIndex();
     }
 
     public static function getPages(): array

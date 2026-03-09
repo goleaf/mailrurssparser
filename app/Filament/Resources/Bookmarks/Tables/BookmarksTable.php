@@ -2,10 +2,10 @@
 
 namespace App\Filament\Resources\Bookmarks\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
+use App\Filament\Resources\Bookmarks\BookmarkResource;
+use App\Models\Bookmark;
+use Filament\Actions\Action;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -15,26 +15,37 @@ class BookmarksTable
     {
         return $table
             ->columns([
-                TextColumn::make('session_hash')
-                    ->searchable(),
                 TextColumn::make('article.title')
+                    ->label('Статья')
                     ->searchable(),
+                TextColumn::make('article.category.name')
+                    ->label('Рубрика')
+                    ->badge()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('article.subCategory.name')
+                    ->label('Подкатегория')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('—'),
+                TextColumn::make('session_hash')
+                    ->searchable()
+                    ->limit(18),
                 TextColumn::make('created_at')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
             ])
             ->filters([
                 //
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                Action::make('viewRecord')
+                    ->label('Просмотр')
+                    ->icon(Heroicon::OutlinedEye)
+                    ->url(fn (Bookmark $record): string => BookmarkResource::getUrl('view', ['record' => $record])),
+                Action::make('editRecord')
+                    ->label('Открыть')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->url(fn (Bookmark $record): string => BookmarkResource::getUrl('edit', ['record' => $record])),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([]);
     }
 }

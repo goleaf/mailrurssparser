@@ -65,7 +65,7 @@ class ArticleResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()
-            ->with(['category', 'subCategory', 'tags', 'rssFeed'])
+            ->forAdminIndex()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

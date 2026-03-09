@@ -52,8 +52,7 @@ class CategoryResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withCount('articles');
+        return parent::getEloquentQuery()->forAdminIndex();
     }
 
     public static function getPages(): array

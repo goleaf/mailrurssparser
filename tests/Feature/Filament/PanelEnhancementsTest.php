@@ -15,7 +15,6 @@ use App\Services\ArticleStatus;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Filament\Schemas\Components\Tabs;
-use Filament\Tables\Enums\ColumnManagerLayout;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -75,31 +74,27 @@ it('scopes configured article resource queries by status', function () {
         ->toBe(['published']);
 });
 
-it('enables the v5.3 column manager on cms list pages', function (string $pageClass) {
+it('keeps cms list pages free from modal column managers', function (string $pageClass) {
     $this->actingAs(User::factory()->create());
 
     $table = Livewire::test($pageClass)->instance()->getTable();
 
     expect($table->hasColumnManager())
-        ->toBeTrue()
-        ->and($table->hasReorderableColumns())
-        ->toBeTrue()
-        ->and($table->getColumnManagerLayout())
-        ->toBe(ColumnManagerLayout::Modal)
-        ->and($table->getColumnManagerColumns())
-        ->toBe(2);
+        ->toBeFalse();
 })->with('cms_list_pages');
 
-it('uses a slide-over column manager on the article table', function () {
+it('keeps the dense article table configurable through toggleable columns instead of modal tools', function () {
     $this->actingAs(User::factory()->create());
 
     $table = Livewire::test(ListArticles::class)->instance()->getTable();
 
-    expect($table->getColumnManagerTriggerAction()->isModalSlideOver())
-        ->toBeTrue()
+    expect($table->hasColumnManager())
+        ->toBeFalse()
         ->and($table->getColumn('is_featured')->isToggleable())
         ->toBeTrue()
         ->and($table->getColumn('views_count')->isToggledHiddenByDefault())
+        ->toBeTrue()
+        ->and($table->getColumn('tags_summary')->isToggledHiddenByDefault())
         ->toBeTrue();
 });
 

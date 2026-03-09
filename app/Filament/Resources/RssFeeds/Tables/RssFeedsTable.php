@@ -6,17 +6,13 @@ use App\Filament\Resources\RssFeeds\RssFeedResource;
 use App\Models\RssFeed;
 use App\Services\RssParserService;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
-use Filament\Tables\Enums\ColumnManagerLayout;
-use Filament\Tables\Enums\ColumnManagerResetActionPosition;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class RssFeedsTable
@@ -27,22 +23,49 @@ class RssFeedsTable
             ->columns([
                 TextColumn::make('title')
                     ->toggleable()
-                    ->searchable(),
+                    ->searchable(['title', 'url', 'source_name', 'last_error']),
+                TextColumn::make('source_name')
+                    ->label('Источник')
+                    ->toggleable()
+                    ->placeholder('—'),
                 TextColumn::make('category.name')
                     ->toggleable()
                     ->badge(),
                 ToggleColumn::make('is_active')
                     ->toggleable(),
+                IconColumn::make('auto_publish')
+                    ->label('Автопубл.')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                IconColumn::make('auto_featured')
+                    ->label('Авто-featured')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('articles_count')
+                    ->label('Статей')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('parse_logs_count')
+                    ->label('Логов')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('fetch_interval')
+                    ->label('Интервал')
+                    ->suffix(' мин')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('last_parsed_at')
                     ->toggleable()
+                    ->since(),
+                TextColumn::make('next_parse_at')
+                    ->label('Следующий запуск')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->since(),
                 TextColumn::make('last_run_new_count')
                     ->badge()
                     ->toggleable()
                     ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'success' : 'gray'),
-                TextColumn::make('articles_parsed_total')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->numeric(),
                 TextColumn::make('consecutive_failures')
                     ->badge()
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -53,19 +76,16 @@ class RssFeedsTable
                     ->color(fn (?string $state): string => filled($state) ? 'danger' : 'gray'),
             ])
             ->filters([
-                //
+                SelectFilter::make('category')
+                    ->relationship('category', 'name')
+                    ->searchable()
+                    ->preload(),
+                TernaryFilter::make('is_active'),
+                TernaryFilter::make('auto_publish')
+                    ->label('Автопубликация'),
+                TernaryFilter::make('auto_featured')
+                    ->label('Автовыделение'),
             ])
-            ->reorderableColumns()
-            ->columnManagerLayout(ColumnManagerLayout::Modal)
-            ->columnManagerColumns(2)
-            ->columnManagerResetActionPosition(ColumnManagerResetActionPosition::Footer)
-            ->columnManagerTriggerAction(
-                fn (Action $action): Action => $action
-                    ->button()
-                    ->label('Вид таблицы')
-                    ->icon(Heroicon::AdjustmentsHorizontal)
-                    ->modalHeading('Вид таблицы RSS-лент'),
-            )
             ->emptyStateIcon(Heroicon::OutlinedRss)
             ->emptyStateHeading('RSS-ленты ещё не настроены')
             ->emptyStateDescription('Добавьте первую ленту, чтобы запустить парсинг и наполнить портал новостями.')
@@ -78,7 +98,7 @@ class RssFeedsTable
             ->recordActions([
                 Action::make('parseNow')
                     ->label('Запустить')
-                    ->icon('heroicon-o-arrow-path')
+                    ->icon(Heroicon::OutlinedArrowPath)
                     ->color('warning')
                     ->action(function (RssFeed $record, RssParserService $parser): void {
                         $result = $parser->parseFeed($record, 'filament');
@@ -99,14 +119,15 @@ class RssFeedsTable
                             ->success()
                             ->send();
                     }),
-                ViewAction::make(),
-                EditAction::make(),
-                DeleteAction::make(),
+                Action::make('viewRecord')
+                    ->label('Просмотр')
+                    ->icon(Heroicon::OutlinedEye)
+                    ->url(fn (RssFeed $record): string => RssFeedResource::getUrl('view', ['record' => $record])),
+                Action::make('editRecord')
+                    ->label('Открыть')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->url(fn (RssFeed $record): string => RssFeedResource::getUrl('edit', ['record' => $record])),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([]);
     }
 }

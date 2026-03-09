@@ -11,7 +11,6 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
-use App\Services\RssParserService;
 use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 
@@ -39,26 +38,12 @@ it('publishes selected articles from the bulk action', function () {
     });
 });
 
-it('imports an article from the header action', function () {
+it('uses the full create page instead of an inline import modal', function () {
     $this->actingAs(User::factory()->create());
 
-    $article = withoutExpandedFactoryRelationships(fn () => Article::factory()->make([
-        'title' => 'Imported story',
-        'status' => 'draft',
-    ]));
-
-    $parser = \Mockery::mock(RssParserService::class);
-    $parser->shouldReceive('importArticleFromUrl')
-        ->once()
-        ->with('https://example.test/rss.xml')
-        ->andReturn($article);
-
-    app()->instance(RssParserService::class, $parser);
-
     Livewire::test(ListArticles::class)
-        ->callAction('importFromUrl', data: [
-            'url' => 'https://example.test/rss.xml',
-        ]);
+        ->assertDontSee('Импорт из ссылки')
+        ->assertSee('Новая статья');
 });
 
 it('eager loads the article cms relations in the resource query', function () {
@@ -76,6 +61,7 @@ it('eager loads the article cms relations in the resource query', function () {
             'category_id' => $category->id,
             'sub_category_id' => $subCategory->id,
             'rss_feed_id' => $feed->id,
+            'editor_id' => User::factory()->create()->id,
         ]);
         $article->tags()->sync([$tag->id]);
 
@@ -91,7 +77,11 @@ it('eager loads the article cms relations in the resource query', function () {
         ->and($record?->relationLoaded('category'))->toBeTrue()
         ->and($record?->relationLoaded('subCategory'))->toBeTrue()
         ->and($record?->relationLoaded('tags'))->toBeTrue()
-        ->and($record?->relationLoaded('rssFeed'))->toBeTrue();
+        ->and($record?->relationLoaded('rssFeed'))->toBeTrue()
+        ->and($record?->relationLoaded('editor'))->toBeTrue()
+        ->and($record?->views_count)->toBeInt()
+        ->and($record?->bookmarked_by_count)->toBeInt()
+        ->and($record?->related_articles_count)->toBeInt();
 });
 
 it('creates an article through the cms form tabs', function () {
@@ -101,15 +91,21 @@ it('creates an article through the cms form tabs', function () {
     $subCategory = SubCategory::factory()->create([
         'category_id' => $category->id,
     ]);
+    $feed = RssFeed::factory()->create([
+        'category_id' => $category->id,
+    ]);
     $tag = Tag::factory()->create();
+    $editor = User::factory()->create();
 
-    Article::withoutSyncingToSearch(function () use ($category, $subCategory, $tag): void {
+    Article::withoutSyncingToSearch(function () use ($category, $subCategory, $feed, $tag, $editor): void {
         Livewire::test(CreateArticle::class)
             ->fillForm([
                 'title' => 'CMS managed article',
                 'slug' => 'cms-managed-article',
                 'category_id' => $category->id,
                 'sub_category_id' => $subCategory->id,
+                'rss_feed_id' => $feed->id,
+                'editor_id' => $editor->id,
                 'short_description' => 'Краткое описание статьи для карточки.',
                 'full_description' => '<p>Полное содержание статьи.</p>',
                 'source_name' => '',
@@ -132,6 +128,8 @@ it('creates an article through the cms form tabs', function () {
         ->not()->toBeNull()
         ->and($article?->category_id)->toBe($category->id)
         ->and($article?->sub_category_id)->toBe($subCategory->id)
+        ->and($article?->rss_feed_id)->toBe($feed->id)
+        ->and($article?->editor_id)->toBe($editor->id)
         ->and($article?->content_type)->toBe(ArticleContentType::Analysis)
         ->and($article?->importance)->toBe(8)
         ->and($article?->tags()->pluck('tags.id')->all())->toBe([$tag->id]);

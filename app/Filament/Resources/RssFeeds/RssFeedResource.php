@@ -203,8 +203,7 @@ class RssFeedResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->with('category');
+        return parent::getEloquentQuery()->forAdminIndex();
     }
 
     public static function getPages(): array

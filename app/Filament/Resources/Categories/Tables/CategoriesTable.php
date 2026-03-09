@@ -2,18 +2,17 @@
 
 namespace App\Filament\Resources\Categories\Tables;
 
-use App\Models\Category;
+use App\Filament\Resources\Categories\CategoryResource;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ColorColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
-use Filament\Tables\Enums\ColumnManagerLayout;
-use Filament\Tables\Enums\ColumnManagerResetActionPosition;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class CategoriesTable
 {
@@ -25,9 +24,12 @@ class CategoriesTable
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Иконка'),
                 TextColumn::make('name')
-                    ->searchable()
+                    ->searchable(['name', 'slug', 'rss_key'])
                     ->toggleable()
                     ->sortable(),
+                TextColumn::make('slug')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable(),
                 TextColumn::make('rss_key')
                     ->toggleable()
                     ->badge(),
@@ -39,36 +41,60 @@ class CategoriesTable
                 ToggleColumn::make('is_active')
                     ->toggleable()
                     ->sortable(),
+                ToggleColumn::make('show_in_menu')
+                    ->label('В меню')
+                    ->toggleable()
+                    ->sortable(),
+                TextColumn::make('sub_categories_count')
+                    ->label('Подкатегорий')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('rss_feeds_count')
+                    ->label('Лент')
+                    ->numeric()
+                    ->sortable(),
                 TextColumn::make('articles_count_cache')
                     ->numeric()
                     ->toggleable()
-                    ->label('Статей'),
+                    ->label('Статей')
+                    ->sortable(),
             ])
             ->filters([
+                Filter::make('search_fields')
+                    ->label('Поиск по полям')
+                    ->schema([
+                        TextInput::make('name')
+                            ->label('Название'),
+                        TextInput::make('rss_key')
+                            ->label('RSS key'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['name'] ?? null),
+                                fn (Builder $query): Builder => $query->where('name', 'like', '%'.$data['name'].'%'),
+                            )
+                            ->when(
+                                filled($data['rss_key'] ?? null),
+                                fn (Builder $query): Builder => $query->where('rss_key', 'like', '%'.$data['rss_key'].'%'),
+                            );
+                    }),
                 TernaryFilter::make('is_active'),
+                TernaryFilter::make('show_in_menu')
+                    ->label('Показывать в меню'),
             ])
             ->defaultSort('order')
             ->reorderable('order')
-            ->reorderableColumns()
-            ->columnManagerLayout(ColumnManagerLayout::Modal)
-            ->columnManagerColumns(2)
-            ->columnManagerResetActionPosition(ColumnManagerResetActionPosition::Footer)
-            ->columnManagerTriggerAction(
-                fn (Action $action): Action => $action
-                    ->button()
-                    ->label('Вид таблицы')
-                    ->icon(Heroicon::AdjustmentsHorizontal)
-                    ->modalHeading('Вид таблицы рубрик'),
-            )
             ->reorderRecordsTriggerAction(
                 fn (Action $action, bool $isReordering): Action => $action
                     ->label($isReordering ? 'Завершить сортировку' : 'Изменить порядок')
-                    ->icon('heroicon-o-arrows-up-down'),
+                    ->icon(Heroicon::OutlinedArrowsUpDown),
             )
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make()
-                    ->hidden(fn (Category $record): bool => $record->articles_count > 0),
+                Action::make('editRecord')
+                    ->label('Открыть')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->url(fn ($record): string => CategoryResource::getUrl('edit', ['record' => $record])),
             ])
             ->toolbarActions([]);
     }

@@ -2,24 +2,19 @@
 
 namespace App\Filament\Resources\Articles\Tables;
 
+use App\Filament\Resources\Articles\ArticleResource;
 use App\Models\Article;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ForceDeleteBulkAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Enums\ColumnManagerLayout;
-use Filament\Tables\Enums\ColumnManagerResetActionPosition;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -35,13 +30,35 @@ class ArticlesTable
         return $table
             ->columns([
                 TextColumn::make('title')
-                    ->searchable()
+                    ->searchable(['title', 'slug', 'author', 'source_name'])
                     ->toggleable()
-                    ->limit(55),
+                    ->limit(55)
+                    ->description(fn (Article $record): ?string => filled($record->author) || filled($record->source_name)
+                        ? collect([$record->author, $record->source_name])->filter()->implode(' · ')
+                        : null),
                 TextColumn::make('category.name')
                     ->badge()
                     ->toggleable()
                     ->color(fn (Article $record): array|string => filled($record->category?->color) ? Color::generatePalette($record->category->color) : 'gray'),
+                TextColumn::make('subCategory.name')
+                    ->label('Подкатегория')
+                    ->badge()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('—'),
+                TextColumn::make('rssFeed.title')
+                    ->label('Лента')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->limit(28)
+                    ->placeholder('Ручной материал'),
+                TextColumn::make('editor.name')
+                    ->label('Редактор')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('Не назначен'),
+                TextColumn::make('tags_summary')
+                    ->label('Теги')
+                    ->state(fn (Article $record): string => $record->tags->take(3)->pluck('name')->implode(', '))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('Без тегов'),
                 TextColumn::make('content_type')
                     ->badge()
                     ->toggleable()
@@ -77,6 +94,16 @@ class ArticlesTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->numeric(),
+                TextColumn::make('bookmarked_by_count')
+                    ->label('Закладки')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->numeric(),
+                TextColumn::make('related_articles_count')
+                    ->label('Связи')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->numeric(),
                 TextColumn::make('published_at')
                     ->dateTime()
                     ->toggleable()
@@ -87,14 +114,74 @@ class ArticlesTable
                     ->relationship('category', 'name')
                     ->searchable()
                     ->preload(),
+                SelectFilter::make('sub_category_id')
+                    ->relationship('subCategory', 'name')
+                    ->label('Подкатегория')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('rss_feed_id')
+                    ->relationship('rssFeed', 'title')
+                    ->label('RSS-лента')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('editor_id')
+                    ->relationship('editor', 'name')
+                    ->label('Редактор')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('status')
                     ->options(ArticleStatus::class),
                 SelectFilter::make('content_type')
                     ->options(ArticleContentType::class),
+                Filter::make('search_fields')
+                    ->label('Поиск по полям')
+                    ->schema([
+                        TextInput::make('title')
+                            ->label('Заголовок'),
+                        TextInput::make('author')
+                            ->label('Автор'),
+                        TextInput::make('source_name')
+                            ->label('Источник'),
+                        TextInput::make('slug')
+                            ->label('Slug'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['title'] ?? null),
+                                fn (Builder $query): Builder => $query->where('title', 'like', '%'.$data['title'].'%'),
+                            )
+                            ->when(
+                                filled($data['author'] ?? null),
+                                fn (Builder $query): Builder => $query->where('author', 'like', '%'.$data['author'].'%'),
+                            )
+                            ->when(
+                                filled($data['source_name'] ?? null),
+                                fn (Builder $query): Builder => $query->where('source_name', 'like', '%'.$data['source_name'].'%'),
+                            )
+                            ->when(
+                                filled($data['slug'] ?? null),
+                                fn (Builder $query): Builder => $query->where('slug', 'like', '%'.$data['slug'].'%'),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        return collect([
+                            filled($data['title'] ?? null) ? 'Заголовок: '.$data['title'] : null,
+                            filled($data['author'] ?? null) ? 'Автор: '.$data['author'] : null,
+                            filled($data['source_name'] ?? null) ? 'Источник: '.$data['source_name'] : null,
+                            filled($data['slug'] ?? null) ? 'Slug: '.$data['slug'] : null,
+                        ])->filter()->values()->all();
+                    }),
                 TernaryFilter::make('is_featured')
                     ->label('Рекомендуемая'),
                 TernaryFilter::make('is_breaking')
                     ->label('Срочная'),
+                TernaryFilter::make('is_pinned')
+                    ->label('Закреплена'),
+                TernaryFilter::make('is_editors_choice')
+                    ->label('Выбор редакции'),
+                TernaryFilter::make('is_sponsored')
+                    ->label('Партнёрская'),
                 Filter::make('published_at')
                     ->schema([
                         DatePicker::make('published_from')
@@ -144,21 +231,11 @@ class ArticlesTable
                 TrashedFilter::make(),
             ])
             ->defaultSort('published_at', 'desc')
-            ->reorderableColumns()
-            ->columnManagerLayout(ColumnManagerLayout::Modal)
-            ->columnManagerColumns(2)
-            ->columnManagerResetActionPosition(ColumnManagerResetActionPosition::Footer)
-            ->columnManagerTriggerAction(
-                fn (Action $action): Action => $action
-                    ->button()
-                    ->label('Вид таблицы')
-                    ->icon(Heroicon::AdjustmentsHorizontal)
-                    ->modalHeading('Вид таблицы статей')
-                    ->modalDescription('Скрывайте и переставляйте колонки без перезагрузки страницы.')
-                    ->slideOver(),
-            )
             ->recordActions([
-                EditAction::make(),
+                Action::make('editRecord')
+                    ->label('Открыть')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->url(fn (Article $record): string => ArticleResource::getUrl('edit', ['record' => $record])),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -209,9 +286,6 @@ class ArticlesTable
                                 $record->update(['is_breaking' => false]);
                             });
                         }),
-                    DeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

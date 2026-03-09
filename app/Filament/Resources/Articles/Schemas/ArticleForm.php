@@ -6,7 +6,6 @@ use App\Filament\Support\SlugGeneratorAction;
 use App\Models\Article;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
-use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -206,34 +205,25 @@ class ArticleForm
                     ->searchable()
                     ->preload()
                     ->columnSpanFull()
-                    ->createOptionForm([
-                        TextInput::make('name')
-                            ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterContent(
-                                SlugGeneratorAction::make(
-                                    sourceField: 'name',
-                                    name: 'generateNewTagSlug',
-                                ),
-                            )
-                            ->afterStateUpdated(function (Set $set, ?string $state): void {
-                                $set('slug', Str::slug($state ?? ''));
-                            }),
-                        TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(table: 'tags', column: 'slug'),
-                        ColorPicker::make('color')
-                            ->required()
-                            ->default('#6B7280'),
-                    ]),
+                    ->helperText('Создание новых тегов вынесено на отдельную страницу админки, чтобы редактирование оставалось page-based.'),
                 Grid::make(2)
                     ->schema([
                         Select::make('content_type')
                             ->required()
                             ->default(ArticleContentType::News->value)
                             ->options(ArticleContentType::class),
+                        Select::make('rss_feed_id')
+                            ->relationship('rssFeed', 'title')
+                            ->label('RSS-лента')
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
+                        Select::make('editor_id')
+                            ->relationship('editor', 'name')
+                            ->label('Ответственный редактор')
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
                         Select::make('importance')
                             ->required()
                             ->default(5)

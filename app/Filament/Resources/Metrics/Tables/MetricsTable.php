@@ -2,11 +2,12 @@
 
 namespace App\Filament\Resources\Metrics\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
+use App\Filament\Resources\Metrics\MetricResource;
+use App\Models\Metric;
+use Filament\Actions\Action;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class MetricsTable
@@ -16,12 +17,21 @@ class MetricsTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('category')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('—'),
                 TextColumn::make('measurable_type')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('Глобальная'),
                 TextColumn::make('measurable_id')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('value')
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('bucket_start')
@@ -29,32 +39,33 @@ class MetricsTable
                     ->sortable(),
                 TextColumn::make('bucket_date')
                     ->date()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('fingerprint')
-                    ->searchable(),
-                TextColumn::make('value')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->limit(18),
             ])
             ->filters([
-                //
+                SelectFilter::make('name')
+                    ->options(fn (): array => Metric::query()->distinct()->orderBy('name')->pluck('name', 'name')->all()),
+                SelectFilter::make('category')
+                    ->options(fn (): array => Metric::query()
+                        ->whereNotNull('category')
+                        ->distinct()
+                        ->orderBy('category')
+                        ->pluck('category', 'category')
+                        ->all()),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                Action::make('viewRecord')
+                    ->label('Просмотр')
+                    ->icon(Heroicon::OutlinedEye)
+                    ->url(fn (Metric $record): string => MetricResource::getUrl('view', ['record' => $record])),
+                Action::make('editRecord')
+                    ->label('Открыть')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->url(fn (Metric $record): string => MetricResource::getUrl('edit', ['record' => $record])),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([]);
     }
 }

@@ -9,18 +9,31 @@ use App\Filament\Resources\RssParseLogs\Pages\ViewRssParseLog;
 use App\Filament\Resources\RssParseLogs\Schemas\RssParseLogForm;
 use App\Filament\Resources\RssParseLogs\Schemas\RssParseLogInfolist;
 use App\Filament\Resources\RssParseLogs\Tables\RssParseLogsTable;
+use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssParseLog;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class RssParseLogResource extends Resource
 {
     protected static ?string $model = RssParseLog::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $modelLabel = 'лог парсинга';
+
+    protected static ?string $pluralModelLabel = 'логи парсинга';
+
+    protected static ?string $navigationLabel = 'Логи парсинга';
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Ingestion;
+
+    protected static ?int $navigationSort = 4;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
     public static function form(Schema $schema): Schema
     {
@@ -42,6 +55,11 @@ class RssParseLogResource extends Resource
         return [
             //
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->forAdminIndex();
     }
 
     public static function getPages(): array

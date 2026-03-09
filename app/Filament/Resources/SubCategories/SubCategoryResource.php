@@ -9,18 +9,31 @@ use App\Filament\Resources\SubCategories\Pages\ViewSubCategory;
 use App\Filament\Resources\SubCategories\Schemas\SubCategoryForm;
 use App\Filament\Resources\SubCategories\Schemas\SubCategoryInfolist;
 use App\Filament\Resources\SubCategories\Tables\SubCategoriesTable;
+use App\Filament\Support\AdminNavigationGroup;
 use App\Models\SubCategory;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class SubCategoryResource extends Resource
 {
     protected static ?string $model = SubCategory::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $modelLabel = 'подкатегория';
+
+    protected static ?string $pluralModelLabel = 'подкатегории';
+
+    protected static ?string $navigationLabel = 'Подкатегории';
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Taxonomy;
+
+    protected static ?int $navigationSort = 3;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolder;
 
     public static function form(Schema $schema): Schema
     {
@@ -42,6 +55,11 @@ class SubCategoryResource extends Resource
         return [
             //
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->forAdminIndex();
     }
 
     public static function getPages(): array
