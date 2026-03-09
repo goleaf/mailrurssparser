@@ -80,6 +80,10 @@
             ? Date.now() - publishedDate.getTime() < 6 * 60 * 60 * 1000
             : false,
     );
+    const bookmarkActive = $derived(isBookmarked(article.id));
+    const bookmarkLabel = $derived(
+        bookmarkActive ? 'Удалить из закладок' : 'Сохранить в закладки',
+    );
     let imageLoaded = $derived(!article.image_url);
 </script>
 
@@ -219,13 +223,15 @@
                             });
                         }}
                         class={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                            isBookmarked(article.id)
+                            bookmarkActive
                                 ? 'border-amber-300 bg-amber-50 text-amber-600 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300'
                                 : 'border-slate-200 bg-white text-slate-400 hover:border-amber-300 hover:text-amber-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-amber-400/30 dark:hover:text-amber-300'
                         }`}
-                        aria-label="Переключить закладку"
+                        aria-label={bookmarkLabel}
+                        aria-pressed={bookmarkActive}
                     >
-                        🔖
+                        <span aria-hidden="true">🔖</span>
+                        <span class="sr-only">{bookmarkLabel}</span>
                     </button>
                 {/if}
             </div>

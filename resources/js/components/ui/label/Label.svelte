@@ -3,7 +3,9 @@
     import type { HTMLLabelAttributes } from 'svelte/elements';
     import { cn } from '@/lib/utils';
 
-    type Props = HTMLLabelAttributes & { children?: Snippet };
+    interface Props extends HTMLLabelAttributes {
+        children?: Snippet;
+    }
 
     let { class: className = '', children, ...rest }: Props = $props();
 </script>

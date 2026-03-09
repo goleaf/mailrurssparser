@@ -6,10 +6,10 @@
     import { SIDEBAR_CONTEXT, type SidebarContext } from './context';
 
     type Size = 'default' | 'lg';
-    type AsChildProps = {
+    interface AsChildProps {
         class?: string;
-        [key: string]: any;
-    };
+        [key: string]: unknown;
+    }
 
     let {
         asChild = false,

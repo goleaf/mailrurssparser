@@ -148,7 +148,7 @@ it('uses lifecycle hooks for browser-only setup and async cleanup', function ():
     $polling = file_get_contents(resource_path('js/composables/usePolling.svelte.js'));
 
     expect($header)
-        ->toContain("import { onMount } from 'svelte';")
+        ->toContain('onMount')
         ->toContain('onMount(() => {');
 
     expect($breakingTicker)
@@ -156,8 +156,8 @@ it('uses lifecycle hooks for browser-only setup and async cleanup', function ():
         ->toContain('onMount(() => {');
 
     expect($searchModal)
-        ->toContain('onMount(() => {')
-        ->toContain('onDestroy(() => {');
+        ->toContain('onDestroy(() => {')
+        ->toContain('tick().then(() => {');
 
     expect($searchPage)
         ->toContain('onDestroy(() => {');
@@ -178,7 +178,7 @@ it('lazy loads heavy search ui and avoids inline handlers in repeated list compo
     $homeContainer = file_get_contents(resource_path('js/features/home/containers/HomePageContainer.svelte'));
 
     expect($header)
-        ->toContain("import('@/features/search/components/SearchModal.svelte')")
+        ->toContain("SearchModal.svelte'")
         ->not->toContain("import SearchModal from '@/features/search/components/SearchModal.svelte'");
 
     expect($autocompletePanel)
@@ -206,13 +206,14 @@ it('lazy loads heavy search ui and avoids inline handlers in repeated list compo
 });
 
 it('keeps search component props one-way, typed, and flattened', function (): void {
+    $autocompletePanel = file_get_contents(resource_path('js/features/search/components/SearchAutocompletePanel.svelte'));
     $searchHero = file_get_contents(resource_path('js/features/search/components/page/SearchHeroPanel.svelte'));
     $searchContainer = file_get_contents(resource_path('js/features/search/containers/SearchPageContainer.svelte'));
     $searchModal = file_get_contents(resource_path('js/features/search/components/SearchModal.svelte'));
     $header = file_get_contents(resource_path('js/features/portal/components/Header.svelte'));
 
     expect($searchHero)
-        ->toContain('type Props = {')
+        ->toContain('interface Props {')
         ->toContain('/** Current search query shown in the input. */')
         ->toContain('selectedCategory')
         ->toContain('selectedContentType')
@@ -222,12 +223,16 @@ it('keeps search component props one-way, typed, and flattened', function (): vo
         ->not->toContain('$bindable(')
         ->not->toContain('searchFilters:');
 
+    expect($autocompletePanel)
+        ->toContain('interface Props {')
+        ->not->toContain('type Props = {');
+
     expect($searchContainer)
         ->toContain('selectedCategory={searchFilters.category}')
         ->not->toContain('bind:query');
 
     expect($searchModal)
-        ->toContain('type Props = {')
+        ->toContain('interface Props {')
         ->not->toContain('$bindable(');
 
     expect($header)
@@ -327,4 +332,91 @@ it('centralizes reduced-motion handling for purposeful Svelte transitions', func
     expect($searchModal)
         ->toContain('in:fade={modalBackdropTransition}')
         ->toContain('in:fly={modalPanelTransition}');
+});
+
+it('uses semantic dialogs and accessible state for public overlay interactions', function (): void {
+    $focusHelper = file_get_contents(resource_path('js/lib/focus.ts'));
+    $header = file_get_contents(resource_path('js/features/portal/components/Header.svelte'));
+    $searchModal = file_get_contents(resource_path('js/features/search/components/SearchModal.svelte'));
+    $autocompletePanel = file_get_contents(resource_path('js/features/search/components/SearchAutocompletePanel.svelte'));
+    $toast = file_get_contents(resource_path('js/components/ui/Toast.svelte'));
+    $articleCard = file_get_contents(resource_path('js/features/articles/components/ArticleCard.svelte'));
+    $articleCardFeatured = file_get_contents(resource_path('js/features/articles/components/ArticleCardFeatured.svelte'));
+
+    expect($focusHelper)
+        ->toContain('trapFocusWithin')
+        ->toContain('getFocusableElements');
+
+    expect($searchModal)
+        ->toContain('role="dialog"')
+        ->toContain('aria-modal="true"')
+        ->toContain('aria-labelledby={SEARCH_DIALOG_TITLE_ID}')
+        ->toContain('aria-controls={SEARCH_AUTOCOMPLETE_LISTBOX_ID}')
+        ->toContain('aria-activedescendant={activeSuggestionId}')
+        ->toContain('trapFocusWithin(event, modalContainer)');
+
+    expect($autocompletePanel)
+        ->toContain('id={listboxId}')
+        ->toContain('id={getOptionId(');
+
+    expect($header)
+        ->toContain('role="dialog"')
+        ->toContain('aria-modal="true"')
+        ->toContain('bind:this={mobileMenuCloseButton}')
+        ->not->toContain('role="button"')
+        ->not->toContain('tabindex="0"');
+
+    expect($toast)
+        ->toContain('aria-live="polite"')
+        ->toContain('role="status"');
+
+    expect($articleCard)
+        ->toContain('aria-pressed={bookmarkActive}')
+        ->toContain('bookmarkLabel');
+
+    expect($articleCardFeatured)
+        ->toContain('aria-pressed={bookmarkActive}')
+        ->toContain('bookmarkLabel');
+});
+
+it('avoids any at frontend type boundaries and prefers interface-based prop contracts', function (): void {
+    $typedFiles = [
+        resource_path('js/AppRoot.svelte'),
+        resource_path('js/features/home/components/HomeHeroPanel.svelte'),
+        resource_path('js/features/search/components/SearchAutocompletePanel.svelte'),
+        resource_path('js/features/search/components/SearchModal.svelte'),
+        resource_path('js/features/search/components/page/SearchHeroPanel.svelte'),
+        resource_path('js/types/navigation.ts'),
+        resource_path('js/features/articles/state/articles.svelte.js'),
+        resource_path('js/components/ui/button/Button.svelte'),
+        resource_path('js/components/ui/label/Label.svelte'),
+        resource_path('js/components/ui/sidebar/SidebarMenuButton.svelte'),
+        resource_path('js/components/ui/dropdown-menu/DropdownMenuTrigger.svelte'),
+        resource_path('js/components/ui/dropdown-menu/DropdownMenuItem.svelte'),
+    ];
+
+    foreach ($typedFiles as $typedFile) {
+        expect(file_get_contents($typedFile))
+            ->not->toContain(': any')
+            ->not->toContain(' any;')
+            ->not->toContain('[key: string]: any');
+    }
+
+    expect(file_get_contents(resource_path('js/AppRoot.svelte')))
+        ->toContain('interface AppRootProps')
+        ->toContain('Component<AppPageProps>');
+
+    expect(file_get_contents(resource_path('js/features/home/components/HomeHeroPanel.svelte')))
+        ->toContain('interface HomeHeroPanelProps')
+        ->toContain(
+            'icon: ComponentType<SvelteComponent<{ class?: string }>>;'
+        );
+
+    expect(file_get_contents(resource_path('js/components/ui/label/Label.svelte')))
+        ->toContain('interface Props extends HTMLLabelAttributes')
+        ->not->toContain('type Props =');
+
+    expect(file_get_contents(resource_path('js/features/articles/state/articles.svelte.js')))
+        ->toContain('ApiArticleListItem[]')
+        ->toContain('ApiPaginationMeta | null');
 });

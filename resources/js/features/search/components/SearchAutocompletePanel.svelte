@@ -15,7 +15,7 @@
      * Typed prop contract for the shared autocomplete dropdown.
      * The component renders suggestion groups and delegates selection upward.
      */
-    type Props = {
+    interface Props {
         /** Raw query string used for filtering and highlighting. */
         query: string;
         /** Structured suggestions grouped by result type. */
@@ -24,6 +24,10 @@
         loading?: boolean;
         /** Index of the keyboard-highlighted suggestion. */
         activeIndex?: number;
+        /** DOM id used to link the search input with the listbox. */
+        listboxId?: string;
+        /** DOM id prefix used for individual suggestion options. */
+        optionIdPrefix?: string;
         /** Called when the user submits a free-text search action. */
         onSearchSubmit?: (query: string) => void;
         /** Called when the user chooses an article suggestion. */
@@ -32,13 +36,15 @@
         onCategorySelect?: (slug: string) => void;
         /** Called when the user chooses a tag suggestion. */
         onTagSelect?: (slug: string) => void;
-    };
+    }
 
     let {
         query,
         suggestions,
         loading = false,
         activeIndex = -1,
+        listboxId = 'search-autocomplete',
+        optionIdPrefix = 'search-autocomplete-option',
         onSearchSubmit,
         onArticleSelect,
         onCategorySelect,
@@ -168,6 +174,10 @@
 
         selectItem(item);
     }
+
+    function getOptionId(index: number): string {
+        return `${optionIdPrefix}-${index}`;
+    }
 </script>
 
 {#if normalizedQuery.length >= 2}
@@ -194,12 +204,14 @@
         </div>
 
         <div
+            id={listboxId}
             class="max-h-[24rem] overflow-y-auto p-2"
             role="listbox"
             aria-label="Подсказки поиска"
         >
             {#if autocompleteSections.searchAction}
                 <button
+                    id={getOptionId(autocompleteSections.searchAction.index)}
                     type="button"
                     role="option"
                     aria-selected={activeIndex === autocompleteSections.searchAction.index}
@@ -236,6 +248,7 @@
                 </div>
                 {#each autocompleteSections.articleItems as item (item.id)}
                     <button
+                        id={getOptionId(item.index)}
                         type="button"
                         role="option"
                         aria-selected={activeIndex === item.index}
@@ -282,6 +295,7 @@
                 <div class="flex flex-wrap gap-2 px-2 pb-1">
                     {#each autocompleteSections.categoryItems as item (item.id)}
                         <button
+                            id={getOptionId(item.index)}
                             type="button"
                             role="option"
                             aria-selected={activeIndex === item.index}
@@ -325,6 +339,7 @@
                 <div class="flex flex-wrap gap-2 px-2 pb-1">
                     {#each autocompleteSections.tagItems as item (item.id)}
                         <button
+                            id={getOptionId(item.index)}
                             type="button"
                             role="option"
                             aria-selected={activeIndex === item.index}

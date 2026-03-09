@@ -1,9 +1,7 @@
-import type { Component, SvelteComponent } from 'svelte';
+import type { Component } from 'svelte';
 import type { HrefLike } from './inertia';
 
-type NavIcon =
-    | Component<{ class?: string }>
-    | (new (...args: any[]) => SvelteComponent<{ class?: string }>);
+type NavIcon = Component<{ class?: string }>;
 
 export type BreadcrumbItem = {
     title: string;

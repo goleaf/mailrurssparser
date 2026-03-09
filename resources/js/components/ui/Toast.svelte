@@ -50,13 +50,18 @@
     }));
 </script>
 
-<div class="pointer-events-none fixed bottom-4 right-4 z-[70] flex w-full max-w-sm flex-col gap-3 px-4 sm:bottom-6 sm:right-6">
+<div
+    class="pointer-events-none fixed bottom-4 right-4 z-[70] flex w-full max-w-sm flex-col gap-3 px-4 sm:bottom-6 sm:right-6"
+    aria-atomic="true"
+    aria-live="polite"
+>
     {#each toasts as toast (toast.id)}
         <div
             class={cn(
                 'pointer-events-auto rounded-2xl border px-4 py-3 shadow-xl backdrop-blur',
                 toneClasses[toast.type] ?? toneClasses.info,
             )}
+            role="status"
             in:fly={toastEnterTransition}
             out:fade={toastExitTransition}
         >

@@ -10,11 +10,11 @@
         | 'outline'
         | 'link';
     type Size = 'default' | 'sm' | 'lg' | 'icon';
-    type AsChildProps = {
+    interface AsChildProps {
         class?: string;
         onClick?: (event: MouseEvent) => void;
-        [key: string]: any;
-    };
+        [key: string]: unknown;
+    }
 
     const base =
         'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';

@@ -40,7 +40,7 @@
      * The component is presentational: it renders the current state and forwards
      * user intent upward through callbacks.
      */
-    type Props = {
+    interface Props {
         /** Current search query shown in the input. */
         query: string;
         /** Available categories for the category filter. */
@@ -67,7 +67,7 @@
         suggestionsLoading: boolean;
         /** Index of the currently keyboard-highlighted suggestion. */
         activeSuggestionIndex: number;
-    };
+    }
 
     let {
         query = '',

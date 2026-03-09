@@ -3,12 +3,12 @@
     import { getContext } from 'svelte';
     import { DROPDOWN_MENU_CONTEXT, type DropdownMenuContext } from './context';
 
-    type TriggerProps = {
+    interface TriggerProps {
         onclick?: (event: MouseEvent) => void;
         'aria-expanded'?: boolean;
         'data-state'?: 'open' | 'closed';
-        [key: string]: any;
-    };
+        [key: string]: unknown;
+    }
 
     let {
         asChild = false,

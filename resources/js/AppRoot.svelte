@@ -1,6 +1,7 @@
 <script lang="ts">
     import { page } from '@inertiajs/svelte';
     import { onMount } from 'svelte';
+    import type { Component } from 'svelte';
     import Toast, { showToast } from '@/components/ui/Toast.svelte';
     import type { ToastType } from '@/components/ui/Toast.svelte';
     import {
@@ -9,10 +10,12 @@
         visitPublic,
     } from '@/features/portal';
 
-    type AppRootProps = {
-        App: any;
-        props: any;
-    };
+    type AppPageProps = Record<string, unknown>;
+
+    interface AppRootProps {
+        App: Component<AppPageProps>;
+        props: AppPageProps;
+    }
 
     type UpdateDetail = {
         registration: ServiceWorkerRegistration;

@@ -6,6 +6,9 @@ import {
 } from 'svelte/store';
 import * as api from '@/features/portal/data/api';
 
+/** @typedef {import('@/features/portal/data/api').ApiArticleListItem} ApiArticleListItem */
+/** @typedef {import('@/features/portal/data/api').ApiPaginationMeta} ApiPaginationMeta */
+
 /**
  * @typedef {{
  *   category: string | null;
@@ -25,13 +28,14 @@ import * as api from '@/features/portal/data/api';
 
 /**
  * @typedef {{
- *   articles: any[];
- *   pagination: Record<string, any> | null;
+ *   articles: ApiArticleListItem[];
+ *   pagination: ApiPaginationMeta | null;
  *   loading: boolean;
  *   error: string | null;
  * }} ArticleListState
  */
 
+/** @returns {ArticleListState} */
 function createListState() {
     return {
         articles: [],
@@ -41,6 +45,7 @@ function createListState() {
     };
 }
 
+/** @returns {ArticleFilters} */
 function createFiltersState() {
     return {
         category: null,
@@ -58,6 +63,7 @@ function createFiltersState() {
     };
 }
 
+/** @param {Partial<ArticleListState>} nextState */
 function replaceListState(nextState) {
     listStateStore.update((state) => ({
         ...state,
@@ -65,6 +71,7 @@ function replaceListState(nextState) {
     }));
 }
 
+/** @param {Partial<ArticleFilters>} nextState */
 function replaceFilters(nextState) {
     filtersStore.update((state) => ({
         ...state,
@@ -136,6 +143,10 @@ export async function loadArticles(
     }
 }
 
+/**
+ * @param {ArticleFilters} f
+ * @returns {Record<string, unknown>}
+ */
 function toApiParams(f) {
     return {
         category: f.category,
@@ -157,6 +168,7 @@ export const resetFilters = () => {
     replaceFilters(createFiltersState());
 };
 
+/** @param {string | null} slug */
 export const setCategory = (slug) => {
     replaceFilters({
         category: slug,
@@ -165,6 +177,7 @@ export const setCategory = (slug) => {
     });
 };
 
+/** @param {string | null} slug */
 export const setSubCategory = (slug) => {
     replaceFilters({
         sub: slug,
@@ -172,6 +185,7 @@ export const setSubCategory = (slug) => {
     });
 };
 
+/** @param {string | null} date */
 export const setDate = (date) => {
     replaceFilters({
         date,
@@ -181,6 +195,10 @@ export const setDate = (date) => {
     });
 };
 
+/**
+ * @param {string | null} from
+ * @param {string | null} to
+ */
 export const setDateRange = (from, to) => {
     replaceFilters({
         date: null,
@@ -199,6 +217,10 @@ export const clearDate = () => {
     });
 };
 
+/**
+ * @param {'date_from' | 'date_to'} key
+ * @param {string | null} value
+ */
 export const setDateBoundary = (key, value) => {
     replaceFilters({
         date: null,
@@ -207,6 +229,7 @@ export const setDateBoundary = (key, value) => {
     });
 };
 
+/** @param {string | null} contentType */
 export const setContentType = (contentType) => {
     replaceFilters({
         content_type: contentType,
@@ -214,6 +237,7 @@ export const setContentType = (contentType) => {
     });
 };
 
+/** @param {number | null} importance */
 export const setImportance = (importance) => {
     replaceFilters({
         importance_min: importance,
@@ -221,6 +245,7 @@ export const setImportance = (importance) => {
     });
 };
 
+/** @param {string} search */
 export const setSearch = (search) => {
     replaceFilters({
         search,
@@ -228,6 +253,7 @@ export const setSearch = (search) => {
     });
 };
 
+/** @param {string} s */
 export const setSort = (s) => {
     replaceFilters({
         sort: s,
@@ -235,6 +261,7 @@ export const setSort = (s) => {
     });
 };
 
+/** @param {number} p */
 export const setPage = (p) => {
     replaceFilters({
         page: p,
@@ -248,6 +275,7 @@ export const clearTags = () => {
     });
 };
 
+/** @param {string} slug */
 export const toggleTag = (slug) => {
     const currentFilters = get(filtersStore);
 

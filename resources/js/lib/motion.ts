@@ -1,6 +1,7 @@
 import type { FlipParams } from 'svelte/animate';
+import { readable } from 'svelte/store';
+import type { Readable } from 'svelte/store';
 import type { FadeParams, FlyParams, SlideParams } from 'svelte/transition';
-import { readable, type Readable } from 'svelte/store';
 
 type MotionTiming = {
     delay?: number;

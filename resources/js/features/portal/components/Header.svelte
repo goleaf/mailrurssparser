@@ -6,7 +6,11 @@
     import Search from 'lucide-svelte/icons/search';
     import SunMedium from 'lucide-svelte/icons/sun-medium';
     import X from 'lucide-svelte/icons/x';
-    import { onMount } from 'svelte';
+    import {
+        onMount,
+        tick,
+    } from 'svelte';
+    import type { Component } from 'svelte';
     import { usePolling } from '@/composables/usePolling.js';
     import { resetFilters } from '@/features/articles/state/articles.svelte.js';
     import {
@@ -34,18 +38,31 @@
         setSidebarOpen,
         syncDarkModeState,
         toggleDarkMode,
-        toggleSidebar,
     } from '@/features/portal/state/app.svelte.js';
+    import {
+        getActiveHtmlElement,
+        trapFocusWithin,
+    } from '@/lib/focus';
     import { cn } from '@/lib/utils';
 
-    type SearchModalComponentType =
-        typeof import('@/features/search/components/SearchModal.svelte').default;
+    type SearchModalComponentType = Component<{
+        open?: boolean;
+        onClose?: () => void;
+        returnFocusElement?: HTMLElement | null;
+    }>;
 
     let hasShadow = $state(false);
     let searchOpen = $state(false);
     let initialArticleCount = $state<number | null>(null);
+    let desktopSearchTrigger = $state<HTMLButtonElement | null>(null);
+    let mobileMenuCloseButton = $state<HTMLButtonElement | null>(null);
+    let mobileMenuDialog = $state<HTMLElement | null>(null);
     let SearchModalComponent = $state<SearchModalComponentType | null>(null);
+    let mobileMenuReturnFocusElement = $state<HTMLElement | null>(null);
     let searchModalLoader: Promise<void> | null = null;
+    let searchReturnFocusElement = $state<HTMLElement | null>(null);
+
+    const MOBILE_MENU_TITLE_ID = 'public-mobile-menu-title';
 
     const categories = $derived($appCategories as ApiCategory[]);
     const totalBookmarks = $derived($bookmarkCount);
@@ -89,7 +106,16 @@
         void ensureSearchModalLoaded();
     }
 
-    function openSearch(): void {
+    function openSearch(event?: MouseEvent): void {
+        const trigger =
+            event?.currentTarget instanceof HTMLElement
+                ? event.currentTarget
+                : desktopSearchTrigger;
+
+        searchReturnFocusElement =
+            trigger?.closest('[role="dialog"]') !== null
+                ? desktopSearchTrigger
+                : trigger;
         searchOpen = true;
         setSidebarOpen(false);
         prefetchSearchModal();
@@ -97,11 +123,50 @@
 
     function closeSearch(): void {
         searchOpen = false;
+        searchReturnFocusElement = null;
     }
 
     function goHome(): void {
         resetFilters();
         setSidebarOpen(false);
+    }
+
+    function openMobileMenu(event: MouseEvent): void {
+        mobileMenuReturnFocusElement =
+            event.currentTarget instanceof HTMLElement
+                ? event.currentTarget
+                : getActiveHtmlElement();
+
+        setSidebarOpen(true);
+    }
+
+    function closeMobileMenu(): void {
+        const focusTarget =
+            mobileMenuReturnFocusElement?.isConnected === true
+                ? mobileMenuReturnFocusElement
+                : null;
+
+        setSidebarOpen(false);
+        mobileMenuReturnFocusElement = null;
+
+        if (focusTarget === null) {
+            return;
+        }
+
+        queueMicrotask(() => {
+            focusTarget.focus();
+        });
+    }
+
+    function handleMobileMenuKeydown(event: KeyboardEvent): void {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeMobileMenu();
+
+            return;
+        }
+
+        trapFocusWithin(event, mobileMenuDialog);
     }
 
     async function initializeHeaderState(): Promise<void> {
@@ -145,6 +210,16 @@
         return () => {
             window.removeEventListener('scroll', syncViewportState);
         };
+    });
+
+    $effect(() => {
+        if (!$appSidebarOpen || typeof window === 'undefined') {
+            return;
+        }
+
+        void tick().then(() => {
+            mobileMenuCloseButton?.focus();
+        });
     });
 
     $effect(() => {
@@ -209,6 +284,7 @@
 
             <div class="ml-auto flex items-center gap-2">
                 <button
+                    bind:this={desktopSearchTrigger}
                     type="button"
                     class="inline-flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-sky-700 dark:hover:bg-sky-950/60 dark:hover:text-sky-300"
                     onclick={openSearch}
@@ -252,9 +328,7 @@
                 <button
                     type="button"
                     class="inline-flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10 lg:hidden"
-                    onclick={() => {
-                        toggleSidebar();
-                    }}
+                    onclick={openMobileMenu}
                     aria-label="Открыть меню"
                 >
                     <Menu class="size-5" />
@@ -264,23 +338,21 @@
     </div>
 
     {#if $appSidebarOpen}
-        <div
+        <button
+            type="button"
             class="fixed inset-0 z-[45] bg-slate-950/50 backdrop-blur-sm lg:hidden"
-            role="button"
-            tabindex="0"
-            onclick={() => {
-                setSidebarOpen(false);
-            }}
-            onkeydown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    setSidebarOpen(false);
-                }
-            }}
-        ></div>
+            onclick={closeMobileMenu}
+            aria-label="Закрыть меню"
+        ></button>
 
-        <aside
+        <div
+            bind:this={mobileMenuDialog}
             class="fixed inset-y-0 right-0 z-50 w-full max-w-sm overflow-y-auto border-l border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(248,250,252,0.98))] px-5 py-5 shadow-2xl shadow-black/20 dark:bg-[linear-gradient(180deg,rgba(2,6,23,0.98),rgba(15,23,42,0.98))] lg:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={MOBILE_MENU_TITLE_ID}
+            tabindex="-1"
+            onkeydown={handleMobileMenuKeydown}
         >
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -296,6 +368,7 @@
                             Новости
                         </div>
                         <div
+                            id={MOBILE_MENU_TITLE_ID}
                             class="font-semibold text-slate-900 dark:text-white"
                         >
                             Меню
@@ -304,11 +377,10 @@
                 </div>
 
                 <button
+                    bind:this={mobileMenuCloseButton}
                     type="button"
                     class="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 dark:border-white/10 dark:text-slate-200"
-                    onclick={() => {
-                        setSidebarOpen(false);
-                    }}
+                    onclick={closeMobileMenu}
                     aria-label="Закрыть меню"
                 >
                     <X class="size-5" />
@@ -372,7 +444,7 @@
                     {/each}
                 </div>
             </div>
-        </aside>
+        </div>
     {/if}
 </header>
 
@@ -380,5 +452,6 @@
     <SearchModalComponent
         open={searchOpen}
         onClose={closeSearch}
+        returnFocusElement={searchReturnFocusElement}
     />
 {/if}

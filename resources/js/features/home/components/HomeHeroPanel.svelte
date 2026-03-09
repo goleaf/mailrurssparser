@@ -4,6 +4,7 @@
     import Sparkles from 'lucide-svelte/icons/sparkles';
     import TrendingUp from 'lucide-svelte/icons/trending-up';
     import { createEventDispatcher } from 'svelte';
+    import type { ComponentType, SvelteComponent } from 'svelte';
     import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
     import { ArticleCardCompact } from '@/features/articles';
 
@@ -35,12 +36,27 @@
         tags?: Tag[];
     };
 
-    type OverviewStat = {
+    interface OverviewStat {
         label: string;
         value: string | number;
         caption: string;
-        icon: any;
-    };
+        icon: ComponentType<SvelteComponent<{ class?: string }>>;
+    }
+
+    interface HomeHeroPanelProps {
+        briefingDate: string;
+        totalResults: number;
+        activeFilterTotal: number;
+        selectedFilters: string[];
+        overviewStats: OverviewStat[];
+        highlightsLoading: boolean;
+        leadStory: Article | null;
+        trendingPreview: Article[];
+        searchHref: string;
+        statsHref: string;
+        bookmarksHref: string;
+        articleHref: (slug: string) => string;
+    }
 
     const dispatch = createEventDispatcher<{
         clear: null;
@@ -59,20 +75,7 @@
         statsHref,
         bookmarksHref,
         articleHref,
-    }: {
-        briefingDate: string;
-        totalResults: number;
-        activeFilterTotal: number;
-        selectedFilters: string[];
-        overviewStats: OverviewStat[];
-        highlightsLoading: boolean;
-        leadStory: Article | null;
-        trendingPreview: Article[];
-        searchHref: string;
-        statsHref: string;
-        bookmarksHref: string;
-        articleHref: (slug: string) => string;
-    } = $props();
+    }: HomeHeroPanelProps = $props();
 </script>
 
 <section

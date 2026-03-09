@@ -4,7 +4,7 @@
     import X from 'lucide-svelte/icons/x';
     import {
         onDestroy,
-        onMount,
+        tick,
     } from 'svelte';
     import { fade, fly } from 'svelte/transition';
     import {
@@ -29,32 +29,50 @@
         SearchSuggestions,
     } from '@/features/search/data/searchAutocomplete';
     import {
+        getActiveHtmlElement,
+        trapFocusWithin,
+    } from '@/lib/focus';
+    import {
         prefersReducedMotion,
         resolveFadeTransition,
         resolveFlyTransition,
     } from '@/lib/motion';
 
     const RECENT_SEARCHES_KEY = 'news-portal-recent-searches';
+    const SEARCH_AUTOCOMPLETE_LISTBOX_ID = 'search-modal-autocomplete';
+    const SEARCH_AUTOCOMPLETE_OPTION_ID_PREFIX = 'search-modal-option';
+    const SEARCH_DIALOG_TITLE_ID = 'search-modal-title';
     const noop = (): void => {};
 
-    type Props = {
+    interface Props {
         open?: boolean;
         onClose?: () => void;
-    };
+        returnFocusElement?: HTMLElement | null;
+    }
 
-    let { open = false, onClose = noop }: Props = $props();
+    let {
+        open = false,
+        onClose = noop,
+        returnFocusElement = null,
+    }: Props = $props();
 
     let query = $state('');
     let suggestions = $state<SearchSuggestions>({ ...emptySearchSuggestions });
     let loading = $state(false);
     let recentSearches = $state<string[]>([]);
+    let modalContainer = $state<HTMLElement | null>(null);
     let searchInput = $state<HTMLInputElement | null>(null);
     let activeSuggestionIndex = $state(-1);
     let autocompleteAbortController: AbortController | null = null;
     let autocompleteRequestVersion = 0;
-    let focusTimer: ReturnType<typeof setTimeout> | null = null;
     let autocompleteTimer: ReturnType<typeof setTimeout> | null = null;
+    let previouslyFocusedElement = $state<HTMLElement | null>(null);
 
+    const activeSuggestionId = $derived(
+        activeSuggestionIndex >= 0
+            ? `${SEARCH_AUTOCOMPLETE_OPTION_ID_PREFIX}-${activeSuggestionIndex}`
+            : undefined,
+    );
     const modalBackdropTransition = $derived(
         resolveFadeTransition($prefersReducedMotion, {
             duration: 180,
@@ -118,9 +136,29 @@
         suggestions = { ...emptySearchSuggestions };
     }
 
+    function restoreFocus(): void {
+        const focusTarget =
+            returnFocusElement?.isConnected === true
+                ? returnFocusElement
+                : previouslyFocusedElement?.isConnected === true
+                  ? previouslyFocusedElement
+                  : null;
+
+        previouslyFocusedElement = null;
+
+        if (focusTarget === null) {
+            return;
+        }
+
+        queueMicrotask(() => {
+            focusTarget.focus();
+        });
+    }
+
     function close(): void {
         resetModalState();
         onClose();
+        restoreFocus();
     }
 
     function submitSearch(nextQuery = query): void {
@@ -228,13 +266,6 @@
         }
     }
 
-    function clearFocusTimer(): void {
-        if (focusTimer !== null && typeof window !== 'undefined') {
-            window.clearTimeout(focusTimer);
-            focusTimer = null;
-        }
-    }
-
     function clearAutocompleteTimer(): void {
         if (autocompleteTimer !== null && typeof window !== 'undefined') {
             window.clearTimeout(autocompleteTimer);
@@ -247,26 +278,18 @@
         autocompleteAbortController = null;
     }
 
-    function handleEscapeKey(event: KeyboardEvent): void {
-        if (open && event.key === 'Escape') {
+    function handleDialogKeydown(event: KeyboardEvent): void {
+        if (event.key === 'Escape') {
+            event.preventDefault();
             close();
-        }
-    }
 
-    onMount(() => {
-        if (typeof window === 'undefined') {
             return;
         }
 
-        window.addEventListener('keydown', handleEscapeKey);
-
-        return () => {
-            window.removeEventListener('keydown', handleEscapeKey);
-        };
-    });
+        trapFocusWithin(event, modalContainer);
+    }
 
     onDestroy(() => {
-        clearFocusTimer();
         clearAutocompleteTimer();
         cancelAutocompleteRequest();
     });
@@ -276,16 +299,12 @@
             return;
         }
 
+        previouslyFocusedElement = getActiveHtmlElement();
         recentSearches = readRecentSearches();
 
-        clearFocusTimer();
-        focusTimer = window.setTimeout(() => {
+        void tick().then(() => {
             searchInput?.focus();
-        }, 0);
-
-        return () => {
-            clearFocusTimer();
-        };
+        });
     });
 
     $effect(() => {
@@ -365,7 +384,13 @@
             class="relative mx-auto flex min-h-full max-w-5xl items-start justify-center"
         >
             <div
+                bind:this={modalContainer}
                 class="mt-8 w-full overflow-hidden rounded-[2rem] border border-white/10 bg-white p-6 shadow-2xl shadow-black/30 dark:bg-neutral-950 sm:p-8"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={SEARCH_DIALOG_TITLE_ID}
+                tabindex="-1"
+                onkeydown={handleDialogKeydown}
                 in:fly={modalPanelTransition}
                 out:fly={modalPanelTransition}
             >
@@ -377,6 +402,7 @@
                             Быстрый поиск
                         </div>
                         <h2
+                            id={SEARCH_DIALOG_TITLE_ID}
                             class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white sm:text-3xl"
                         >
                             Найти статью, рубрику или тег
@@ -405,6 +431,12 @@
                                 bind:this={searchInput}
                                 bind:value={query}
                                 type="text"
+                                role="combobox"
+                                autocomplete="off"
+                                aria-activedescendant={activeSuggestionId}
+                                aria-autocomplete="list"
+                                aria-controls={SEARCH_AUTOCOMPLETE_LISTBOX_ID}
+                                aria-expanded={query.trim().length >= 2}
                                 class="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
                                 placeholder="Поиск по новостям..."
                                 onkeydown={handleSearchKeydown}
@@ -425,6 +457,8 @@
                             {suggestions}
                             {loading}
                             activeIndex={activeSuggestionIndex}
+                            listboxId={SEARCH_AUTOCOMPLETE_LISTBOX_ID}
+                            optionIdPrefix={SEARCH_AUTOCOMPLETE_OPTION_ID_PREFIX}
                             onSearchSubmit={submitSearch}
                             onArticleSelect={openArticle}
                             onCategorySelect={applyCategory}

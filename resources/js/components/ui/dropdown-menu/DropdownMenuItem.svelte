@@ -4,11 +4,11 @@
     import { cn } from '@/lib/utils';
     import { DROPDOWN_MENU_CONTEXT, type DropdownMenuContext } from './context';
 
-    type AsChildProps = {
+    interface AsChildProps {
         class?: string;
         onClick?: (event: MouseEvent) => void;
-        [key: string]: any;
-    };
+        [key: string]: unknown;
+    }
 
     let {
         asChild = false,

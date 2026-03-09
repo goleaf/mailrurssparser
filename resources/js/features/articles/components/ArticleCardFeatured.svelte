@@ -66,6 +66,10 @@
             ? Date.now() - publishedDate.getTime() < 6 * 60 * 60 * 1000
             : false,
     );
+    const bookmarkActive = $derived(isBookmarked(article.id));
+    const bookmarkLabel = $derived(
+        bookmarkActive ? 'Удалить из закладок' : 'Сохранить в закладки',
+    );
     let imageLoaded = $derived(!article.image_url);
 </script>
 
@@ -143,13 +147,15 @@
                             );
                         }}
                         class={`rounded-full bg-white/90 px-3 py-1 text-sm shadow transition-colors dark:bg-gray-900/80 ${
-                            isBookmarked(article.id)
+                            bookmarkActive
                                 ? 'text-yellow-500'
                                 : 'text-gray-500 hover:text-yellow-500 dark:text-gray-300'
                         }`}
-                        aria-label="Переключить закладку"
+                        aria-label={bookmarkLabel}
+                        aria-pressed={bookmarkActive}
                     >
-                        🔖
+                        <span aria-hidden="true">🔖</span>
+                        <span class="sr-only">{bookmarkLabel}</span>
                     </button>
                 {/if}
             </div>
