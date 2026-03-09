@@ -1,6 +1,14 @@
+/**
+ * @template T
+ * @param {() => Promise<T>} fetchFn
+ * @param {number} [intervalMs=60000]
+ * @returns {{ readonly data: T | null, readonly lastFetched: number | null }}
+ */
 export function usePolling(fetchFn, intervalMs = 60000) {
     let timer;
+    /** @type {T | null} */
     let data = $state(null);
+    /** @type {number | null} */
     let lastFetched = $state(null);
 
     async function run() {

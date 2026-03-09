@@ -25,6 +25,25 @@ export type ApiRequestError = Error & {
     };
 };
 
+export type ApiNewsletterSubscriptionResponse = {
+    success?: boolean;
+    message?: string | null;
+    already_subscribed?: boolean;
+    resent?: boolean;
+};
+
+export type ApiShareResponse = {
+    success?: boolean;
+    platform?: string | null;
+    share_url?: string | null;
+    total?: number | null;
+};
+
+export type ApiBookmarkToggleResponse = {
+    bookmarked: boolean;
+    total: number;
+};
+
 export type ApiPaginationMeta = {
     current_page?: number;
     last_page?: number;
@@ -446,7 +465,7 @@ function normalizeCalendarData(payload: unknown): Record<string, number> {
     );
 }
 
-async function request<T = any>(
+async function request<T = unknown>(
     path: string,
     options: RequestOptions = {},
 ): Promise<ApiResponse<T>> {
@@ -692,7 +711,7 @@ export const getBookmarks = () =>
     );
 
 export const toggleBookmark = (articleId: number | string) =>
-    request(`${API_PREFIX}/bookmarks/${articleId}`, {
+    request<ApiBookmarkToggleResponse>(`${API_PREFIX}/bookmarks/${articleId}`, {
         method: 'POST',
     });
 
@@ -703,16 +722,19 @@ export const checkBookmarks = (ids: Array<number | string>) =>
     });
 
 export const shareArticle = (articleId: number | string, platform: string) =>
-    request(`${API_PREFIX}/share/${articleId}`, {
+    request<ApiShareResponse>(`${API_PREFIX}/share/${articleId}`, {
         method: 'POST',
         data: { platform },
     });
 
 export const subscribe = (payload: Record<string, unknown>) =>
-    request(`${API_PREFIX}/newsletter/subscribe`, {
-        method: 'POST',
-        data: payload,
-    });
+    request<ApiNewsletterSubscriptionResponse>(
+        `${API_PREFIX}/newsletter/subscribe`,
+        {
+            method: 'POST',
+            data: payload,
+        },
+    );
 
 export const trackView = (slug: string) =>
     request(`${API_PREFIX}/articles/${slug}/view`, {

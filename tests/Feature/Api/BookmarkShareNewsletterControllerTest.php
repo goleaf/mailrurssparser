@@ -84,6 +84,7 @@ it('tracks shares and returns a share url', function () {
     $this->postJson('/api/v1/share/'.$article->id, [
         'platform' => 'telegram',
     ])->assertSuccessful()
+        ->assertJsonStructure(['success', 'platform', 'share_url', 'total'])
         ->assertJsonPath('success', true)
         ->assertJsonPath('platform', 'telegram')
         ->assertJsonPath('total', 1);
@@ -102,6 +103,7 @@ it('subscribes and resends confirmation emails based on subscriber state', funct
         'email' => 'reader@example.com',
         'name' => 'Reader',
     ])->assertSuccessful()
+        ->assertJsonStructure(['success', 'message'])
         ->assertJson([
             'success' => true,
             'message' => 'Проверьте почту для подтверждения',
@@ -117,6 +119,7 @@ it('subscribes and resends confirmation emails based on subscriber state', funct
     $this->postJson('/api/v1/newsletter/subscribe', [
         'email' => 'reader@example.com',
     ])->assertSuccessful()
+        ->assertJsonStructure(['resent'])
         ->assertJson([
             'resent' => true,
         ]);
@@ -131,6 +134,7 @@ it('subscribes and resends confirmation emails based on subscriber state', funct
     $this->postJson('/api/v1/newsletter/subscribe', [
         'email' => 'reader@example.com',
     ])->assertSuccessful()
+        ->assertJsonStructure(['already_subscribed'])
         ->assertJson([
             'already_subscribed' => true,
         ]);

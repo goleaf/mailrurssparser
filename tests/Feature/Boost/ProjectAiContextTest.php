@@ -211,7 +211,7 @@ it('discovers the versioned inertia svelte news portal frontend boost skill', fu
         ->and($skill['package'])
         ->toBe('inertia-svelte')
         ->and($skill['path'])
-        ->toEndWith('/.ai/inertia-svelte/2/skill/news-portal-frontend')
+        ->toEndWith('/.ai/inertia-svelte/3/skill/news-portal-frontend')
         ->and($skill['description'])
         ->toContain('public news portal frontend');
 });

@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { Link } from '@inertiajs/svelte';
+    import { Link, page } from '@inertiajs/svelte';
     import type { Snippet } from 'svelte';
     import Heading from '@/components/Heading.svelte';
     import { Button } from '@/components/ui/button';
     import { Separator } from '@/components/ui/separator';
-    import { currentUrlState } from '@/lib/currentUrl';
+    import { currentPath, currentUrlState } from '@/lib/currentUrl';
     import { toUrl } from '@/lib/utils';
     import { edit as editAppearance } from '@/routes/appearance';
     import { edit as editProfile } from '@/routes/profile';
@@ -37,7 +37,8 @@
         },
     ];
 
-    const { currentUrl, isCurrentOrParentUrl } = currentUrlState();
+    const currentUrl = $derived(currentPath(page.url));
+    const { isCurrentOrParentUrl } = currentUrlState();
 </script>
 
 <div class="px-4 py-6">
@@ -57,7 +58,7 @@
                         variant="ghost"
                         class="w-full justify-start {isCurrentOrParentUrl(
                             item.href,
-                            $currentUrl,
+                            currentUrl,
                         )
                             ? 'bg-muted'
                             : ''}"
