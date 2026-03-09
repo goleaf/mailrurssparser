@@ -137,7 +137,8 @@
                 await Promise.all([
                     api.getCategory(currentSlug),
                     api.getPinnedArticles(currentSlug).catch(() => ({
-                        data: { data: [] },
+                        data: [],
+                        status: 0,
                     })),
                     api.getArticles({
                         category: currentSlug,
@@ -155,10 +156,10 @@
                     }),
                 ]);
 
-            category = categoryResponse.data?.data ?? null;
-            pinnedArticles = pinnedResponse.data?.data ?? [];
-            articles = articlesResponse.data?.data ?? [];
-            pagination = articlesResponse.data?.meta ?? null;
+            category = categoryResponse.data;
+            pinnedArticles = pinnedResponse.data;
+            articles = articlesResponse.data;
+            pagination = articlesResponse.meta;
         } catch (loadError) {
             error =
                 loadError instanceof Error
@@ -239,7 +240,9 @@
 
 <AppHead title={category ? category.name : 'Категория'} />
 
-<div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(to_bottom,_#f8fbff,_#f1f5f9)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_30%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8">
+<div
+    class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(to_bottom,_#f8fbff,_#f1f5f9)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_30%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8"
+>
     <div class="mx-auto max-w-7xl">
         <section
             class="overflow-hidden rounded-[2.3rem] border border-slate-200/80 bg-white/90 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80"
@@ -248,11 +251,17 @@
                 class="relative px-6 py-8 sm:px-8"
                 style={`background: linear-gradient(135deg, ${category?.color ?? '#2563EB'} 0%, rgba(15, 23, 42, 0.92) 100%);`}
             >
-                <div class="absolute right-0 top-0 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                <div
+                    class="absolute right-0 top-0 h-40 w-40 rounded-full bg-white/10 blur-3xl"
+                ></div>
                 <div class="flex flex-wrap items-end justify-between gap-6">
                     <div class="max-w-3xl">
-                        <div class="mb-4 flex flex-wrap items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-white/65">
-                            <a href="/#/" class="transition hover:text-white">Главная</a>
+                        <div
+                            class="mb-4 flex flex-wrap items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-white/65"
+                        >
+                            <a href="/#/" class="transition hover:text-white"
+                                >Главная</a
+                            >
                             <span>/</span>
                             <span>{category?.name ?? 'Раздел'}</span>
                             {#if pageFilters.sub}
@@ -260,18 +269,26 @@
                                 <span>{pageFilters.sub}</span>
                             {/if}
                         </div>
-                        <div class="text-sm font-semibold tracking-[0.24em] text-white/70 uppercase">
+                        <div
+                            class="text-sm font-semibold tracking-[0.24em] text-white/70 uppercase"
+                        >
                             Раздел портала
                         </div>
                         <div class="mt-4 flex items-center gap-4">
-                            <div class="flex size-16 items-center justify-center rounded-3xl bg-white/12 text-4xl text-white backdrop-blur">
+                            <div
+                                class="flex size-16 items-center justify-center rounded-3xl bg-white/12 text-4xl text-white backdrop-blur"
+                            >
                                 {category?.icon ?? '📰'}
                             </div>
                             <div>
-                                <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                                <h1
+                                    class="text-3xl font-semibold tracking-tight text-white sm:text-4xl"
+                                >
                                     {category?.name ?? 'Загрузка...'}
                                 </h1>
-                                <p class="mt-2 text-sm text-white/75 sm:text-base">
+                                <p
+                                    class="mt-2 text-sm text-white/75 sm:text-base"
+                                >
                                     {category?.description ||
                                         'Свежая лента материалов по выбранной рубрике.'}
                                 </p>
@@ -279,18 +296,28 @@
                         </div>
                     </div>
 
-                    <div class="rounded-[1.75rem] border border-white/10 bg-white/8 px-5 py-4 text-white backdrop-blur">
-                        <div class="text-xs font-semibold uppercase tracking-[0.22em] text-white/60">
+                    <div
+                        class="rounded-[1.75rem] border border-white/10 bg-white/8 px-5 py-4 text-white backdrop-blur"
+                    >
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.22em] text-white/60"
+                        >
                             Материалов в разделе
                         </div>
-                        <div class="mt-2 text-3xl font-semibold">{totalResults}</div>
-                        <div class="mt-2 text-sm text-white/70">Текущий ритм публикаций по рубрике</div>
+                        <div class="mt-2 text-3xl font-semibold">
+                            {totalResults}
+                        </div>
+                        <div class="mt-2 text-sm text-white/70">
+                            Текущий ритм публикаций по рубрике
+                        </div>
                     </div>
                 </div>
             </div>
 
             {#if category?.sub_categories?.length}
-                <div class="border-t border-slate-200/70 bg-white px-6 py-4 dark:border-white/10 dark:bg-slate-950 sm:px-8">
+                <div
+                    class="border-t border-slate-200/70 bg-white px-6 py-4 dark:border-white/10 dark:bg-slate-950 sm:px-8"
+                >
                     <div class="flex flex-wrap gap-2">
                         <button
                             type="button"
@@ -329,24 +356,34 @@
         </section>
 
         {#if pinnedArticles.length > 0}
-            <section class="mt-8 rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
+            <section
+                class="mt-8 rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]"
+            >
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300"
+                        >
                             Закреплённое
                         </div>
-                        <h2 class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                        <h2
+                            class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white"
+                        >
                             Важное в разделе {category?.name}
                         </h2>
                     </div>
-                    <div class="rounded-full bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+                    <div
+                        class="rounded-full bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+                    >
                         {pinnedArticles.length} статьи
                     </div>
                 </div>
 
                 <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {#each pinnedArticles as article (article.id)}
-                        <div class="rounded-[1.7rem] border border-slate-200/70 bg-white/70 p-2 dark:border-white/10 dark:bg-white/5">
+                        <div
+                            class="rounded-[1.7rem] border border-slate-200/70 bg-white/70 p-2 dark:border-white/10 dark:bg-white/5"
+                        >
                             <ArticleCardCompact {article} />
                         </div>
                     {/each}
@@ -364,26 +401,39 @@
             </aside>
 
             <section class="space-y-6">
-                <div class="rounded-[1.8rem] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-                    <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div
+                    class="rounded-[1.8rem] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/10 dark:bg-white/5"
+                >
+                    <div
+                        class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400"
+                    >
                         Поток раздела
                     </div>
-                    <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+                    <div
+                        class="mt-2 flex flex-wrap items-center justify-between gap-3"
+                    >
                         <div>
-                            <h2 class="text-2xl font-semibold text-slate-950 dark:text-white">
+                            <h2
+                                class="text-2xl font-semibold text-slate-950 dark:text-white"
+                            >
                                 {category?.name ?? 'Раздел'}: оперативная лента
                             </h2>
-                            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                                Фильтруйте поток по тегам, датам, важности и подрубрикам.
+                            <p
+                                class="mt-2 text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Фильтруйте поток по тегам, датам, важности и
+                                подрубрикам.
                             </p>
                         </div>
-                        <div class="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-slate-950">
+                        <div
+                            class="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-slate-950"
+                        >
                             {totalResults} материалов
                         </div>
                     </div>
                 </div>
 
-                <FilterBar pagination={pagination} />
+                <FilterBar {pagination} />
 
                 {#if loading}
                     <div class="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
@@ -392,16 +442,25 @@
                         {/each}
                     </div>
                 {:else if error}
-                    <div class="rounded-[2rem] border border-dashed border-rose-300 bg-white p-8 text-center text-rose-600 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-300">
+                    <div
+                        class="rounded-[2rem] border border-dashed border-rose-300 bg-white p-8 text-center text-rose-600 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-300"
+                    >
                         {error}
                     </div>
                 {:else if articles.length === 0}
-                    <div class="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-slate-900">
-                        <h3 class="text-2xl font-semibold text-slate-950 dark:text-white">
+                    <div
+                        class="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-slate-900"
+                    >
+                        <h3
+                            class="text-2xl font-semibold text-slate-950 dark:text-white"
+                        >
                             В этом разделе пока ничего нет
                         </h3>
-                        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                            Попробуйте снять часть фильтров или открыть соседнюю подкатегорию.
+                        <p
+                            class="mt-3 text-sm text-slate-500 dark:text-slate-400"
+                        >
+                            Попробуйте снять часть фильтров или открыть соседнюю
+                            подкатегорию.
                         </p>
                     </div>
                 {:else}

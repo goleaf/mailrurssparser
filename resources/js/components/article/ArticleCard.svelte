@@ -47,7 +47,9 @@
     }: {
         article: Article;
         showBookmark?: boolean;
-        onBookmarkToggle?: ((result: BookmarkToggleResult) => void | Promise<void>) | undefined;
+        onBookmarkToggle?:
+            | ((result: BookmarkToggleResult) => void | Promise<void>)
+            | undefined;
     } = $props();
 
     const publishedDate = $derived(
@@ -77,7 +79,10 @@
 >
     <div class="relative overflow-hidden">
         {#if article.image_url}
-            <a href={`/#/articles/${article.slug}`} class="bg-slate-200 dark:bg-slate-700">
+            <a
+                href={`/#/articles/${article.slug}`}
+                class="bg-slate-200 dark:bg-slate-700"
+            >
                 <img
                     src={article.image_url}
                     alt={article.title}
@@ -100,7 +105,9 @@
             </div>
         {/if}
 
-        <div class="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3">
+        <div
+            class="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3"
+        >
             <a
                 href={`/#/category/${article.category.slug}`}
                 class="rounded-full px-3 py-1.5 text-[0.68rem] font-bold tracking-[0.18em] uppercase text-white shadow"
@@ -129,14 +136,17 @@
                 <span
                     class="rounded-full border border-white/15 bg-black/55 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur"
                 >
-                    {article.content_type_label ?? getArticleContentTypeLabel(article.content_type)}
+                    {article.content_type_label ??
+                        getArticleContentTypeLabel(article.content_type)}
                 </span>
             </div>
         {/if}
     </div>
 
     <div class="flex flex-1 flex-col p-5">
-        <div class="mb-3 flex items-center justify-between gap-3 text-[0.72rem] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+        <div
+            class="mb-3 flex items-center justify-between gap-3 text-[0.72rem] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500"
+        >
             <time>{formattedDate}</time>
             <span>Поток</span>
         </div>
@@ -150,7 +160,9 @@
         </a>
 
         {#if article.short_description}
-            <p class="mb-4 line-clamp-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <p
+                class="mb-4 line-clamp-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-300"
+            >
                 {article.short_description}
             </p>
         {/if}
@@ -171,7 +183,9 @@
         <div
             class="mt-auto flex items-center justify-between border-t border-slate-200/80 pt-4 dark:border-white/10"
         >
-            <div class="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
+            <div
+                class="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500"
+            >
                 <span>👁 {article.views_count ?? 0}</span>
                 <span>⏱ {article.reading_time ?? 1}м</span>
             </div>

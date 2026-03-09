@@ -28,9 +28,7 @@
     >
         <div class="relative space-y-0.5 text-red-600 dark:text-red-100">
             <p class="font-medium">Внимание</p>
-            <p class="text-sm">
-                Это действие нельзя отменить.
-            </p>
+            <p class="text-sm">Это действие нельзя отменить.</p>
         </div>
         <Dialog>
             <DialogTrigger>
@@ -57,9 +55,7 @@
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="password" class="sr-only"
-                                >Пароль</Label
-                            >
+                            <Label for="password" class="sr-only">Пароль</Label>
                             <Input
                                 id="password"
                                 type="password"

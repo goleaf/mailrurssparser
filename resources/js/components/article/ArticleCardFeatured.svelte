@@ -34,7 +34,10 @@
         category: ArticleCategory;
     };
 
-    let { article, showBookmark = true }: { article: Article; showBookmark?: boolean } = $props();
+    let {
+        article,
+        showBookmark = true,
+    }: { article: Article; showBookmark?: boolean } = $props();
 
     const publishedDate = $derived(
         article.published_at ? new Date(article.published_at) : null,
@@ -63,7 +66,10 @@
 >
     <div class="relative overflow-hidden">
         {#if article.image_url}
-            <a href={`/#/articles/${article.slug}`} class="bg-slate-200 dark:bg-slate-700">
+            <a
+                href={`/#/articles/${article.slug}`}
+                class="bg-slate-200 dark:bg-slate-700"
+            >
                 <img
                     src={article.image_url}
                     alt={article.title}
@@ -86,8 +92,12 @@
             </div>
         {/if}
 
-        <div class="absolute inset-0 bg-linear-to-t from-slate-950/85 via-slate-950/30 to-transparent"></div>
-        <div class="absolute inset-x-0 top-0 flex items-start justify-between p-4">
+        <div
+            class="absolute inset-0 bg-linear-to-t from-slate-950/85 via-slate-950/30 to-transparent"
+        ></div>
+        <div
+            class="absolute inset-x-0 top-0 flex items-start justify-between p-4"
+        >
             <a
                 href={`/#/category/${article.category.slug}`}
                 class="rounded-full px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white shadow"
@@ -98,11 +108,15 @@
 
             <div class="flex items-center gap-2">
                 {#if article.is_breaking}
-                    <span class="rounded-full bg-red-500 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white">
+                    <span
+                        class="rounded-full bg-red-500 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white"
+                    >
                         Срочно
                     </span>
                 {:else if isNew || article.is_recent}
-                    <span class="rounded-full bg-emerald-500 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white">
+                    <span
+                        class="rounded-full bg-emerald-500 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white"
+                    >
                         Новое
                     </span>
                 {/if}
@@ -135,15 +149,20 @@
 
         {#if article.content_type && article.content_type !== 'news'}
             <div class="absolute bottom-4 left-4">
-                <span class="rounded-full border border-white/15 bg-black/60 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur">
-                    {article.content_type_label ?? getArticleContentTypeLabel(article.content_type)}
+                <span
+                    class="rounded-full border border-white/15 bg-black/60 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur"
+                >
+                    {article.content_type_label ??
+                        getArticleContentTypeLabel(article.content_type)}
                 </span>
             </div>
         {/if}
     </div>
 
     <div class="space-y-4 p-6">
-        <div class="flex items-center gap-3 text-[0.72rem] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+        <div
+            class="flex items-center gap-3 text-[0.72rem] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500"
+        >
             <time>{formattedDate}</time>
             <span>Подборка дня</span>
         </div>
@@ -157,7 +176,9 @@
         </a>
 
         {#if article.short_description}
-            <p class="line-clamp-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <p
+                class="line-clamp-4 text-sm leading-7 text-slate-600 dark:text-slate-300"
+            >
                 {article.short_description}
             </p>
         {/if}
@@ -175,7 +196,9 @@
             </div>
         {/if}
 
-        <div class="flex flex-wrap items-center gap-4 border-t border-slate-200/80 pt-4 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
+        <div
+            class="flex flex-wrap items-center gap-4 border-t border-slate-200/80 pt-4 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400"
+        >
             <span>👁 {article.views_count ?? 0}</span>
             <span>⏱ {article.reading_time ?? 1}м</span>
         </div>

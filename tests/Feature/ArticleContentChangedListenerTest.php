@@ -4,6 +4,7 @@ use App\Events\ArticleContentChanged;
 use App\Listeners\RebuildRelatedArticlesIndex;
 use App\Models\Article;
 use App\Models\Category;
+use App\Models\RssFeed;
 use App\Models\Tag;
 use App\Services\ArticleCacheKey;
 use App\Services\ArticleCacheService;
@@ -97,6 +98,10 @@ it('forgets memoized article caches when article content changes in the same req
 
     $category = Category::factory()->create([
         'slug' => 'same-request-refresh',
+    ]);
+
+    RssFeed::factory()->create([
+        'category_id' => $category->id,
     ]);
 
     Article::factory()->create([

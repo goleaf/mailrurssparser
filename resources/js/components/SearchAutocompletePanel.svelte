@@ -34,15 +34,19 @@
     }: Props = $props();
 
     const normalizedQuery = $derived(query.trim());
-    const items = $derived(buildSearchAutocompleteItems(normalizedQuery, suggestions));
+    const items = $derived(
+        buildSearchAutocompleteItems(normalizedQuery, suggestions),
+    );
     const hasMatches = $derived(hasSearchSuggestions(suggestions));
     const searchAction = $derived.by(
         (): Extract<SearchAutocompleteItem, { kind: 'search' }> | null =>
             items.find(
                 (
                     item,
-                ): item is Extract<SearchAutocompleteItem, { kind: 'search' }> =>
-                    item.kind === 'search',
+                ): item is Extract<
+                    SearchAutocompleteItem,
+                    { kind: 'search' }
+                > => item.kind === 'search',
             ) ?? null,
     );
     const articleItems = $derived.by(
@@ -50,8 +54,10 @@
             items.filter(
                 (
                     item,
-                ): item is Extract<SearchAutocompleteItem, { section: 'articles' }> =>
-                    item.section === 'articles',
+                ): item is Extract<
+                    SearchAutocompleteItem,
+                    { section: 'articles' }
+                > => item.section === 'articles',
             ),
     );
     const categoryItems = $derived.by(
@@ -59,8 +65,10 @@
             items.filter(
                 (
                     item,
-                ): item is Extract<SearchAutocompleteItem, { section: 'categories' }> =>
-                    item.section === 'categories',
+                ): item is Extract<
+                    SearchAutocompleteItem,
+                    { section: 'categories' }
+                > => item.section === 'categories',
             ),
     );
     const tagItems = $derived.by(
@@ -68,8 +76,10 @@
             items.filter(
                 (
                     item,
-                ): item is Extract<SearchAutocompleteItem, { section: 'tags' }> =>
-                    item.section === 'tags',
+                ): item is Extract<
+                    SearchAutocompleteItem,
+                    { section: 'tags' }
+                > => item.section === 'tags',
             ),
     );
 
@@ -107,9 +117,15 @@
 </script>
 
 {#if normalizedQuery.length >= 2}
-    <div class="mt-3 overflow-hidden rounded-[1.5rem] border border-slate-200/90 bg-white/96 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.5)] backdrop-blur dark:border-white/10 dark:bg-slate-950/95">
-        <div class="flex items-center justify-between border-b border-slate-200/80 px-4 py-3 dark:border-white/10">
-            <div class="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
+    <div
+        class="mt-3 overflow-hidden rounded-[1.5rem] border border-slate-200/90 bg-white/96 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.5)] backdrop-blur dark:border-white/10 dark:bg-slate-950/95"
+    >
+        <div
+            class="flex items-center justify-between border-b border-slate-200/80 px-4 py-3 dark:border-white/10"
+        >
+            <div
+                class="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400"
+            >
                 Автодополнение
             </div>
             <div class="text-xs text-slate-400">
@@ -123,7 +139,11 @@
             </div>
         </div>
 
-        <div class="max-h-[24rem] overflow-y-auto p-2" role="listbox" aria-label="Подсказки поиска">
+        <div
+            class="max-h-[24rem] overflow-y-auto p-2"
+            role="listbox"
+            aria-label="Подсказки поиска"
+        >
             {#if searchAction}
                 <button
                     type="button"
@@ -139,7 +159,9 @@
                         selectItem(searchAction);
                     }}
                 >
-                    <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-300">
+                    <span
+                        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-300"
+                    >
                         <Search class="size-4" />
                     </span>
                     <div class="min-w-0">
@@ -154,7 +176,9 @@
             {/if}
 
             {#if articleItems.length > 0}
-                <div class="px-3 pb-2 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                <div
+                    class="px-3 pb-2 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400"
+                >
                     Статьи
                 </div>
                 {#each articleItems as item (item.id)}
@@ -176,7 +200,9 @@
                             <div class="line-clamp-1 text-sm font-semibold">
                                 {#each highlightAutocompleteText(item.label, normalizedQuery) as segment, index (`${item.id}-${index}`)}
                                     {#if segment.highlighted}
-                                        <mark class="rounded bg-sky-100 px-1 text-slate-950 dark:bg-sky-500/25 dark:text-sky-50">
+                                        <mark
+                                            class="rounded bg-sky-100 px-1 text-slate-950 dark:bg-sky-500/25 dark:text-sky-50"
+                                        >
                                             {segment.text}
                                         </mark>
                                     {:else}
@@ -196,7 +222,9 @@
             {/if}
 
             {#if categoryItems.length > 0}
-                <div class="px-3 pb-2 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                <div
+                    class="px-3 pb-2 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400"
+                >
                     Рубрики
                 </div>
                 <div class="flex flex-wrap gap-2 px-2 pb-1">
@@ -222,7 +250,9 @@
                             <span class="font-medium">
                                 {#each highlightAutocompleteText(item.label, normalizedQuery) as segment, index (`${item.id}-${index}`)}
                                     {#if segment.highlighted}
-                                        <mark class="rounded bg-sky-100 px-1 text-slate-950 dark:bg-sky-500/25 dark:text-sky-50">
+                                        <mark
+                                            class="rounded bg-sky-100 px-1 text-slate-950 dark:bg-sky-500/25 dark:text-sky-50"
+                                        >
                                             {segment.text}
                                         </mark>
                                     {:else}
@@ -236,7 +266,9 @@
             {/if}
 
             {#if tagItems.length > 0}
-                <div class="px-3 pb-2 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                <div
+                    class="px-3 pb-2 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400"
+                >
                     Теги
                 </div>
                 <div class="flex flex-wrap gap-2 px-2 pb-1">
@@ -259,7 +291,9 @@
                             <span class="font-medium">
                                 {#each highlightAutocompleteText(item.label, normalizedQuery) as segment, index (`${item.id}-${index}`)}
                                     {#if segment.highlighted}
-                                        <mark class="rounded bg-sky-100 px-1 text-slate-950 dark:bg-sky-500/25 dark:text-sky-50">
+                                        <mark
+                                            class="rounded bg-sky-100 px-1 text-slate-950 dark:bg-sky-500/25 dark:text-sky-50"
+                                        >
                                             {segment.text}
                                         </mark>
                                     {:else}
@@ -273,8 +307,11 @@
             {/if}
 
             {#if !loading && !hasMatches}
-                <div class="px-3 py-4 text-sm text-slate-500 dark:text-slate-400">
-                    Быстрых совпадений нет. Нажмите Enter, чтобы открыть полную выдачу по запросу.
+                <div
+                    class="px-3 py-4 text-sm text-slate-500 dark:text-slate-400"
+                >
+                    Быстрых совпадений нет. Нажмите Enter, чтобы открыть полную
+                    выдачу по запросу.
                 </div>
             {/if}
         </div>

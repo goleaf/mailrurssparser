@@ -2,12 +2,12 @@
 
 namespace App\Filament\Resources\Articles;
 
-use App\Filament\Support\AdminNavigationGroup;
 use App\Filament\Resources\Articles\Pages\CreateArticle;
 use App\Filament\Resources\Articles\Pages\EditArticle;
 use App\Filament\Resources\Articles\Pages\ListArticles;
 use App\Filament\Resources\Articles\Schemas\ArticleForm;
 use App\Filament\Resources\Articles\Tables\ArticlesTable;
+use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Article;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -30,7 +30,7 @@ class ArticleResource extends Resource
 
     protected static ?string $navigationLabel = 'Все статьи';
 
-    protected static string | UnitEnum | null $navigationGroup = AdminNavigationGroup::Editorial;
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Editorial;
 
     protected static ?int $navigationSort = 1;
 
@@ -95,7 +95,7 @@ class ArticleResource extends Resource
         return parent::getNavigationLabel();
     }
 
-    public static function getNavigationGroup(): string | UnitEnum | null
+    public static function getNavigationGroup(): string|UnitEnum|null
     {
         $configuration = static::getConfiguration();
 
@@ -133,7 +133,7 @@ class ArticleResource extends Resource
         return (string) static::getEloquentQuery()->count();
     }
 
-    public static function getNavigationBadgeColor(): string | array | null
+    public static function getNavigationBadgeColor(): string|array|null
     {
         $configuration = static::getConfiguration();
 

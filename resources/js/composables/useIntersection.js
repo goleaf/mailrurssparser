@@ -1,6 +1,9 @@
 export function useIntersection(callback, options = {}) {
     return (node) => {
-        if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+        if (
+            typeof window === 'undefined' ||
+            typeof IntersectionObserver === 'undefined'
+        ) {
             return {
                 destroy() {},
             };

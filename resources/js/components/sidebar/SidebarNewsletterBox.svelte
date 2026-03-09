@@ -40,8 +40,12 @@
     }
 </script>
 
-<aside class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-neutral-900">
-    <div class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
+<aside
+    class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-neutral-900"
+>
+    <div
+        class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300"
+    >
         📬 Рассылка
     </div>
     <h3 class="mt-3 text-xl font-semibold text-slate-900 dark:text-white">
@@ -52,7 +56,9 @@
     </p>
 
     {#if submitted}
-        <div class="mt-5 rounded-3xl bg-emerald-50 p-5 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+        <div
+            class="mt-5 rounded-3xl bg-emerald-50 p-5 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+        >
             <div class="flex items-center gap-3">
                 <MailCheck class="size-5" />
                 <span class="font-medium">Спасибо, подписка оформлена.</span>
@@ -82,7 +88,9 @@
             </button>
 
             {#if errorMessage}
-                <p class="text-sm text-rose-500 dark:text-rose-300">{errorMessage}</p>
+                <p class="text-sm text-rose-500 dark:text-rose-300">
+                    {errorMessage}
+                </p>
             {/if}
         </form>
     {/if}

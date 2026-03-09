@@ -11,9 +11,7 @@ function resolvePage(name: string): Promise<ResolvedComponent> {
     const page = pages[`./pages/${name}.svelte`];
 
     if (!page) {
-        return Promise.reject(
-            new Error(`Unknown Inertia page: ${name}`),
-        );
+        return Promise.reject(new Error(`Unknown Inertia page: ${name}`));
     }
 
     return page();

@@ -40,7 +40,9 @@ export function getArticleContentTypeLabel(value?: string | null): string {
     return articleContentTypeLabels[value] ?? value;
 }
 
-export function getArticleContentTypeFilterLabel(value?: string | null): string {
+export function getArticleContentTypeFilterLabel(
+    value?: string | null,
+): string {
     if (!value) {
         return '';
     }

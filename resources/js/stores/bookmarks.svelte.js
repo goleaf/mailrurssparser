@@ -5,7 +5,7 @@ export const bookmarkIds = $state([]);
 export async function loadBookmarks() {
     const res = await api.getBookmarks();
 
-    bookmarkIds.splice(0, bookmarkIds.length, ...res.data.data.map((b) => b.id));
+    bookmarkIds.splice(0, bookmarkIds.length, ...res.data.map((b) => b.id));
 }
 
 export async function toggleBookmark(articleId) {

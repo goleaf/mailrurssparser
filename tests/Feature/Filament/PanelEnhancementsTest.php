@@ -11,6 +11,7 @@ use App\Models\Article;
 use App\Models\Tag;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
+use App\Services\ArticleStatus;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Filament\Schemas\Components\Tabs;
@@ -56,12 +57,14 @@ it('scopes configured article resource queries by status', function () {
 
     $moderationStatuses = ArticleResource::withConfiguration('moderation', fn (): array => ArticleResource::getEloquentQuery()
         ->pluck('status')
+        ->map(fn (ArticleStatus|string $status): string => $status instanceof ArticleStatus ? $status->value : $status)
         ->unique()
         ->values()
         ->all());
 
     $publishedStatuses = ArticleResource::withConfiguration('published', fn (): array => ArticleResource::getEloquentQuery()
         ->pluck('status')
+        ->map(fn (ArticleStatus|string $status): string => $status instanceof ArticleStatus ? $status->value : $status)
         ->unique()
         ->values()
         ->all());

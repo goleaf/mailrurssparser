@@ -87,12 +87,20 @@
 
     const pageFilters = filters as HomeFilters;
     const categories = $derived((appState.categories ?? []) as Category[]);
-    const pagination = $derived((listState.pagination ?? null) as PaginationMeta | null);
+    const pagination = $derived(
+        (listState.pagination ?? null) as PaginationMeta | null,
+    );
     const activeFilterTotal = $derived(activeFiltersCount());
-    const currentPage = $derived(Number(pagination?.current_page ?? pageFilters.page ?? 1));
+    const currentPage = $derived(
+        Number(pagination?.current_page ?? pageFilters.page ?? 1),
+    );
     const lastPage = $derived(Number(pagination?.last_page ?? 1));
     const totalResults = $derived(
-        Number(pagination?.total ?? pagination?.total_results ?? listState.articles.length),
+        Number(
+            pagination?.total ??
+                pagination?.total_results ??
+                listState.articles.length,
+        ),
     );
     const briefingDate = $derived(
         new Intl.DateTimeFormat('ru-RU', {
@@ -106,7 +114,11 @@
             return null;
         }
 
-        return categories.find((category) => category.slug === pageFilters.category) ?? null;
+        return (
+            categories.find(
+                (category) => category.slug === pageFilters.category,
+            ) ?? null
+        );
     });
 
     const selectedFilters = $derived.by(() => {
@@ -129,7 +141,9 @@
         }
 
         if (pageFilters.content_type) {
-            chips.push(getArticleContentTypeFilterLabel(pageFilters.content_type));
+            chips.push(
+                getArticleContentTypeFilterLabel(pageFilters.content_type),
+            );
         }
 
         if (pageFilters.importance_min) {
@@ -145,15 +159,25 @@
 
     const leadStory = $derived.by(() => {
         if (activeFilterTotal > 0) {
-            return (listState.articles[0] as Article | undefined) ?? featuredArticles[0] ?? null;
+            return (
+                (listState.articles[0] as Article | undefined) ??
+                featuredArticles[0] ??
+                null
+            );
         }
 
-        return featuredArticles[0] ?? ((listState.articles[0] as Article | undefined) ?? null);
+        return (
+            featuredArticles[0] ??
+            (listState.articles[0] as Article | undefined) ??
+            null
+        );
     });
 
     const secondaryHighlights = $derived.by(() => {
         if (activeFilterTotal > 0) {
-            return (listState.articles.slice(1, 4) as Article[]).filter(Boolean);
+            return (listState.articles.slice(1, 4) as Article[]).filter(
+                Boolean,
+            );
         }
 
         const preferred = featuredArticles.slice(1, 4);
@@ -226,11 +250,11 @@
 
         featuredArticles =
             featuredResponse.status === 'fulfilled'
-                ? featuredResponse.value.data?.data ?? []
+                ? featuredResponse.value.data
                 : [];
         trendingArticles =
             trendingResponse.status === 'fulfilled'
-                ? trendingResponse.value.data?.data ?? []
+                ? trendingResponse.value.data
                 : [];
         highlightsLoading = false;
     }
@@ -311,38 +335,64 @@
     />
 </AppHead>
 
-<div class="relative overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),_transparent_34%),linear-gradient(to_bottom,_#f8fbff,_#eef2ff)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_30%),linear-gradient(to_bottom,_#020617,_#0f172a)] sm:px-6 lg:px-8">
-    <div class="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top_right,_rgba(14,165,233,0.22),_transparent_42%)]"></div>
-    <div class="pointer-events-none absolute inset-x-0 top-24 h-px bg-linear-to-r from-transparent via-sky-300/45 to-transparent dark:via-sky-700/40"></div>
+<div
+    class="relative overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),_transparent_34%),linear-gradient(to_bottom,_#f8fbff,_#eef2ff)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_30%),linear-gradient(to_bottom,_#020617,_#0f172a)] sm:px-6 lg:px-8"
+>
+    <div
+        class="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top_right,_rgba(14,165,233,0.22),_transparent_42%)]"
+    ></div>
+    <div
+        class="pointer-events-none absolute inset-x-0 top-24 h-px bg-linear-to-r from-transparent via-sky-300/45 to-transparent dark:via-sky-700/40"
+    ></div>
 
     <div class="relative mx-auto max-w-7xl">
-        <section class="relative overflow-hidden rounded-[2.6rem] border border-slate-200/80 bg-white/88 p-6 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.45)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8 lg:p-10">
-            <div class="absolute right-0 top-0 h-44 w-44 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-500/20"></div>
-            <div class="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-amber-200/70 blur-3xl dark:bg-amber-500/10"></div>
+        <section
+            class="relative overflow-hidden rounded-[2.6rem] border border-slate-200/80 bg-white/88 p-6 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.45)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8 lg:p-10"
+        >
+            <div
+                class="absolute right-0 top-0 h-44 w-44 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-500/20"
+            ></div>
+            <div
+                class="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-amber-200/70 blur-3xl dark:bg-amber-500/10"
+            ></div>
 
-            <div class="relative grid gap-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
+            <div
+                class="relative grid gap-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]"
+            >
                 <div class="space-y-6">
                     <div class="flex flex-wrap items-center gap-3">
-                        <div class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.26em] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
+                        <div
+                            class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.26em] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300"
+                        >
                             <Sparkles class="size-4" />
                             Утренний выпуск
                         </div>
-                        <div class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-medium text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                        <div
+                            class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-medium text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
+                        >
                             {briefingDate}
                         </div>
-                        <div class="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                        <div
+                            class="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
+                        >
                             {totalResults} материалов в открытой ленте
                         </div>
                     </div>
 
                     <div class="max-w-3xl">
-                        <h1 class="max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl dark:text-white">
-                            Важные темы дня, быстрый обзор и глубокая навигация по потоку.
+                        <h1
+                            class="max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl dark:text-white"
+                        >
+                            Важные темы дня, быстрый обзор и глубокая навигация
+                            по потоку.
                         </h1>
-                        <p class="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">
-                            Публичная часть собрана как редакционная витрина: главный материал,
-                            быстрые сигналы по рубрикам, тренды чтения и фильтры, которые не
-                            мешают читать поток.
+                        <p
+                            class="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg"
+                        >
+                            Публичная часть собрана как редакционная витрина:
+                            главный материал, быстрые сигналы по рубрикам,
+                            тренды чтения и фильтры, которые не мешают читать
+                            поток.
                         </p>
                     </div>
 
@@ -371,13 +421,21 @@
                     </div>
 
                     {#if activeFilterTotal > 0}
-                        <div class="rounded-[2rem] border border-slate-200 bg-slate-50/90 p-4 dark:border-white/10 dark:bg-white/5">
-                            <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div
+                            class="rounded-[2rem] border border-slate-200 bg-slate-50/90 p-4 dark:border-white/10 dark:bg-white/5"
+                        >
+                            <div
+                                class="flex flex-wrap items-center justify-between gap-3"
+                            >
                                 <div>
-                                    <div class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                                    <div
+                                        class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400"
+                                    >
                                         Активные фильтры
                                     </div>
-                                    <div class="mt-2 text-sm font-medium text-slate-900 dark:text-white">
+                                    <div
+                                        class="mt-2 text-sm font-medium text-slate-900 dark:text-white"
+                                    >
                                         {activeFilterTotal} выбрано в ленте
                                     </div>
                                 </div>
@@ -393,7 +451,9 @@
 
                             <div class="mt-4 flex flex-wrap gap-2">
                                 {#each selectedFilters as filterValue (`filter-${filterValue}`)}
-                                    <span class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-white dark:text-slate-950">
+                                    <span
+                                        class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-white dark:text-slate-950"
+                                    >
                                         {filterValue}
                                     </span>
                                 {/each}
@@ -403,19 +463,31 @@
 
                     <div class="grid gap-3 sm:grid-cols-3">
                         {#each overviewStats as item (item.label)}
-                            <div class="rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.9))] p-4 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.78))]">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <div
+                                class="rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.9))] p-4 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.78))]"
+                            >
+                                <div
+                                    class="flex items-center justify-between gap-3"
+                                >
+                                    <div
+                                        class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                                    >
                                         {item.label}
                                     </div>
-                                    <div class="rounded-2xl bg-slate-100 p-2 text-slate-700 dark:bg-white/10 dark:text-slate-200">
+                                    <div
+                                        class="rounded-2xl bg-slate-100 p-2 text-slate-700 dark:bg-white/10 dark:text-slate-200"
+                                    >
                                         <item.icon class="size-4" />
                                     </div>
                                 </div>
-                                <div class="mt-4 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                                <div
+                                    class="mt-4 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white"
+                                >
                                     {item.value}
                                 </div>
-                                <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                                <div
+                                    class="mt-2 text-sm text-slate-500 dark:text-slate-400"
+                                >
                                     {item.caption}
                                 </div>
                             </div>
@@ -425,8 +497,12 @@
 
                 <div class="space-y-5">
                     {#if highlightsLoading}
-                        <div class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
-                            <Skeleton class="h-[22rem] w-full rounded-[1.5rem]" />
+                        <div
+                            class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900"
+                        >
+                            <Skeleton
+                                class="h-[22rem] w-full rounded-[1.5rem]"
+                            />
                         </div>
                     {:else if leadStory}
                         <a
@@ -440,71 +516,111 @@
                                     class="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
                                 />
                             {:else}
-                                <div class="absolute inset-0 bg-linear-to-br from-sky-500 via-slate-900 to-slate-950"></div>
+                                <div
+                                    class="absolute inset-0 bg-linear-to-br from-sky-500 via-slate-900 to-slate-950"
+                                ></div>
                             {/if}
 
-                            <div class="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/70 to-slate-900/15"></div>
-                            <div class="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-sky-500/20 to-transparent opacity-80"></div>
+                            <div
+                                class="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/70 to-slate-900/15"
+                            ></div>
+                            <div
+                                class="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-sky-500/20 to-transparent opacity-80"
+                            ></div>
 
-                            <div class="relative flex min-h-[24rem] flex-col justify-between p-6 sm:p-7">
-                                <div class="flex flex-wrap items-center justify-between gap-3">
-                                    <div class="flex flex-wrap items-center gap-2">
+                            <div
+                                class="relative flex min-h-[24rem] flex-col justify-between p-6 sm:p-7"
+                            >
+                                <div
+                                    class="flex flex-wrap items-center justify-between gap-3"
+                                >
+                                    <div
+                                        class="flex flex-wrap items-center gap-2"
+                                    >
                                         <span
                                             class="rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm"
                                             style={`background-color: ${leadStory.category.color ?? '#0EA5E9'};`}
                                         >
                                             {leadStory.category.name}
                                         </span>
-                                        <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white/85">
+                                        <span
+                                            class="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white/85"
+                                        >
                                             Главный материал
                                         </span>
                                         {#if leadStory.is_breaking}
-                                            <span class="rounded-full bg-rose-500 px-3 py-1 text-xs font-semibold text-white">
+                                            <span
+                                                class="rounded-full bg-rose-500 px-3 py-1 text-xs font-semibold text-white"
+                                            >
                                                 Срочно
                                             </span>
                                         {/if}
                                     </div>
-                                    <span class="rounded-full border border-white/15 bg-black/15 px-3 py-1 text-xs font-medium text-white/70">
+                                    <span
+                                        class="rounded-full border border-white/15 bg-black/15 px-3 py-1 text-xs font-medium text-white/70"
+                                    >
                                         Открыть материал
                                     </span>
                                 </div>
 
                                 <div>
-                                    <div class="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
+                                    <div
+                                        class="text-xs font-semibold uppercase tracking-[0.24em] text-white/60"
+                                    >
                                         Редакционный фокус
                                     </div>
-                                    <h2 class="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-white">
+                                    <h2
+                                        class="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-white"
+                                    >
                                         {leadStory.title}
                                     </h2>
                                     {#if leadStory.short_description}
-                                        <p class="mt-4 max-w-xl text-sm leading-6 text-white/80">
+                                        <p
+                                            class="mt-4 max-w-xl text-sm leading-6 text-white/80"
+                                        >
                                             {leadStory.short_description}
                                         </p>
                                     {/if}
 
-                                    <div class="mt-5 flex flex-wrap items-center gap-4 text-sm text-white/70">
-                                        <span>👁 {leadStory.views_count ?? 0}</span>
-                                        <span>⏱ {leadStory.reading_time ?? 1} мин</span>
+                                    <div
+                                        class="mt-5 flex flex-wrap items-center gap-4 text-sm text-white/70"
+                                    >
+                                        <span
+                                            >👁 {leadStory.views_count ??
+                                                0}</span
+                                        >
+                                        <span
+                                            >⏱ {leadStory.reading_time ?? 1} мин</span
+                                        >
                                         {#if leadStory.published_at}
-                                            <span>{leadStory.published_at}</span>
+                                            <span>{leadStory.published_at}</span
+                                            >
                                         {/if}
                                     </div>
                                 </div>
                             </div>
                         </a>
                     {:else}
-                        <div class="rounded-[2rem] border border-dashed border-slate-300 bg-white/80 p-6 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400">
+                        <div
+                            class="rounded-[2rem] border border-dashed border-slate-300 bg-white/80 p-6 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400"
+                        >
                             Пока нет материалов для главного блока.
                         </div>
                     {/if}
 
-                    <div class="rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.8))]">
+                    <div
+                        class="rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.8))]"
+                    >
                         <div class="flex items-center justify-between gap-3">
                             <div>
-                                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                <div
+                                    class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400"
+                                >
                                     В тренде
                                 </div>
-                                <div class="mt-1 text-xl font-semibold text-slate-950 dark:text-white">
+                                <div
+                                    class="mt-1 text-xl font-semibold text-slate-950 dark:text-white"
+                                >
                                     Что читают прямо сейчас
                                 </div>
                             </div>
@@ -518,8 +634,10 @@
 
                         <div class="mt-5 space-y-3">
                             {#if highlightsLoading}
-                                {#each Array.from({ length: 3 }) as _, index (`trending-loading-${index}`)}
-                                    <div class="h-26 animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5"></div>
+                                {#each Array.from( { length: 3 }, ) as _, index (`trending-loading-${index}`)}
+                                    <div
+                                        class="h-26 animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5"
+                                    ></div>
                                 {/each}
                             {:else}
                                 {#each trendingPreview as article (article.id)}
@@ -544,39 +662,61 @@
             <section class="space-y-6">
                 <section class="space-y-6">
                     <div>
-                        <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400"
+                        >
                             Редакционная лента
                         </div>
-                        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                        <h2
+                            class="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white"
+                        >
                             {selectedCategory?.name ?? 'Все новости'}
                         </h2>
-                        <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                            Основной поток материалов с фильтрами по рубрикам, тегам, форматам
-                            и календарю публикаций.
+                        <p
+                            class="mt-3 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400"
+                        >
+                            Основной поток материалов с фильтрами по рубрикам,
+                            тегам, форматам и календарю публикаций.
                         </p>
                     </div>
 
-                    <FilterBar pagination={pagination} />
+                    <FilterBar {pagination} />
 
                     <div>
                         {#if listState.loading}
                             <div class="grid gap-5 md:grid-cols-2">
-                                {#each Array.from({ length: 6 }) as _, index (`home-loading-${index}`)}
-                                    <SkeletonCard lineWidths={['w-20', 'w-full', 'w-4/5', 'w-full']} />
+                                {#each Array.from( { length: 6 }, ) as _, index (`home-loading-${index}`)}
+                                    <SkeletonCard
+                                        lineWidths={[
+                                            'w-20',
+                                            'w-full',
+                                            'w-4/5',
+                                            'w-full',
+                                        ]}
+                                    />
                                 {/each}
                             </div>
                         {:else if listState.error}
-                            <div class="rounded-[1.75rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200">
+                            <div
+                                class="rounded-[1.75rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200"
+                            >
                                 {listState.error}
                             </div>
                         {:else if listState.articles.length === 0}
-                            <div class="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center dark:border-white/10 dark:bg-white/5">
+                            <div
+                                class="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center dark:border-white/10 dark:bg-white/5"
+                            >
                                 <div class="text-5xl">🧭</div>
-                                <h3 class="mt-4 text-2xl font-semibold text-slate-950 dark:text-white">
+                                <h3
+                                    class="mt-4 text-2xl font-semibold text-slate-950 dark:text-white"
+                                >
                                     По этим условиям пока нет материалов
                                 </h3>
-                                <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                                    Попробуйте убрать часть фильтров или открыть общую ленту.
+                                <p
+                                    class="mt-3 text-sm text-slate-500 dark:text-slate-400"
+                                >
+                                    Попробуйте убрать часть фильтров или открыть
+                                    общую ленту.
                                 </p>
                                 <button
                                     type="button"
@@ -594,8 +734,11 @@
                             </div>
 
                             {#if listState.articles.length > 50}
-                                <div class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-                                    Показываем первые 50. Используйте фильтры для уточнения.
+                                <div
+                                    class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100"
+                                >
+                                    Показываем первые 50. Используйте фильтры
+                                    для уточнения.
                                 </div>
                             {/if}
                         {/if}

@@ -14,9 +14,7 @@ class ConfirmSubscriptionMail extends Mailable
     use Queueable;
     use SerializesModels;
 
-    public function __construct(public NewsletterSubscriber $subscriber)
-    {
-    }
+    public function __construct(public NewsletterSubscriber $subscriber) {}
 
     public function envelope(): Envelope
     {

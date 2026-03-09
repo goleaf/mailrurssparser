@@ -2,12 +2,12 @@
 
 namespace App\Filament\Resources\Tags;
 
-use App\Filament\Support\AdminNavigationGroup;
 use App\Filament\Resources\Tags\Pages\CreateTag;
 use App\Filament\Resources\Tags\Pages\EditTag;
 use App\Filament\Resources\Tags\Pages\ListTags;
 use App\Filament\Resources\Tags\Schemas\TagForm;
 use App\Filament\Resources\Tags\Tables\TagsTable;
+use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Tag;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -26,7 +26,7 @@ class TagResource extends Resource
 
     protected static ?string $navigationLabel = 'Теги';
 
-    protected static string | UnitEnum | null $navigationGroup = AdminNavigationGroup::Taxonomy;
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Taxonomy;
 
     protected static ?int $navigationSort = 2;
 

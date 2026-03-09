@@ -25,7 +25,7 @@ enum AdminNavigationGroup implements HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): string | BackedEnum | Htmlable | null
+    public function getIcon(): string|BackedEnum|Htmlable|null
     {
         return match ($this) {
             self::Editorial => Heroicon::OutlinedNewspaper,

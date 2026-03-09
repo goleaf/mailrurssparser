@@ -148,6 +148,7 @@ export function highlightAutocompleteText(
 
     return segments.map((segment) => ({
         text: segment,
-        highlighted: segment.toLocaleLowerCase() === normalizedQuery.toLocaleLowerCase(),
+        highlighted:
+            segment.toLocaleLowerCase() === normalizedQuery.toLocaleLowerCase(),
     }));
 }

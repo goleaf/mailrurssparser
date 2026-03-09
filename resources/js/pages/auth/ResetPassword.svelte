@@ -20,10 +20,7 @@
 
 <AppHead title="Сброс пароля" />
 
-<AuthLayout
-    title="Сброс пароля"
-    description="Введите новый пароль ниже"
->
+<AuthLayout title="Сброс пароля" description="Введите новый пароль ниже">
     <Form
         {...update.form()}
         transform={(data) => ({ ...data, token, email })}
@@ -59,7 +56,8 @@
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password_confirmation">Подтвердите пароль</Label>
+                    <Label for="password_confirmation">Подтвердите пароль</Label
+                    >
                     <Input
                         id="password_confirmation"
                         type="password"

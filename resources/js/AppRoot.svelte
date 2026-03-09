@@ -100,8 +100,12 @@
 </script>
 
 {#if updateRegistration?.waiting}
-    <div class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
-        <div class="pointer-events-auto flex max-w-xl items-center gap-4 rounded-2xl border border-sky-200 bg-white px-5 py-4 text-sm shadow-xl dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+    <div
+        class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4"
+    >
+        <div
+            class="pointer-events-auto flex max-w-xl items-center gap-4 rounded-2xl border border-sky-200 bg-white px-5 py-4 text-sm shadow-xl dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+        >
             <div class="flex-1">
                 <div class="font-semibold text-slate-900 dark:text-white">
                     Доступно обновление

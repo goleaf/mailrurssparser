@@ -176,9 +176,9 @@
                 }),
             ]);
 
-            tag = tagResponse.data?.data ?? null;
-            articles = articlesResponse.data?.data ?? [];
-            pagination = articlesResponse.data?.meta ?? null;
+            tag = tagResponse.data;
+            articles = articlesResponse.data;
+            pagination = articlesResponse.meta;
         } catch (loadError) {
             error =
                 loadError instanceof Error
@@ -214,11 +214,20 @@
 
 <AppHead title={tag ? `Тег: ${tag.name}` : 'Тег'} />
 
-<div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(107,114,128,0.16),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#eef2ff)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.16),_transparent_30%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8">
+<div
+    class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(107,114,128,0.16),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#eef2ff)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.16),_transparent_30%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8"
+>
     <div class="mx-auto max-w-7xl">
-        <section class="relative overflow-hidden rounded-[2.35rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94),rgba(241,245,249,0.96))] p-6 shadow-[0_36px_110px_-60px_rgba(15,23,42,0.4)] backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,41,59,0.88),rgba(15,23,42,0.92))] sm:p-8">
-            <div class="absolute right-0 top-0 h-44 w-44 rounded-full bg-slate-300/55 blur-3xl dark:bg-slate-400/10"></div>
-            <div class="absolute bottom-0 left-0 h-36 w-36 rounded-full blur-3xl dark:opacity-40" style={`background-color: ${(tag?.color ?? '#6B7280')}33`}></div>
+        <section
+            class="relative overflow-hidden rounded-[2.35rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94),rgba(241,245,249,0.96))] p-6 shadow-[0_36px_110px_-60px_rgba(15,23,42,0.4)] backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,41,59,0.88),rgba(15,23,42,0.92))] sm:p-8"
+        >
+            <div
+                class="absolute right-0 top-0 h-44 w-44 rounded-full bg-slate-300/55 blur-3xl dark:bg-slate-400/10"
+            ></div>
+            <div
+                class="absolute bottom-0 left-0 h-36 w-36 rounded-full blur-3xl dark:opacity-40"
+                style={`background-color: ${tag?.color ?? '#6B7280'}33`}
+            ></div>
             <div class="flex flex-wrap items-start justify-between gap-6">
                 <div class="relative max-w-3xl">
                     <div
@@ -227,11 +236,15 @@
                     >
                         #{tag?.name ?? 'tag'}
                     </div>
-                    <h1 class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                    <h1
+                        class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl"
+                    >
                         Тег: {tag?.name ?? 'Загрузка...'}
                     </h1>
                     {#if tag?.description}
-                        <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
+                        <p
+                            class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base"
+                        >
                             {tag.description}
                         </p>
                     {/if}
@@ -255,11 +268,17 @@
 
                 <div class="grid gap-3 sm:grid-cols-3">
                     {#each heroStats as stat (stat.label)}
-                        <div class="rounded-[1.6rem] border border-slate-200/80 bg-white/75 px-5 py-4 dark:border-white/10 dark:bg-white/5">
-                            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        <div
+                            class="rounded-[1.6rem] border border-slate-200/80 bg-white/75 px-5 py-4 dark:border-white/10 dark:bg-white/5"
+                        >
+                            <div
+                                class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400"
+                            >
                                 {stat.label}
                             </div>
-                            <div class="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">
+                            <div
+                                class="mt-2 text-3xl font-semibold text-slate-950 dark:text-white"
+                            >
                                 {stat.value}
                             </div>
                         </div>
@@ -270,13 +289,21 @@
 
         <div class="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
             <section class="space-y-6">
-                <div class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
-                    <div class="flex flex-wrap items-center justify-between gap-4">
+                <div
+                    class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]"
+                >
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-4"
+                    >
                         <div>
-                            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <div
+                                class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                            >
                                 Материалы по тегу
                             </div>
-                            <div class="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">
+                            <div
+                                class="mt-1 text-2xl font-semibold text-slate-950 dark:text-white"
+                            >
                                 Найдено: {totalResults}
                             </div>
                         </div>
@@ -303,7 +330,9 @@
 
                     <div class="mt-4 grid gap-3 md:grid-cols-2">
                         <label class="space-y-2">
-                            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <span
+                                class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                            >
                                 С даты
                             </span>
                             <input
@@ -311,7 +340,8 @@
                                 class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
                                 value={dateFrom ?? ''}
                                 onchange={(event) => {
-                                    const target = event.currentTarget as HTMLInputElement;
+                                    const target =
+                                        event.currentTarget as HTMLInputElement;
 
                                     dateFrom = target.value || null;
                                     page = 1;
@@ -320,7 +350,9 @@
                         </label>
 
                         <label class="space-y-2">
-                            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <span
+                                class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                            >
                                 По дату
                             </span>
                             <input
@@ -328,7 +360,8 @@
                                 class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
                                 value={dateTo ?? ''}
                                 onchange={(event) => {
-                                    const target = event.currentTarget as HTMLInputElement;
+                                    const target =
+                                        event.currentTarget as HTMLInputElement;
 
                                     dateTo = target.value || null;
                                     page = 1;
@@ -345,16 +378,25 @@
                         {/each}
                     </div>
                 {:else if error}
-                    <div class="rounded-[2rem] border border-dashed border-rose-300 bg-white p-8 text-center text-rose-600 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-300">
+                    <div
+                        class="rounded-[2rem] border border-dashed border-rose-300 bg-white p-8 text-center text-rose-600 dark:border-rose-500/30 dark:bg-slate-900 dark:text-rose-300"
+                    >
                         {error}
                     </div>
                 {:else if articles.length === 0}
-                    <div class="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-slate-900">
-                        <h2 class="text-2xl font-semibold text-slate-950 dark:text-white">
+                    <div
+                        class="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-slate-900"
+                    >
+                        <h2
+                            class="text-2xl font-semibold text-slate-950 dark:text-white"
+                        >
                             По этому тегу пока нет материалов
                         </h2>
-                        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                            Попробуйте поменять сортировку или выбрать соседний тег.
+                        <p
+                            class="mt-3 text-sm text-slate-500 dark:text-slate-400"
+                        >
+                            Попробуйте поменять сортировку или выбрать соседний
+                            тег.
                         </p>
                     </div>
                 {:else}
@@ -369,8 +411,12 @@
             </section>
 
             <aside class="space-y-5">
-                <section class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
-                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <section
+                    class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]"
+                >
+                    <div
+                        class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                    >
                         Похожие теги
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2">
@@ -388,8 +434,11 @@
                                 </button>
                             {/each}
                         {:else}
-                            <p class="text-sm text-slate-500 dark:text-slate-400">
-                                Связанные теги появятся после загрузки материалов.
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Связанные теги появятся после загрузки
+                                материалов.
                             </p>
                         {/if}
                     </div>

@@ -11,7 +11,7 @@ class ArticleResourceConfiguration extends ResourceConfiguration
 
     protected ?string $navigationLabel = null;
 
-    protected string | UnitEnum | null $navigationGroup = null;
+    protected string|UnitEnum|null $navigationGroup = null;
 
     protected ?int $navigationSort = null;
 
@@ -41,14 +41,14 @@ class ArticleResourceConfiguration extends ResourceConfiguration
         return $this->navigationLabel;
     }
 
-    public function navigationGroup(string | UnitEnum | null $group): static
+    public function navigationGroup(string|UnitEnum|null $group): static
     {
         $this->navigationGroup = $group;
 
         return $this;
     }
 
-    public function getNavigationGroup(): string | UnitEnum | null
+    public function getNavigationGroup(): string|UnitEnum|null
     {
         return $this->navigationGroup;
     }

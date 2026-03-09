@@ -11,7 +11,11 @@
         SearchAutocompleteItem,
         SearchSuggestions,
     } from '@/lib/searchAutocomplete';
-    import { resetFilters, setCategory, toggleTag } from '@/stores/articles.svelte.js';
+    import {
+        resetFilters,
+        setCategory,
+        toggleTag,
+    } from '@/stores/articles.svelte.js';
 
     const RECENT_SEARCHES_KEY = 'news-portal-recent-searches';
 
@@ -154,7 +158,8 @@
             }
 
             event.preventDefault();
-            activeSuggestionIndex = (activeSuggestionIndex + 1 + items.length) % items.length;
+            activeSuggestionIndex =
+                (activeSuggestionIndex + 1 + items.length) % items.length;
 
             return;
         }
@@ -244,11 +249,7 @@
                     return;
                 }
 
-                suggestions = {
-                    articles: response.data?.articles ?? [],
-                    categories: response.data?.categories ?? [],
-                    tags: response.data?.tags ?? [],
-                };
+                suggestions = response.data;
                 activeSuggestionIndex = -1;
             } catch (error) {
                 if (
@@ -286,14 +287,22 @@
             aria-label="Закрыть поиск"
         ></button>
 
-        <div class="relative mx-auto flex min-h-full max-w-5xl items-start justify-center">
-            <div class="mt-8 w-full overflow-hidden rounded-[2rem] border border-white/10 bg-white p-6 shadow-2xl shadow-black/30 dark:bg-neutral-950 sm:p-8">
+        <div
+            class="relative mx-auto flex min-h-full max-w-5xl items-start justify-center"
+        >
+            <div
+                class="mt-8 w-full overflow-hidden rounded-[2rem] border border-white/10 bg-white p-6 shadow-2xl shadow-black/30 dark:bg-neutral-950 sm:p-8"
+            >
                 <div class="mb-6 flex items-start justify-between gap-4">
                     <div>
-                        <div class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-600 dark:text-sky-300">
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-600 dark:text-sky-300"
+                        >
                             Быстрый поиск
                         </div>
-                        <h2 class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white sm:text-3xl">
+                        <h2
+                            class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white sm:text-3xl"
+                        >
                             Найти статью, рубрику или тег
                         </h2>
                     </div>
@@ -309,8 +318,12 @@
                 </div>
 
                 <div class="rounded-[1.75rem] bg-slate-100 p-2 dark:bg-white/5">
-                    <div class="rounded-[1.25rem] bg-white px-4 py-3 shadow-sm dark:bg-neutral-900">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div
+                        class="rounded-[1.25rem] bg-white px-4 py-3 shadow-sm dark:bg-neutral-900"
+                    >
+                        <div
+                            class="flex flex-col gap-3 sm:flex-row sm:items-center"
+                        >
                             <Search class="size-5 shrink-0 text-slate-400" />
                             <input
                                 bind:this={searchInput}
@@ -347,29 +360,42 @@
                 <div class="mt-6 grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                            <h3
+                                class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400"
+                            >
                                 Подсказки
                             </h3>
                             {#if loading}
-                                <span class="text-xs text-slate-400">Обновляем...</span>
+                                <span class="text-xs text-slate-400"
+                                    >Обновляем...</span
+                                >
                             {/if}
                         </div>
 
                         {#if !query.trim()}
-                            <div class="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-                                Начните вводить запрос, чтобы увидеть подходящие статьи, рубрики и теги.
+                            <div
+                                class="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
+                            >
+                                Начните вводить запрос, чтобы увидеть подходящие
+                                статьи, рубрики и теги.
                             </div>
                         {/if}
 
                         {#if query.trim() && !loading && suggestions.articles.length === 0 && suggestions.categories.length === 0 && suggestions.tags.length === 0}
-                            <div class="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+                            <div
+                                class="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
+                            >
                                 Ничего не найдено. Попробуйте другой запрос.
                             </div>
                         {/if}
 
                         {#if suggestions.articles.length > 0}
-                            <div class="rounded-3xl border border-slate-200 p-3 dark:border-white/10">
-                                <div class="mb-2 px-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <div
+                                class="rounded-3xl border border-slate-200 p-3 dark:border-white/10"
+                            >
+                                <div
+                                    class="mb-2 px-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                                >
                                     Статьи
                                 </div>
                                 <div class="space-y-1">
@@ -381,11 +407,17 @@
                                                 openArticle(article.slug);
                                             }}
                                         >
-                                            <span class="font-medium text-slate-800 dark:text-slate-100">
+                                            <span
+                                                class="font-medium text-slate-800 dark:text-slate-100"
+                                            >
                                                 {article.title}
                                             </span>
-                                            <span class="shrink-0 text-xs text-slate-400">
-                                                {formatArticleDate(article.published_at)}
+                                            <span
+                                                class="shrink-0 text-xs text-slate-400"
+                                            >
+                                                {formatArticleDate(
+                                                    article.published_at,
+                                                )}
                                             </span>
                                         </button>
                                     {/each}
@@ -394,8 +426,12 @@
                         {/if}
 
                         {#if suggestions.categories.length > 0}
-                            <div class="rounded-3xl border border-slate-200 p-4 dark:border-white/10">
-                                <div class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <div
+                                class="rounded-3xl border border-slate-200 p-4 dark:border-white/10"
+                            >
+                                <div
+                                    class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                                >
                                     Рубрики
                                 </div>
                                 <div class="flex flex-wrap gap-2">
@@ -419,8 +455,12 @@
                         {/if}
 
                         {#if suggestions.tags.length > 0}
-                            <div class="rounded-3xl border border-slate-200 p-4 dark:border-white/10">
-                                <div class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <div
+                                class="rounded-3xl border border-slate-200 p-4 dark:border-white/10"
+                            >
+                                <div
+                                    class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                                >
                                     Теги
                                 </div>
                                 <div class="flex flex-wrap gap-2">
@@ -441,8 +481,12 @@
                     </div>
 
                     <div class="space-y-4">
-                        <div class="rounded-3xl bg-slate-950 p-5 text-white dark:bg-slate-900">
-                            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
+                        <div
+                            class="rounded-3xl bg-slate-950 p-5 text-white dark:bg-slate-900"
+                        >
+                            <div
+                                class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300"
+                            >
                                 Последние запросы
                             </div>
                             <div class="mt-4 flex flex-wrap gap-2">
@@ -461,7 +505,8 @@
                                     {/each}
                                 {:else}
                                     <p class="text-sm text-slate-300">
-                                        История поиска появится здесь после первых запросов.
+                                        История поиска появится здесь после
+                                        первых запросов.
                                     </p>
                                 {/if}
                             </div>
@@ -474,10 +519,14 @@
                                 submitSearch();
                             }}
                         >
-                            <span class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <span
+                                class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                            >
                                 Полный поиск
                             </span>
-                            <span class="mt-1 block text-base font-semibold text-slate-900 dark:text-white">
+                            <span
+                                class="mt-1 block text-base font-semibold text-slate-900 dark:text-white"
+                            >
                                 Показать все результаты
                             </span>
                         </button>

@@ -40,7 +40,7 @@ export async function loadArticles({ append = false } = {}) {
 
     try {
         const res = await api.getArticles(toApiParams(filters));
-        const nextArticles = res.data.data;
+        const nextArticles = res.data;
 
         listState.articles = append
             ? [
@@ -53,7 +53,7 @@ export async function loadArticles({ append = false } = {}) {
                   ),
               ]
             : nextArticles;
-        listState.pagination = res.data.meta;
+        listState.pagination = res.meta;
     } catch (e) {
         listState.error = e.message;
     } finally {

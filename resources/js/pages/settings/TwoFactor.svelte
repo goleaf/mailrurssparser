@@ -64,7 +64,8 @@
                     <div>
                         {#if twoFactorAuth.hasSetupData()}
                             <Button onclick={() => (showSetupModal = true)}>
-                                <ShieldCheck class="size-4" />Продолжить настройку
+                                <ShieldCheck class="size-4" />Продолжить
+                                настройку
                             </Button>
                         {:else}
                             <Form
@@ -73,7 +74,8 @@
                             >
                                 {#snippet children({ processing })}
                                     <Button type="submit" disabled={processing}>
-                                        <ShieldCheck class="size-4" />Включить 2FA
+                                        <ShieldCheck class="size-4" />Включить
+                                        2FA
                                     </Button>
                                 {/snippet}
                             </Form>

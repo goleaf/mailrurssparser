@@ -87,7 +87,7 @@
     const viewsPolling = usePolling(async () => {
         const response = await api.getArticle(slug, { track: 0 });
 
-        return (response.data?.data ?? null) as Article | null;
+        return response.data as Article | null;
     }, 120000);
 
     const publishedDate = $derived(
@@ -193,9 +193,7 @@
 
         try {
             const articleResponse = await api.getArticle(slug);
-            const nextArticle = articleResponse.data?.data as
-                | Article
-                | undefined;
+            const nextArticle = articleResponse.data as Article | null;
 
             if (!nextArticle) {
                 throw new Error('Article payload missing');
@@ -384,9 +382,16 @@
         </div>
     {:else if article}
         <article class="mx-auto max-w-6xl px-4 py-10 lg:px-6 lg:py-14">
-            <section class="relative overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94),rgba(239,246,255,0.96))] p-6 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.46)] backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(15,23,42,0.88),rgba(8,47,73,0.84))] lg:p-8">
-                <div class="absolute right-0 top-0 h-56 w-56 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-500/18"></div>
-                <div class="absolute bottom-0 left-0 h-40 w-40 rounded-full blur-3xl" style={`background-color: ${(article.category.color ?? '#2563EB')}22`}></div>
+            <section
+                class="relative overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94),rgba(239,246,255,0.96))] p-6 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.46)] backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(15,23,42,0.88),rgba(8,47,73,0.84))] lg:p-8"
+            >
+                <div
+                    class="absolute right-0 top-0 h-56 w-56 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-500/18"
+                ></div>
+                <div
+                    class="absolute bottom-0 left-0 h-40 w-40 rounded-full blur-3xl"
+                    style={`background-color: ${article.category.color ?? '#2563EB'}22`}
+                ></div>
                 <header class="relative mx-auto max-w-5xl">
                     <nav
                         class="mb-5 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400"
@@ -417,7 +422,8 @@
                             class="rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
                             style={`background-color: ${article.category.color ?? '#2563EB'}`}
                         >
-                            {article.category.icon ?? '📰'} {article.category.name}
+                            {article.category.icon ?? '📰'}
+                            {article.category.name}
                         </span>
                         {#if contentTypeLabel}
                             <span
@@ -445,7 +451,8 @@
                     <div
                         class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500 dark:text-slate-400"
                     >
-                        <span>{publishedDate || article.published_at_date}</span>
+                        <span>{publishedDate || article.published_at_date}</span
+                        >
                         <span>•</span>
                         <span>{article.author || 'Редакция'}</span>
                         {#if displaySourceName}
@@ -456,11 +463,17 @@
 
                     <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         {#each headerFacts as fact (fact.label)}
-                            <div class="rounded-[1.5rem] border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5">
-                                <div class="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <div
+                                class="rounded-[1.5rem] border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5"
+                            >
+                                <div
+                                    class="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-slate-400"
+                                >
                                     {fact.label}
                                 </div>
-                                <div class="mt-2 text-base font-semibold text-slate-950 dark:text-white">
+                                <div
+                                    class="mt-2 text-base font-semibold text-slate-950 dark:text-white"
+                                >
                                     {fact.value}
                                 </div>
                             </div>
@@ -643,7 +656,9 @@
                                 }
 
                                 void (async () => {
-                                    const result = await toggleBookmark(article.id);
+                                    const result = await toggleBookmark(
+                                        article.id,
+                                    );
 
                                     showToast(
                                         result.bookmarked

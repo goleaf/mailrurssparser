@@ -26,50 +26,18 @@
     let calendarData = $state<Record<string, number>>({});
     let loading = $state(false);
 
-    const daysInMonth = $derived(new Date(currentYear, currentMonth, 0).getDate());
+    const daysInMonth = $derived(
+        new Date(currentYear, currentMonth, 0).getDate(),
+    );
     const firstWeekday = $derived(
         (new Date(currentYear, currentMonth - 1, 1).getDay() + 6) % 7,
     );
-    const monthLabel = $derived(`${monthNames[currentMonth - 1]} ${currentYear}`);
+    const monthLabel = $derived(
+        `${monthNames[currentMonth - 1]} ${currentYear}`,
+    );
     const totalArticles = $derived(
         Object.values(calendarData).reduce((sum, count) => sum + count, 0),
     );
-
-    function normalizeCalendarData(payload: unknown): Record<string, number> {
-        const rawData =
-            payload &&
-            typeof payload === 'object' &&
-            !Array.isArray(payload) &&
-            'data' in payload &&
-            payload.data &&
-            typeof payload.data === 'object' &&
-            !Array.isArray(payload.data)
-                ? payload.data
-                : payload;
-
-        if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
-            return {};
-        }
-
-        return Object.entries(rawData).reduce<Record<string, number>>(
-            (counts, [day, value]) => {
-                if (!/^\d+$/.test(day)) {
-                    return counts;
-                }
-
-                const numericValue = Number(value);
-
-                if (!Number.isFinite(numericValue) || numericValue <= 0) {
-                    return counts;
-                }
-
-                counts[day] = numericValue;
-
-                return counts;
-            },
-            {},
-        );
-    }
 
     function formatDay(day: number): string {
         return `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(
@@ -120,7 +88,7 @@
             .getCalendar(year, month)
             .then((response) => {
                 if (!cancelled) {
-                    calendarData = normalizeCalendarData(response.data);
+                    calendarData = response.data;
                 }
             })
             .catch(() => {
@@ -140,9 +108,13 @@
     });
 </script>
 
-<aside class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-neutral-900">
+<aside
+    class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-neutral-900"
+>
     <div class="mb-4 flex items-center justify-between">
-        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
+        <div
+            class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300"
+        >
             📅 Календарь
         </div>
 
@@ -183,7 +155,9 @@
         </button>
     </div>
 
-    <div class="grid grid-cols-7 gap-1 text-center text-[0.7rem] font-semibold uppercase tracking-wide text-slate-400">
+    <div
+        class="grid grid-cols-7 gap-1 text-center text-[0.7rem] font-semibold uppercase tracking-wide text-slate-400"
+    >
         {#each weekdays as weekday (weekday)}
             <div class="py-2">{weekday}</div>
         {/each}
@@ -191,10 +165,12 @@
 
     <div class="relative mt-2 grid grid-cols-7 gap-1">
         {#if loading}
-            <div class="absolute inset-0 rounded-3xl bg-white/70 backdrop-blur-xs dark:bg-neutral-900/70"></div>
+            <div
+                class="absolute inset-0 rounded-3xl bg-white/70 backdrop-blur-xs dark:bg-neutral-900/70"
+            ></div>
         {/if}
 
-        {#each Array.from({ length: firstWeekday }) as _, index (`empty-${index}`)}
+        {#each Array.from( { length: firstWeekday }, ) as _, index (`empty-${index}`)}
             <div class="aspect-square"></div>
         {/each}
 
@@ -210,7 +186,9 @@
                         : 'text-slate-500 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5',
                     selected &&
                         'bg-sky-500 text-white hover:bg-sky-500 dark:bg-sky-500 dark:text-white',
-                    isToday(day) && !selected && 'ring-2 ring-sky-300 dark:ring-sky-700',
+                    isToday(day) &&
+                        !selected &&
+                        'ring-2 ring-sky-300 dark:ring-sky-700',
                 )}
                 onclick={() => {
                     setDate(formatDay(day));
@@ -223,7 +201,9 @@
                     <span
                         class={cn(
                             'absolute bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full',
-                            selected ? 'bg-white' : 'bg-sky-500 dark:bg-sky-300',
+                            selected
+                                ? 'bg-white'
+                                : 'bg-sky-500 dark:bg-sky-300',
                         )}
                     ></span>
                 {/if}
@@ -233,6 +213,8 @@
 
     <div class="mt-4 text-sm text-slate-500 dark:text-slate-400">
         За месяц:
-        <span class="font-semibold text-slate-900 dark:text-white">{formatNumber(totalArticles)}</span>
+        <span class="font-semibold text-slate-900 dark:text-white"
+            >{formatNumber(totalArticles)}</span
+        >
     </div>
 </aside>

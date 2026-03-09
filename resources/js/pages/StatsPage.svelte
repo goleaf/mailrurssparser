@@ -10,95 +10,14 @@
     import AppHead from '@/components/AppHead.svelte';
     import Skeleton from '@/components/ui/skeleton/Skeleton.svelte';
     import * as api from '@/lib/api';
+    import type {
+        StatsCategoryBreakdownItem as CategoryBreakdownItem,
+        StatsChartPayload as ChartPayload,
+        StatsFeedPerformance as FeedPerformance,
+        StatsOverview as Overview,
+        StatsPopularRow as PopularRow,
+    } from '@/lib/api';
     import { cn } from '@/lib/utils';
-
-    type Overview = {
-        articles: {
-            total: number;
-            today: number;
-            this_week: number;
-            breaking: number;
-            featured: number;
-        };
-        views: {
-            total: number;
-            today: number;
-            this_week: number;
-            unique_today: number;
-        };
-        top_categories: CategoryBreakdownItem[];
-        trending_tags: TrendingTag[];
-        last_parse?: string | null;
-        feeds: {
-            total: number;
-            active: number;
-            errors: number;
-        };
-    };
-
-    type ChartSeries = {
-        id: number;
-        name: string;
-        color: string;
-        data: number[];
-    };
-
-    type ChartPayload = {
-        labels: string[];
-        data: number[];
-        period: '7d' | '30d' | '90d';
-        series?: ChartSeries[];
-    };
-
-    type PopularRow = {
-        article_id: number | string;
-        title: string;
-        slug: string;
-        category?: string | null;
-        view_count: number;
-        shares_count: number;
-        bookmarks_count: number;
-        change_percent?: number | null;
-    };
-
-    type CategoryBreakdownItem = {
-        id: number | string;
-        name: string;
-        slug: string;
-        color?: string | null;
-        article_count: number;
-        percentage: number;
-        top_article?: {
-            id: number | string;
-            title: string;
-            slug: string;
-            views_count?: number | null;
-        } | null;
-    };
-
-    type FeedPerformance = {
-        id: number | string;
-        title: string;
-        category?: string | null;
-        total_articles: number;
-        today_articles_count: number;
-        last_run?: {
-            new_count: number;
-            skip_count: number;
-            error_count: number;
-            duration_ms?: number | null;
-            started_at?: string | null;
-        } | null;
-        avg_duration_ms?: number | null;
-    };
-
-    type TrendingTag = {
-        id: number | string;
-        name: string;
-        slug: string;
-        color?: string | null;
-        usage_count?: number | null;
-    };
 
     type TrendSummary = {
         direction: 'up' | 'down' | 'flat';
@@ -197,7 +116,8 @@
         const maxValue = Math.max(...values, 1);
         const minValue = Math.min(...values, 0);
         const range = Math.max(maxValue - minValue, 1);
-        const slot = labels.length > 1 ? width / (labels.length - 1) : width / 2;
+        const slot =
+            labels.length > 1 ? width / (labels.length - 1) : width / 2;
 
         const points = values.map((value, index) => {
             const x =
@@ -225,17 +145,16 @@
     const articlesSeries = $derived.by((): ArticleBar[] => {
         const labels = articlesChart?.labels ?? [];
         const totals = articlesChart?.data ?? [];
-        const series =
-            articlesChart?.series?.length
-                ? articlesChart.series
-                : [
-                      {
-                          id: 0,
-                          name: 'Все категории',
-                          color: '#2563EB',
-                          data: totals,
-                      },
-                  ];
+        const series = articlesChart?.series?.length
+            ? articlesChart.series
+            : [
+                  {
+                      id: 0,
+                      name: 'Все категории',
+                      color: '#2563EB',
+                      data: totals,
+                  },
+              ];
 
         const chartWidth =
             articlesChartWidth -
@@ -352,7 +271,9 @@
             };
         }
 
-        const change = Number((((current - previous) / previous) * 100).toFixed(1));
+        const change = Number(
+            (((current - previous) / previous) * 100).toFixed(1),
+        );
 
         if (change > 0) {
             return {
@@ -491,9 +412,9 @@
             chartData = viewsChartResponse.data;
             articlesChart = articlesChartResponse.data;
             comparisonChart = comparisonResponse.data;
-            popular = popularResponse.data?.data ?? [];
-            feeds = feedsResponse.data?.data ?? [];
-            categoryBreakdown = breakdownResponse.data?.data ?? [];
+            popular = popularResponse.data;
+            feeds = feedsResponse.data;
+            categoryBreakdown = breakdownResponse.data;
             loadedChartPeriod = chartPeriod;
             loadedPopularPeriod = popularPeriod;
         } catch {
@@ -530,7 +451,7 @@
             return;
         }
 
-        popular = response.data?.data ?? [];
+        popular = response.data;
         loadedPopularPeriod = period;
     }
 
@@ -610,44 +531,71 @@
 
 <AppHead title="Статистика портала" />
 
-<div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_30%),linear-gradient(to_bottom,_#f8fbff,_#eef2ff)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),_transparent_30%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8">
+<div
+    class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_30%),linear-gradient(to_bottom,_#f8fbff,_#eef2ff)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),_transparent_30%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8"
+>
     <div class="mx-auto max-w-7xl space-y-8">
-        <section class="relative overflow-hidden rounded-[2.3rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8">
-            <div class="absolute right-0 top-0 h-40 w-40 rounded-full bg-sky-200/50 blur-3xl dark:bg-sky-500/20"></div>
-            <div class="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-amber-200/50 blur-3xl dark:bg-amber-500/10"></div>
+        <section
+            class="relative overflow-hidden rounded-[2.3rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/80 sm:p-8"
+        >
+            <div
+                class="absolute right-0 top-0 h-40 w-40 rounded-full bg-sky-200/50 blur-3xl dark:bg-sky-500/20"
+            ></div>
+            <div
+                class="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-amber-200/50 blur-3xl dark:bg-amber-500/10"
+            ></div>
             <div class="flex flex-wrap items-end justify-between gap-6">
                 <div class="max-w-3xl">
-                    <div class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
+                    <div
+                        class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300"
+                    >
                         <Radio class="size-4" />
                         Живая аналитика
                     </div>
-                    <h1 class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                    <h1
+                        class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl"
+                    >
                         Пульс редакции и поведение аудитории
                     </h1>
-                    <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
-                        Единая панель с публикациями, просмотрами, долей рубрик и работой RSS-лент.
-                        Подходит и для быстрого обзора, и для анализа ритма новостей.
+                    <p
+                        class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base"
+                    >
+                        Единая панель с публикациями, просмотрами, долей рубрик
+                        и работой RSS-лент. Подходит и для быстрого обзора, и
+                        для анализа ритма новостей.
                     </p>
 
                     <div class="mt-5 flex flex-wrap gap-3">
-                        <div class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                        <div
+                            class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
+                        >
                             {formatNumber(overview?.articles.total ?? 0)} материалов
                         </div>
-                        <div class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                        <div
+                            class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
+                        >
                             {formatNumber(overview?.views.total ?? 0)} просмотров
                         </div>
-                        <div class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                        <div
+                            class="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
+                        >
                             {formatNumber(overview?.feeds.active ?? 0)} активных лент
                         </div>
                     </div>
                 </div>
 
                 {#if overview?.last_parse}
-                    <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 px-5 py-4 dark:border-white/10 dark:bg-white/5">
-                        <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    <div
+                        class="rounded-[1.75rem] border border-slate-200 bg-slate-50 px-5 py-4 dark:border-white/10 dark:bg-white/5"
+                    >
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400"
+                        >
                             Последний парсинг
                         </div>
-                        <div class="mt-2 text-sm font-medium text-slate-900 dark:text-white">
+                        <div
+                            class="mt-2 text-sm font-medium text-slate-900 dark:text-white"
+                        >
                             {formatRelativeDate(overview.last_parse)}
                         </div>
                     </div>
@@ -656,7 +604,9 @@
         </section>
 
         {#if error && !loading}
-            <section class="rounded-[1.75rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200">
+            <section
+                class="rounded-[1.75rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200"
+            >
                 {error}
             </section>
         {/if}
@@ -664,7 +614,9 @@
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {#if loading}
                 {#each Array.from({ length: 4 }) as _, index (index)}
-                    <div class="rounded-[1.75rem] border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-slate-900">
+                    <div
+                        class="rounded-[1.75rem] border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-slate-900"
+                    >
                         <Skeleton class="h-5 w-24" />
                         <Skeleton class="mt-5 h-10 w-32" />
                         <Skeleton class="mt-4 h-4 w-40" />
@@ -672,22 +624,32 @@
                 {/each}
             {:else}
                 {#each cardTrends as card (card.key)}
-                    <article class="rounded-[1.9rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
+                    <article
+                        class="rounded-[1.9rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]"
+                    >
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                                <div
+                                    class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                                >
                                     {card.title}
                                 </div>
-                                <div class="mt-4 text-4xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                                <div
+                                    class="mt-4 text-4xl font-semibold tracking-tight text-slate-950 dark:text-white"
+                                >
                                     {formatNumber(card.value)}
                                 </div>
                             </div>
-                            <div class="rounded-2xl bg-slate-100 p-3 text-slate-700 dark:bg-white/5 dark:text-slate-200">
+                            <div
+                                class="rounded-2xl bg-slate-100 p-3 text-slate-700 dark:bg-white/5 dark:text-slate-200"
+                            >
                                 <card.icon class="size-5" />
                             </div>
                         </div>
 
-                        <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                        <p
+                            class="mt-4 text-sm text-slate-500 dark:text-slate-400"
+                        >
                             {card.subtitle}
                         </p>
 
@@ -715,14 +677,22 @@
             {/if}
         </section>
 
-        <section class="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
-            <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
+        <section
+            class="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]"
+        >
+            <article
+                class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900"
+            >
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        >
                             Просмотры
                         </div>
-                        <h2 class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                        <h2
+                            class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white"
+                        >
                             Динамика за период
                         </h2>
                     </div>
@@ -750,7 +720,9 @@
                 {#if loading}
                     <Skeleton class="mt-6 h-[320px] w-full rounded-[1.5rem]" />
                 {:else}
-                    <div class="relative mt-6 overflow-hidden rounded-[1.5rem] bg-slate-50 p-4 dark:bg-white/5">
+                    <div
+                        class="relative mt-6 overflow-hidden rounded-[1.5rem] bg-slate-50 p-4 dark:bg-white/5"
+                    >
                         <svg
                             viewBox={`0 0 ${lineChartWidth} ${lineChartHeight}`}
                             class="h-[320px] w-full"
@@ -762,7 +734,11 @@
                                     lineChartPadding.top +
                                     lineMetrics.height -
                                     ((tick - lineMetrics.minValue) /
-                                        Math.max(lineMetrics.maxValue - lineMetrics.minValue, 1)) *
+                                        Math.max(
+                                            lineMetrics.maxValue -
+                                                lineMetrics.minValue,
+                                            1,
+                                        )) *
                                         lineMetrics.height}
                                 <line
                                     x1={lineChartPadding.left}
@@ -791,7 +767,13 @@
                             />
 
                             <defs>
-                                <linearGradient id="viewsGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+                                <linearGradient
+                                    id="viewsGradient"
+                                    x1="0%"
+                                    x2="100%"
+                                    y1="0%"
+                                    y2="0%"
+                                >
                                     <stop offset="0%" stop-color="#0EA5E9" />
                                     <stop offset="100%" stop-color="#2563EB" />
                                 </linearGradient>
@@ -842,23 +824,36 @@
                                 class="pointer-events-none absolute z-10 rounded-2xl bg-slate-950 px-3 py-2 text-xs text-white shadow-lg"
                                 style={`left: calc(${(hoveredPoint.left / lineChartWidth) * 100}% - 3rem); top: calc(${(hoveredPoint.top / lineChartHeight) * 100}% - 3.75rem);`}
                             >
-                                <div class="font-semibold">{formatNumber(hoveredPoint.value)} просмотров</div>
-                                <div class="mt-1 text-slate-300">{formatLabel(hoveredPoint.label)}</div>
+                                <div class="font-semibold">
+                                    {formatNumber(hoveredPoint.value)} просмотров
+                                </div>
+                                <div class="mt-1 text-slate-300">
+                                    {formatLabel(hoveredPoint.label)}
+                                </div>
                             </div>
                         {/if}
                     </div>
                 {/if}
 
                 <div class="mt-5 text-sm text-slate-500 dark:text-slate-400">
-                    Всего за выбранный период: <span class="font-semibold text-slate-900 dark:text-white">{formatNumber(chartTotal)}</span>
+                    Всего за выбранный период: <span
+                        class="font-semibold text-slate-900 dark:text-white"
+                        >{formatNumber(chartTotal)}</span
+                    >
                 </div>
             </article>
 
-            <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <article
+                class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900"
+            >
+                <div
+                    class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                >
                     Категории
                 </div>
-                <h2 class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                <h2
+                    class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white"
+                >
                     Доля публикаций
                 </h2>
 
@@ -867,7 +862,9 @@
                         {#each Array.from({ length: 5 }) as _, index (index)}
                             <div>
                                 <Skeleton class="h-4 w-28" />
-                                <Skeleton class="mt-3 h-3 w-full rounded-full" />
+                                <Skeleton
+                                    class="mt-3 h-3 w-full rounded-full"
+                                />
                             </div>
                         {/each}
                     </div>
@@ -875,15 +872,23 @@
                     <div class="mt-6 space-y-4">
                         {#each categoryBreakdown as item (item.id)}
                             <div>
-                                <div class="flex items-center justify-between gap-3 text-sm">
-                                    <div class="font-medium text-slate-900 dark:text-white">
+                                <div
+                                    class="flex items-center justify-between gap-3 text-sm"
+                                >
+                                    <div
+                                        class="font-medium text-slate-900 dark:text-white"
+                                    >
                                         {item.name}
                                     </div>
-                                    <div class="text-slate-500 dark:text-slate-400">
+                                    <div
+                                        class="text-slate-500 dark:text-slate-400"
+                                    >
                                         {formatNumber(item.article_count)} • {item.percentage}%
                                     </div>
                                 </div>
-                                <div class="mt-2 h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
+                                <div
+                                    class="mt-2 h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5"
+                                >
                                     <div
                                         class="h-full rounded-full"
                                         style={`width: ${Math.max(item.percentage, 3)}%; background-color: ${item.color ?? '#3B82F6'};`}
@@ -904,14 +909,22 @@
             </article>
         </section>
 
-        <section class="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
-            <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
+        <section
+            class="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]"
+        >
+            <article
+                class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900"
+            >
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        >
                             Публикации
                         </div>
-                        <h2 class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                        <h2
+                            class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white"
+                        >
                             Статьи по дням
                         </h2>
                     </div>
@@ -919,7 +932,9 @@
                     {#if articlesChart?.series?.length}
                         <div class="flex flex-wrap gap-3">
                             {#each articlesChart.series as series (series.id)}
-                                <div class="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                <div
+                                    class="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"
+                                >
                                     <span
                                         class="size-3 rounded-full"
                                         style={`background-color: ${series.color}`}
@@ -934,7 +949,9 @@
                 {#if loading}
                     <Skeleton class="mt-6 h-[320px] w-full rounded-[1.5rem]" />
                 {:else}
-                    <div class="relative mt-6 overflow-hidden rounded-[1.5rem] bg-slate-50 p-4 dark:bg-white/5">
+                    <div
+                        class="relative mt-6 overflow-hidden rounded-[1.5rem] bg-slate-50 p-4 dark:bg-white/5"
+                    >
                         <svg
                             viewBox={`0 0 ${articlesChartWidth} ${articlesChartHeight}`}
                             class="h-[320px] w-full"
@@ -956,7 +973,9 @@
                                             hoveredBar = {
                                                 label: `${bar.label} — ${segment.name}`,
                                                 value: segment.value,
-                                                left: segment.x + segment.width / 2,
+                                                left:
+                                                    segment.x +
+                                                    segment.width / 2,
                                                 top: segment.y,
                                             };
                                         }}
@@ -984,19 +1003,29 @@
                                 class="pointer-events-none absolute z-10 rounded-2xl bg-slate-950 px-3 py-2 text-xs text-white shadow-lg"
                                 style={`left: calc(${(hoveredBar.left / articlesChartWidth) * 100}% - 3rem); top: calc(${(hoveredBar.top / articlesChartHeight) * 100}% - 3.75rem);`}
                             >
-                                <div class="font-semibold">{formatNumber(hoveredBar.value)} публикаций</div>
-                                <div class="mt-1 text-slate-300">{hoveredBar.label}</div>
+                                <div class="font-semibold">
+                                    {formatNumber(hoveredBar.value)} публикаций
+                                </div>
+                                <div class="mt-1 text-slate-300">
+                                    {hoveredBar.label}
+                                </div>
                             </div>
                         {/if}
                     </div>
                 {/if}
             </article>
 
-            <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <article
+                class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900"
+            >
+                <div
+                    class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                >
                     Теги
                 </div>
-                <h2 class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                <h2
+                    class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white"
+                >
                     Тренды редакции
                 </h2>
 
@@ -1028,14 +1057,22 @@
             </article>
         </section>
 
-        <section class="grid gap-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
+        <section
+            class="grid gap-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]"
+        >
+            <article
+                class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900"
+            >
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        >
                             Популярное
                         </div>
-                        <h2 class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                        <h2
+                            class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white"
+                        >
                             Самые читаемые статьи
                         </h2>
                     </div>
@@ -1063,7 +1100,9 @@
                 <div class="mt-6 overflow-x-auto">
                     <table class="min-w-full table-auto text-sm">
                         <thead class="text-left text-slate-400">
-                            <tr class="border-b border-slate-200 dark:border-white/10">
+                            <tr
+                                class="border-b border-slate-200 dark:border-white/10"
+                            >
                                 <th class="pb-3 pr-4 font-medium">#</th>
                                 <th class="pb-3 pr-4 font-medium">Статья</th>
                                 <th class="pb-3 pr-4 font-medium">Категория</th>
@@ -1074,20 +1113,38 @@
                         </thead>
                         <tbody>
                             {#if loading}
-                                {#each Array.from({ length: 5 }) as _, index (index)}
-                                    <tr class="border-b border-slate-100 dark:border-white/5">
-                                        <td class="py-4 pr-4"><Skeleton class="h-4 w-6" /></td>
-                                        <td class="py-4 pr-4"><Skeleton class="h-4 w-48" /></td>
-                                        <td class="py-4 pr-4"><Skeleton class="h-4 w-20" /></td>
-                                        <td class="py-4 pr-4"><Skeleton class="h-4 w-12" /></td>
-                                        <td class="py-4 pr-4"><Skeleton class="h-4 w-12" /></td>
-                                        <td class="py-4"><Skeleton class="h-4 w-12" /></td>
+                                {#each Array.from( { length: 5 }, ) as _, index (index)}
+                                    <tr
+                                        class="border-b border-slate-100 dark:border-white/5"
+                                    >
+                                        <td class="py-4 pr-4"
+                                            ><Skeleton class="h-4 w-6" /></td
+                                        >
+                                        <td class="py-4 pr-4"
+                                            ><Skeleton class="h-4 w-48" /></td
+                                        >
+                                        <td class="py-4 pr-4"
+                                            ><Skeleton class="h-4 w-20" /></td
+                                        >
+                                        <td class="py-4 pr-4"
+                                            ><Skeleton class="h-4 w-12" /></td
+                                        >
+                                        <td class="py-4 pr-4"
+                                            ><Skeleton class="h-4 w-12" /></td
+                                        >
+                                        <td class="py-4"
+                                            ><Skeleton class="h-4 w-12" /></td
+                                        >
                                     </tr>
                                 {/each}
                             {:else}
                                 {#each popular as row, index (row.article_id)}
-                                    <tr class="border-b border-slate-100 dark:border-white/5">
-                                        <td class="py-4 pr-4 font-semibold text-slate-500 dark:text-slate-400">
+                                    <tr
+                                        class="border-b border-slate-100 dark:border-white/5"
+                                    >
+                                        <td
+                                            class="py-4 pr-4 font-semibold text-slate-500 dark:text-slate-400"
+                                        >
                                             {index + 1}
                                         </td>
                                         <td class="py-4 pr-4">
@@ -1106,20 +1163,31 @@
                                                             : 'text-rose-600 dark:text-rose-300',
                                                     )}
                                                 >
-                                                    {row.change_percent >= 0 ? '+' : ''}{row.change_percent}% к прошлому периоду
+                                                    {row.change_percent >= 0
+                                                        ? '+'
+                                                        : ''}{row.change_percent}%
+                                                    к прошлому периоду
                                                 </div>
                                             {/if}
                                         </td>
-                                        <td class="py-4 pr-4 text-slate-600 dark:text-slate-300">
+                                        <td
+                                            class="py-4 pr-4 text-slate-600 dark:text-slate-300"
+                                        >
                                             {row.category ?? 'Без категории'}
                                         </td>
-                                        <td class="py-4 pr-4 text-slate-600 dark:text-slate-300">
+                                        <td
+                                            class="py-4 pr-4 text-slate-600 dark:text-slate-300"
+                                        >
                                             {formatNumber(row.view_count)}
                                         </td>
-                                        <td class="py-4 pr-4 text-slate-600 dark:text-slate-300">
+                                        <td
+                                            class="py-4 pr-4 text-slate-600 dark:text-slate-300"
+                                        >
                                             {formatNumber(row.shares_count)}
                                         </td>
-                                        <td class="py-4 text-slate-600 dark:text-slate-300">
+                                        <td
+                                            class="py-4 text-slate-600 dark:text-slate-300"
+                                        >
                                             {formatNumber(row.bookmarks_count)}
                                         </td>
                                     </tr>
@@ -1130,20 +1198,30 @@
                 </div>
             </article>
 
-            <article class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <article
+                class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900"
+            >
+                <div
+                    class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                >
                     RSS-ленты
                 </div>
-                <h2 class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                <h2
+                    class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white"
+                >
                     Статус парсинга
                 </h2>
 
                 <div class="mt-6 overflow-x-auto">
                     <table class="min-w-full table-auto text-sm">
                         <thead class="text-left text-slate-400">
-                            <tr class="border-b border-slate-200 dark:border-white/10">
+                            <tr
+                                class="border-b border-slate-200 dark:border-white/10"
+                            >
                                 <th class="pb-3 pr-4 font-medium">Лента</th>
-                                <th class="pb-3 pr-4 font-medium">Последний запуск</th>
+                                <th class="pb-3 pr-4 font-medium"
+                                    >Последний запуск</th
+                                >
                                 <th class="pb-3 pr-4 font-medium">Сегодня</th>
                                 <th class="pb-3 pr-4 font-medium">Всего</th>
                                 <th class="pb-3 font-medium">Статус</th>
@@ -1151,39 +1229,75 @@
                         </thead>
                         <tbody>
                             {#if loading}
-                                {#each Array.from({ length: 5 }) as _, index (index)}
-                                    <tr class="border-b border-slate-100 dark:border-white/5">
-                                        <td class="py-4 pr-4"><Skeleton class="h-4 w-40" /></td>
-                                        <td class="py-4 pr-4"><Skeleton class="h-4 w-20" /></td>
-                                        <td class="py-4 pr-4"><Skeleton class="h-4 w-12" /></td>
-                                        <td class="py-4 pr-4"><Skeleton class="h-4 w-12" /></td>
-                                        <td class="py-4"><Skeleton class="h-4 w-20" /></td>
+                                {#each Array.from( { length: 5 }, ) as _, index (index)}
+                                    <tr
+                                        class="border-b border-slate-100 dark:border-white/5"
+                                    >
+                                        <td class="py-4 pr-4"
+                                            ><Skeleton class="h-4 w-40" /></td
+                                        >
+                                        <td class="py-4 pr-4"
+                                            ><Skeleton class="h-4 w-20" /></td
+                                        >
+                                        <td class="py-4 pr-4"
+                                            ><Skeleton class="h-4 w-12" /></td
+                                        >
+                                        <td class="py-4 pr-4"
+                                            ><Skeleton class="h-4 w-12" /></td
+                                        >
+                                        <td class="py-4"
+                                            ><Skeleton class="h-4 w-20" /></td
+                                        >
                                     </tr>
                                 {/each}
                             {:else}
                                 {#each feeds as feed (feed.id)}
                                     {@const status = feedStatus(feed)}
-                                    <tr class="border-b border-slate-100 dark:border-white/5">
+                                    <tr
+                                        class="border-b border-slate-100 dark:border-white/5"
+                                    >
                                         <td class="py-4 pr-4">
-                                            <div class="font-medium text-slate-900 dark:text-white">
+                                            <div
+                                                class="font-medium text-slate-900 dark:text-white"
+                                            >
                                                 {feed.title}
                                             </div>
-                                            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                {feed.category ?? 'Без категории'}
+                                            <div
+                                                class="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                                            >
+                                                {feed.category ??
+                                                    'Без категории'}
                                             </div>
                                         </td>
-                                        <td class="py-4 pr-4 text-slate-600 dark:text-slate-300">
-                                            {formatRelativeDate(feed.last_run?.started_at)}
+                                        <td
+                                            class="py-4 pr-4 text-slate-600 dark:text-slate-300"
+                                        >
+                                            {formatRelativeDate(
+                                                feed.last_run?.started_at,
+                                            )}
                                         </td>
-                                        <td class="py-4 pr-4 text-slate-600 dark:text-slate-300">
-                                            {formatNumber(feed.today_articles_count)}
+                                        <td
+                                            class="py-4 pr-4 text-slate-600 dark:text-slate-300"
+                                        >
+                                            {formatNumber(
+                                                feed.today_articles_count,
+                                            )}
                                         </td>
-                                        <td class="py-4 pr-4 text-slate-600 dark:text-slate-300">
+                                        <td
+                                            class="py-4 pr-4 text-slate-600 dark:text-slate-300"
+                                        >
                                             {formatNumber(feed.total_articles)}
                                         </td>
                                         <td class="py-4">
-                                            <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 dark:bg-white/5 dark:text-slate-300">
-                                                <span class={cn('size-2 rounded-full', status.dot)}></span>
+                                            <span
+                                                class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 dark:bg-white/5 dark:text-slate-300"
+                                            >
+                                                <span
+                                                    class={cn(
+                                                        'size-2 rounded-full',
+                                                        status.dot,
+                                                    )}
+                                                ></span>
                                                 {status.label}
                                             </span>
                                         </td>

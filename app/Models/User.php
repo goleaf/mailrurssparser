@@ -20,11 +20,12 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasEmailAuthentication
 {
     use HasEncodedAttributes;
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
+
     use InteractsWithAppAuthentication;
     use InteractsWithAppAuthenticationRecovery;
-
     use InteractsWithEmailAuthentication;
 
     /**

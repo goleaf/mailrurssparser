@@ -1,7 +1,9 @@
 <script lang="ts">
-    type ArticleCategory = {
-        icon?: string | null;
-    };
+    type ArticleCategory =
+        | {
+              icon?: string | null;
+          }
+        | string;
 
     type Article = {
         title: string;
@@ -12,6 +14,10 @@
     };
 
     let { article }: { article: Article } = $props();
+
+    const categoryIcon = $derived(
+        typeof article.category === 'string' ? null : article.category?.icon,
+    );
 
     const formattedDate = $derived(
         article.published_at
@@ -39,7 +45,7 @@
             <div
                 class="flex h-22 w-22 items-center justify-center rounded-[1rem] bg-[linear-gradient(135deg,#dbeafe,#e2e8f0,#cbd5e1)] text-2xl dark:bg-[linear-gradient(135deg,#1e293b,#0f172a,#334155)]"
             >
-                {article.category?.icon || '📰'}
+                {categoryIcon || '📰'}
             </div>
         {/if}
     </a>
@@ -53,9 +59,12 @@
             </h3>
         </a>
 
-        <div class="mt-2 flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
+        <div
+            class="mt-2 flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500"
+        >
             <span>Лента</span>
-            <span class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+            <span class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600"
+            ></span>
             <time>{formattedDate}</time>
         </div>
     </div>

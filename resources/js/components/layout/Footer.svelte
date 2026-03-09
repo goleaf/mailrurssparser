@@ -44,10 +44,12 @@
             if (response.data?.already_subscribed) {
                 successMessage = 'Этот адрес уже подтверждён в рассылке.';
             } else if (response.data?.resent) {
-                successMessage = 'Мы повторно отправили письмо для подтверждения.';
+                successMessage =
+                    'Мы повторно отправили письмо для подтверждения.';
             } else {
                 successMessage =
-                    response.data?.message ?? 'Проверьте почту для подтверждения.';
+                    response.data?.message ??
+                    'Проверьте почту для подтверждения.';
             }
 
             showToast(successMessage, 'success');
@@ -71,16 +73,25 @@
     });
 </script>
 
-<footer class="relative overflow-hidden border-t border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.12),transparent_26%),linear-gradient(180deg,#020617,#000000)] text-slate-100 dark:border-white/10">
-    <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"></div>
+<footer
+    class="relative overflow-hidden border-t border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.12),transparent_26%),linear-gradient(180deg,#020617,#000000)] text-slate-100 dark:border-white/10"
+>
+    <div
+        class="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"
+    ></div>
     <div class="mx-auto max-w-7xl px-4 py-14 lg:px-6">
-        <div class="mb-10 grid gap-4 rounded-[2.25rem] border border-white/10 bg-white/6 p-5 backdrop-blur sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-6">
+        <div
+            class="mb-10 grid gap-4 rounded-[2.25rem] border border-white/10 bg-white/6 p-5 backdrop-blur sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-6"
+        >
             <div>
-                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
+                <div
+                    class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300"
+                >
                     Редакционная подписка
                 </div>
                 <div class="mt-2 text-2xl font-semibold text-white">
-                    Ежедневный обзор важных тем, без перегруза и случайного шума.
+                    Ежедневный обзор важных тем, без перегруза и случайного
+                    шума.
                 </div>
             </div>
             <a
@@ -101,7 +112,9 @@
                         🗞️
                     </span>
                     <div>
-                        <div class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300">
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300"
+                        >
                             Новостной портал
                         </div>
                         <div class="text-2xl font-semibold">Новости</div>
@@ -109,8 +122,9 @@
                 </div>
 
                 <p class="max-w-sm text-sm leading-6 text-slate-300">
-                    Актуальная лента политики, экономики, общества и спорта с быстрым поиском,
-                    метками и удобным чтением на любом устройстве.
+                    Актуальная лента политики, экономики, общества и спорта с
+                    быстрым поиском, метками и удобным чтением на любом
+                    устройстве.
                 </p>
 
                 <div class="flex flex-wrap gap-3">
@@ -136,7 +150,9 @@
             </section>
 
             <section>
-                <div class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300">
+                <div
+                    class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300"
+                >
                     Категории
                 </div>
                 <div class="mt-5 grid gap-2 sm:grid-cols-2">
@@ -158,7 +174,9 @@
             </section>
 
             <section class="space-y-3">
-                <div class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300">
+                <div
+                    class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300"
+                >
                     Быстрые ссылки
                 </div>
 
@@ -199,13 +217,20 @@
                 </a>
             </section>
 
-            <section class="rounded-[2rem] border border-white/10 bg-white/7 p-6 backdrop-blur">
-                <div class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300">
+            <section
+                class="rounded-[2rem] border border-white/10 bg-white/7 p-6 backdrop-blur"
+            >
+                <div
+                    class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300"
+                >
                     Рассылка
                 </div>
-                <h3 class="mt-3 text-2xl font-semibold">Лучшее за день на почту</h3>
+                <h3 class="mt-3 text-2xl font-semibold">
+                    Лучшее за день на почту
+                </h3>
                 <p class="mt-2 text-sm leading-6 text-slate-300">
-                    Подписка без лишнего шума. Только важные материалы и срочные новости.
+                    Подписка без лишнего шума. Только важные материалы и срочные
+                    новости.
                 </p>
 
                 <form
@@ -232,7 +257,9 @@
                 </form>
 
                 {#if successMessage}
-                    <p class="mt-3 text-sm text-emerald-300">{successMessage}</p>
+                    <p class="mt-3 text-sm text-emerald-300">
+                        {successMessage}
+                    </p>
                 {/if}
 
                 {#if errorMessage}

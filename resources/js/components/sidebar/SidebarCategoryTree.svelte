@@ -49,8 +49,12 @@
     });
 </script>
 
-<aside class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-neutral-900">
-    <div class="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
+<aside
+    class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-neutral-900"
+>
+    <div
+        class="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300"
+    >
         📂 Категории
     </div>
 
@@ -71,13 +75,17 @@
                 <span class="text-base">📰</span>
                 <span>Все новости</span>
             </span>
-            <span class="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500 dark:bg-white/10 dark:text-slate-300">
+            <span
+                class="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500 dark:bg-white/10 dark:text-slate-300"
+            >
                 Все
             </span>
         </button>
 
         {#each categories as category (category.id)}
-            <div class="rounded-2xl border border-transparent transition hover:border-slate-200 dark:hover:border-white/10">
+            <div
+                class="rounded-2xl border border-transparent transition hover:border-slate-200 dark:hover:border-white/10"
+            >
                 <div class="flex items-center gap-2">
                     <button
                         type="button"
@@ -97,11 +105,14 @@
                         }}
                     >
                         <span class="flex min-w-0 items-center gap-3">
-                            <span class="text-base">{category.icon ?? '•'}</span>
+                            <span class="text-base">{category.icon ?? '•'}</span
+                            >
                             <span class="truncate">{category.name}</span>
                         </span>
 
-                        <span class="ml-3 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500 dark:bg-white/10 dark:text-slate-300">
+                        <span
+                            class="ml-3 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500 dark:bg-white/10 dark:text-slate-300"
+                        >
                             {category.articles_count_cache ?? 0}
                         </span>
                     </button>

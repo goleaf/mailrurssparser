@@ -152,7 +152,9 @@
 <AppHead title="Панель" />
 
 <AppLayout {breadcrumbs}>
-    <div class="relative flex flex-1 flex-col gap-6 overflow-x-hidden p-4 md:p-6">
+    <div
+        class="relative flex flex-1 flex-col gap-6 overflow-x-hidden p-4 md:p-6"
+    >
         <div
             class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.2),_transparent_60%),radial-gradient(circle_at_right,_rgba(6,182,212,0.14),_transparent_38%)]"
         ></div>
@@ -164,7 +166,9 @@
                 class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.32),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(45,212,191,0.2),_transparent_26%),linear-gradient(135deg,_rgba(2,6,23,0.96),_rgba(15,23,42,0.94),_rgba(8,47,73,0.9))]"
             ></div>
 
-            <div class="relative grid gap-6 p-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,1fr)] lg:p-8">
+            <div
+                class="relative grid gap-6 p-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,1fr)] lg:p-8"
+            >
                 <div class="space-y-5">
                     <div class="flex flex-wrap items-center gap-3">
                         <span
@@ -180,14 +184,19 @@
                     </div>
 
                     <div class="max-w-3xl space-y-3">
-                        <h1 class="text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                            Лента редактора теперь догружает публикации по мере прокрутки.
+                        <h1
+                            class="text-3xl font-semibold tracking-tight text-white md:text-4xl"
+                        >
+                            Лента редактора теперь догружает публикации по мере
+                            прокрутки.
                         </h1>
-                        <p class="max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
-                            Панель использует настоящую бесконечную прокрутку Inertia:
-                            сервер отдает курсорный поток статей, а интерфейс подхватывает
-                            следующие страницы без ручной пагинации и без замены уже
-                            загруженных карточек.
+                        <p
+                            class="max-w-2xl text-sm leading-6 text-slate-300 md:text-base"
+                        >
+                            Панель использует настоящую бесконечную прокрутку
+                            Inertia: сервер отдает курсорный поток статей, а
+                            интерфейс подхватывает следующие страницы без ручной
+                            пагинации и без замены уже загруженных карточек.
                         </p>
                     </div>
 
@@ -195,7 +204,9 @@
                         <div
                             class="rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-3 backdrop-blur-xs"
                         >
-                            <div class="text-[0.68rem] font-semibold tracking-[0.2em] text-slate-400 uppercase">
+                            <div
+                                class="text-[0.68rem] font-semibold tracking-[0.2em] text-slate-400 uppercase"
+                            >
                                 Уже в окне
                             </div>
                             <div class="mt-2 text-2xl font-semibold text-white">
@@ -210,7 +221,9 @@
                             <div
                                 class="min-w-[16rem] flex-1 rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-3 backdrop-blur-xs"
                             >
-                                <div class="text-[0.68rem] font-semibold tracking-[0.2em] text-slate-400 uppercase">
+                                <div
+                                    class="text-[0.68rem] font-semibold tracking-[0.2em] text-slate-400 uppercase"
+                                >
                                     Сильные рубрики
                                 </div>
                                 <div class="mt-3 flex flex-wrap gap-2">
@@ -227,7 +240,9 @@
                                             </span>
                                             <span>{category.name}</span>
                                             <span class="text-slate-300">
-                                                {numberFormatter.format(category.article_count)}
+                                                {numberFormatter.format(
+                                                    category.article_count,
+                                                )}
                                             </span>
                                         </a>
                                     {/each}
@@ -239,7 +254,9 @@
                             <div
                                 class="min-w-[16rem] flex-1 rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-3 backdrop-blur-xs"
                             >
-                                <div class="text-[0.68rem] font-semibold tracking-[0.2em] text-slate-400 uppercase">
+                                <div
+                                    class="text-[0.68rem] font-semibold tracking-[0.2em] text-slate-400 uppercase"
+                                >
                                     Аудитория по странам
                                 </div>
                                 <div class="mt-3 flex flex-wrap gap-2">
@@ -248,11 +265,15 @@
                                             class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-3 py-1.5 text-xs font-medium text-white"
                                         >
                                             <span class="text-sm">
-                                                {countryFlag(country.country_code)}
+                                                {countryFlag(
+                                                    country.country_code,
+                                                )}
                                             </span>
                                             <span>{country.country_code}</span>
                                             <span class="text-slate-300">
-                                                {numberFormatter.format(country.view_count)}
+                                                {numberFormatter.format(
+                                                    country.view_count,
+                                                )}
                                             </span>
                                         </div>
                                     {/each}
@@ -264,7 +285,9 @@
                             <div
                                 class="min-w-[16rem] flex-1 rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-3 backdrop-blur-xs"
                             >
-                                <div class="text-[0.68rem] font-semibold tracking-[0.2em] text-slate-400 uppercase">
+                                <div
+                                    class="text-[0.68rem] font-semibold tracking-[0.2em] text-slate-400 uppercase"
+                                >
                                     Часовые пояса читателей
                                 </div>
                                 <div class="mt-3 flex flex-wrap gap-2">
@@ -276,7 +299,9 @@
                                                 {timezone.timezone}
                                             </span>
                                             <span class="text-slate-300">
-                                                {numberFormatter.format(timezone.view_count)}
+                                                {numberFormatter.format(
+                                                    timezone.view_count,
+                                                )}
                                             </span>
                                         </div>
                                     {/each}
@@ -288,13 +313,19 @@
 
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                     {#each statCards as card (card.label)}
-                        <div class={`rounded-[1.6rem] border p-4 shadow-sm ${card.surface}`}>
+                        <div
+                            class={`rounded-[1.6rem] border p-4 shadow-sm ${card.surface}`}
+                        >
                             <div class="flex items-start justify-between gap-3">
                                 <div>
-                                    <div class="text-[0.68rem] font-semibold tracking-[0.2em] uppercase opacity-70">
+                                    <div
+                                        class="text-[0.68rem] font-semibold tracking-[0.2em] uppercase opacity-70"
+                                    >
                                         {card.label}
                                     </div>
-                                    <div class="mt-3 text-3xl font-semibold tracking-tight">
+                                    <div
+                                        class="mt-3 text-3xl font-semibold tracking-tight"
+                                    >
                                         {card.value}
                                     </div>
                                     <div class="mt-2 text-sm opacity-80">
@@ -318,14 +349,19 @@
                 class="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-slate-200/80 pb-4 dark:border-white/10"
             >
                 <div>
-                    <div class="text-[0.68rem] font-semibold tracking-[0.24em] text-slate-400 uppercase">
+                    <div
+                        class="text-[0.68rem] font-semibold tracking-[0.24em] text-slate-400 uppercase"
+                    >
                         Бесконечный поток
                     </div>
-                    <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+                    <h2
+                        class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white"
+                    >
                         Последние публикации
                     </h2>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Прокрутка автоматически подгружает следующую пачку материалов.
+                        Прокрутка автоматически подгружает следующую пачку
+                        материалов.
                     </p>
                 </div>
 
@@ -351,11 +387,14 @@
                     <div
                         class="rounded-[1.6rem] border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center text-slate-500 md:col-span-2 xl:col-span-3 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
                     >
-                        <div class="text-lg font-semibold text-slate-900 dark:text-white">
+                        <div
+                            class="text-lg font-semibold text-slate-900 dark:text-white"
+                        >
                             Публикаций пока нет
                         </div>
                         <div class="mt-2 text-sm">
-                            Как только RSS-ленты принесут новые статьи, поток появится здесь.
+                            Как только RSS-ленты принесут новые статьи, поток
+                            появится здесь.
                         </div>
                     </div>
                 {/if}
@@ -366,11 +405,17 @@
                             <div
                                 class="overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900"
                             >
-                                <Skeleton class="h-44 w-full rounded-[1.2rem]" />
+                                <Skeleton
+                                    class="h-44 w-full rounded-[1.2rem]"
+                                />
                                 <Skeleton class="mt-4 h-4 w-2/3 rounded-full" />
-                                <Skeleton class="mt-2 h-4 w-full rounded-full" />
+                                <Skeleton
+                                    class="mt-2 h-4 w-full rounded-full"
+                                />
                                 <Skeleton class="mt-2 h-4 w-5/6 rounded-full" />
-                                <div class="mt-5 flex items-center justify-between gap-3">
+                                <div
+                                    class="mt-5 flex items-center justify-between gap-3"
+                                >
                                     <Skeleton class="h-4 w-20 rounded-full" />
                                     <Skeleton class="h-4 w-24 rounded-full" />
                                 </div>

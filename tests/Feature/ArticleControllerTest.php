@@ -38,6 +38,13 @@ it('filters articles by category', function () {
 
     expect($items)->toHaveCount(1)
         ->and($items[0]['category']['slug'])->toBe('politics');
+
+    $response->assertJsonStructure([
+        'data' => [
+            '*' => ['id', 'title', 'slug', 'category'],
+        ],
+        'meta' => ['current_page', 'last_page', 'total', 'total_results'],
+    ]);
 });
 
 it('increments views when showing an article', function () {

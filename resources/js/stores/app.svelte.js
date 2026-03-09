@@ -86,9 +86,9 @@ export async function initApp() {
             api.getBreaking(),
         ]);
 
-        appState.categories = cats.data.data;
-        appState.trendingTags = tags.data.data;
-        appState.breakingNews = breaking.data.data;
+        appState.categories = cats.data;
+        appState.trendingTags = tags.data;
+        appState.breakingNews = breaking.data;
         appState.initialized = true;
     })();
 

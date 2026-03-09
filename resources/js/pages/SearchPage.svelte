@@ -107,9 +107,7 @@
     const categories = $derived((appState.categories ?? []) as Category[]);
     const totalResults = $derived(
         Number(
-            pagination?.total ??
-                pagination?.total_results ??
-                results.length,
+            pagination?.total ?? pagination?.total_results ?? results.length,
         ),
     );
     const currentPage = $derived(Number(pagination?.current_page ?? 1));
@@ -248,7 +246,10 @@
             : [{ text: excerpt, highlighted: false }];
     }
 
-    async function loadHighlights(term: string, articles: Article[]): Promise<void> {
+    async function loadHighlights(
+        term: string,
+        articles: Article[],
+    ): Promise<void> {
         const topMatches = articles.slice(0, 3);
 
         if (term.trim().length < 2 || topMatches.length === 0) {
@@ -312,9 +313,9 @@
                 per_page: searchFilters.per_page,
             });
 
-            results = response.data?.data ?? [];
-            pagination = response.data?.meta ?? null;
-            emptyStateSuggestions = response.data?.meta?.suggestions ?? [];
+            results = response.data;
+            pagination = response.meta ?? null;
+            emptyStateSuggestions = response.meta?.suggestions ?? [];
             activeQuery = normalized;
             query = normalized;
             rememberSearch(normalized);
@@ -415,7 +416,12 @@
     }
 
     function changePage(page: number): void {
-        if (!activeQuery || page === currentPage || page < 1 || page > lastPage) {
+        if (
+            !activeQuery ||
+            page === currentPage ||
+            page < 1 ||
+            page > lastPage
+        ) {
             return;
         }
 
@@ -481,7 +487,8 @@
             }
 
             event.preventDefault();
-            activeSuggestionIndex = (activeSuggestionIndex + 1 + items.length) % items.length;
+            activeSuggestionIndex =
+                (activeSuggestionIndex + 1 + items.length) % items.length;
 
             return;
         }
@@ -545,11 +552,7 @@
                     return;
                 }
 
-                suggestions = {
-                    articles: response.data?.articles ?? [],
-                    categories: response.data?.categories ?? [],
-                    tags: response.data?.tags ?? [],
-                };
+                suggestions = response.data;
                 activeSuggestionIndex = -1;
             } catch (error) {
                 if (
@@ -618,43 +621,71 @@
 
 <AppHead title={activeQuery ? `Поиск: ${activeQuery}` : 'Поиск'} />
 
-<div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.12),_transparent_35%),linear-gradient(to_bottom,_#f8fbff,_#f1f5f9)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_35%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8">
+<div
+    class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.12),_transparent_35%),linear-gradient(to_bottom,_#f8fbff,_#f1f5f9)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_35%),linear-gradient(to_bottom,_#020617,_#111827)] sm:px-6 lg:px-8"
+>
     <div class="mx-auto max-w-7xl">
-        <section class="relative overflow-hidden rounded-[2.35rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94),rgba(239,246,255,0.96))] p-6 shadow-[0_36px_110px_-60px_rgba(15,23,42,0.44)] backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(15,23,42,0.88),rgba(8,47,73,0.88))] sm:p-8">
-            <div class="absolute right-0 top-0 h-48 w-48 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-500/20"></div>
-            <div class="absolute bottom-0 left-0 h-36 w-36 rounded-full bg-cyan-200/55 blur-3xl dark:bg-cyan-500/10"></div>
-            <div class="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_19rem] lg:items-start">
+        <section
+            class="relative overflow-hidden rounded-[2.35rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94),rgba(239,246,255,0.96))] p-6 shadow-[0_36px_110px_-60px_rgba(15,23,42,0.44)] backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(15,23,42,0.88),rgba(8,47,73,0.88))] sm:p-8"
+        >
+            <div
+                class="absolute right-0 top-0 h-48 w-48 rounded-full bg-sky-200/60 blur-3xl dark:bg-sky-500/20"
+            ></div>
+            <div
+                class="absolute bottom-0 left-0 h-36 w-36 rounded-full bg-cyan-200/55 blur-3xl dark:bg-cyan-500/10"
+            ></div>
+            <div
+                class="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_19rem] lg:items-start"
+            >
                 <div class="max-w-3xl">
-                    <div class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold tracking-[0.24em] text-sky-700 uppercase dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
+                    <div
+                        class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-semibold tracking-[0.24em] text-sky-700 uppercase dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300"
+                    >
                         <Sparkles class="size-4" />
                         Поиск по порталу
                     </div>
 
-                    <h1 class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                    <h1
+                        class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl"
+                    >
                         Найдите новости, рубрики и темы за секунды
                     </h1>
 
-                    <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
-                        Ищите по заголовкам, описаниям, авторам и полному тексту.
-                        Фильтруйте выдачу по рубрике, формату и датам, не выходя
-                        из страницы.
+                    <p
+                        class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base"
+                    >
+                        Ищите по заголовкам, описаниям, авторам и полному
+                        тексту. Фильтруйте выдачу по рубрике, формату и датам,
+                        не выходя из страницы.
                     </p>
                 </div>
 
-                <div class="rounded-[1.9rem] border border-slate-200/80 bg-white/75 p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-                    <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div
+                    class="rounded-[1.9rem] border border-slate-200/80 bg-white/75 p-5 shadow-sm dark:border-white/10 dark:bg-white/5"
+                >
+                    <div
+                        class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400"
+                    >
                         Пульс поиска
                     </div>
                     <div class="mt-4 space-y-3">
                         {#each searchSnapshots as snapshot (snapshot.label)}
-                            <div class="rounded-[1.35rem] border border-slate-200/80 bg-slate-50/80 px-4 py-3 dark:border-white/10 dark:bg-black/10">
-                                <div class="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            <div
+                                class="rounded-[1.35rem] border border-slate-200/80 bg-slate-50/80 px-4 py-3 dark:border-white/10 dark:bg-black/10"
+                            >
+                                <div
+                                    class="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400"
+                                >
                                     {snapshot.label}
                                 </div>
-                                <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                                <div
+                                    class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white"
+                                >
                                     {snapshot.value}
                                 </div>
-                                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                <div
+                                    class="mt-1 text-sm text-slate-500 dark:text-slate-400"
+                                >
                                     {snapshot.caption}
                                 </div>
                             </div>
@@ -665,8 +696,12 @@
 
             <div class="mt-8 space-y-5">
                 <div class="rounded-[1.75rem] bg-slate-100 p-2 dark:bg-white/5">
-                    <div class="rounded-[1.25rem] bg-white px-4 py-3 shadow-sm dark:bg-slate-900">
-                        <div class="flex flex-col gap-3 md:flex-row md:items-center">
+                    <div
+                        class="rounded-[1.25rem] bg-white px-4 py-3 shadow-sm dark:bg-slate-900"
+                    >
+                        <div
+                            class="flex flex-col gap-3 md:flex-row md:items-center"
+                        >
                             <Search class="size-5 shrink-0 text-slate-400" />
                             <input
                                 bind:value={query}
@@ -711,7 +746,9 @@
 
                 <div class="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
                     <label class="space-y-2">
-                        <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <span
+                            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        >
                             Рубрика
                         </span>
                         <select
@@ -721,13 +758,17 @@
                         >
                             <option value="">Все категории</option>
                             {#each categories as category (category.id)}
-                                <option value={category.slug}>{category.name}</option>
+                                <option value={category.slug}
+                                    >{category.name}</option
+                                >
                             {/each}
                         </select>
                     </label>
 
                     <label class="space-y-2">
-                        <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <span
+                            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        >
                             Формат
                         </span>
                         <select
@@ -736,13 +777,17 @@
                             onchange={handleContentTypeChange}
                         >
                             {#each contentTypeOptions as option (option.value)}
-                                <option value={option.value}>{option.label}</option>
+                                <option value={option.value}
+                                    >{option.label}</option
+                                >
                             {/each}
                         </select>
                     </label>
 
                     <label class="space-y-2">
-                        <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <span
+                            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        >
                             С даты
                         </span>
                         <input
@@ -756,7 +801,9 @@
                     </label>
 
                     <label class="space-y-2">
-                        <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <span
+                            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        >
                             По дату
                         </span>
                         <input
@@ -794,47 +841,81 @@
         <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <section class="space-y-6">
                 {#if activeQuery}
-                    <div class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
-                        <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                                Результаты поиска
+                    <div
+                        class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]"
+                    >
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-3"
+                        >
+                            <div>
+                                <div
+                                    class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                                >
+                                    Результаты поиска
+                                </div>
+                                <h2
+                                    class="mt-1 text-2xl font-semibold text-slate-950 dark:text-white"
+                                >
+                                    Найдено: {totalResults} результатов
+                                </h2>
                             </div>
-                            <h2 class="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">
-                                Найдено: {totalResults} результатов
-                            </h2>
+                            <div
+                                class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300"
+                            >
+                                Запрос: <span
+                                    class="font-semibold text-slate-900 dark:text-white"
+                                    >{activeQuery}</span
+                                >
+                            </div>
                         </div>
-                        <div class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">
-                            Запрос: <span class="font-semibold text-slate-900 dark:text-white">{activeQuery}</span>
-                        </div>
-                    </div>
                     </div>
                 {/if}
 
                 {#if loading}
                     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                         {#each Array.from({ length: 6 }) as _, index (index)}
-                            <SkeletonCard lineWidths={['w-24', 'w-full', 'w-4/5', 'w-full', 'w-3/4']} />
+                            <SkeletonCard
+                                lineWidths={[
+                                    'w-24',
+                                    'w-full',
+                                    'w-4/5',
+                                    'w-full',
+                                    'w-3/4',
+                                ]}
+                            />
                         {/each}
                     </div>
                 {:else if activeQuery && results.length === 0}
-                    <div class="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-slate-900">
-                        <h3 class="text-2xl font-semibold text-slate-950 dark:text-white">
+                    <div
+                        class="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-slate-900"
+                    >
+                        <h3
+                            class="text-2xl font-semibold text-slate-950 dark:text-white"
+                        >
                             По запросу “{activeQuery}” ничего не найдено
                         </h3>
-                        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                            Попробуйте сократить запрос или перейти в похожую рубрику.
+                        <p
+                            class="mt-3 text-sm text-slate-500 dark:text-slate-400"
+                        >
+                            Попробуйте сократить запрос или перейти в похожую
+                            рубрику.
                         </p>
 
                         {#if emptyStateSuggestions.length > 0}
-                            <div class="mt-6 flex flex-wrap justify-center gap-3">
+                            <div
+                                class="mt-6 flex flex-wrap justify-center gap-3"
+                            >
                                 {#each emptyStateSuggestions as suggestion (suggestion.type + String(suggestion.id))}
                                     <button
                                         type="button"
                                         class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
                                         onclick={() => {
-                                            if (suggestion.type === 'category') {
-                                                navigateToCategory(suggestion.slug);
+                                            if (
+                                                suggestion.type === 'category'
+                                            ) {
+                                                navigateToCategory(
+                                                    suggestion.slug,
+                                                );
                                                 return;
                                             }
 
@@ -845,7 +926,9 @@
                                             class="size-2 rounded-full"
                                             style={`background-color: ${suggestion.color ?? '#2563EB'};`}
                                         ></span>
-                                        {suggestion.type === 'category' ? 'Рубрика' : 'Тег'}: {suggestion.name}
+                                        {suggestion.type === 'category'
+                                            ? 'Рубрика'
+                                            : 'Тег'}: {suggestion.name}
                                     </button>
                                 {/each}
                             </div>
@@ -858,12 +941,19 @@
                         {/each}
                     </div>
                 {:else}
-                    <div class="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-slate-900">
-                        <h3 class="text-2xl font-semibold text-slate-950 dark:text-white">
+                    <div
+                        class="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-slate-900"
+                    >
+                        <h3
+                            class="text-2xl font-semibold text-slate-950 dark:text-white"
+                        >
                             Начните поиск
                         </h3>
-                        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                            Введите минимум два символа, чтобы получить результаты и подсказки.
+                        <p
+                            class="mt-3 text-sm text-slate-500 dark:text-slate-400"
+                        >
+                            Введите минимум два символа, чтобы получить
+                            результаты и подсказки.
                         </p>
                     </div>
                 {/if}
@@ -872,8 +962,12 @@
             </section>
 
             <aside class="space-y-5">
-                <section class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
-                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <section
+                    class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]"
+                >
+                    <div
+                        class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                    >
                         Подсветка совпадений
                     </div>
 
@@ -884,13 +978,19 @@
                                     href={`/#/articles/${item.slug}`}
                                     class="block rounded-2xl border border-slate-200 p-4 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
                                 >
-                                    <div class="text-sm font-semibold text-slate-900 dark:text-white">
+                                    <div
+                                        class="text-sm font-semibold text-slate-900 dark:text-white"
+                                    >
                                         {item.title}
                                     </div>
-                                    <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                                    <p
+                                        class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400"
+                                    >
                                         {#each item.segments as segment, index (index)}
                                             {#if segment.highlighted}
-                                                <mark class="rounded bg-sky-100 px-1 text-slate-900 dark:bg-sky-500/25 dark:text-sky-50">
+                                                <mark
+                                                    class="rounded bg-sky-100 px-1 text-slate-900 dark:bg-sky-500/25 dark:text-sky-50"
+                                                >
                                                     {segment.text}
                                                 </mark>
                                             {:else}
@@ -901,21 +1001,30 @@
                                 </a>
                             {/each}
                         {:else}
-                            <p class="text-sm text-slate-500 dark:text-slate-400">
-                                После поиска здесь появятся самые точные совпадения по тексту.
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                После поиска здесь появятся самые точные
+                                совпадения по тексту.
                             </p>
                         {/if}
                     </div>
                 </section>
 
-                <section class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
-                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <section
+                    class="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]"
+                >
+                    <div
+                        class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                    >
                         Похожие запросы
                     </div>
 
                     <div class="mt-4 space-y-4">
                         <div>
-                            <div class="text-sm font-semibold text-slate-900 dark:text-white">
+                            <div
+                                class="text-sm font-semibold text-slate-900 dark:text-white"
+                            >
                                 Рубрики
                             </div>
                             <div class="mt-3 flex flex-wrap gap-2">
@@ -925,7 +1034,9 @@
                                             type="button"
                                             class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
                                             onclick={() => {
-                                                navigateToCategory(category.slug);
+                                                navigateToCategory(
+                                                    category.slug,
+                                                );
                                             }}
                                         >
                                             <span
@@ -936,15 +1047,20 @@
                                         </button>
                                     {/each}
                                 {:else}
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">
-                                        Подходящие рубрики появятся после ввода запроса.
+                                    <p
+                                        class="text-sm text-slate-500 dark:text-slate-400"
+                                    >
+                                        Подходящие рубрики появятся после ввода
+                                        запроса.
                                     </p>
                                 {/if}
                             </div>
                         </div>
 
                         <div>
-                            <div class="text-sm font-semibold text-slate-900 dark:text-white">
+                            <div
+                                class="text-sm font-semibold text-slate-900 dark:text-white"
+                            >
                                 Теги
                             </div>
                             <div class="mt-3 flex flex-wrap gap-2">
@@ -961,8 +1077,11 @@
                                         </button>
                                     {/each}
                                 {:else}
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">
-                                        Подходящие теги появятся после ввода запроса.
+                                    <p
+                                        class="text-sm text-slate-500 dark:text-slate-400"
+                                    >
+                                        Подходящие теги появятся после ввода
+                                        запроса.
                                     </p>
                                 {/if}
                             </div>

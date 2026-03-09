@@ -9,9 +9,7 @@
         slug: string;
         published_at?: string | null;
         image_url?: string | null;
-        category?: {
-            icon?: string | null;
-        } | null;
+        category?: string | { icon?: string | null } | null;
     };
 
     const periods = [
@@ -37,7 +35,7 @@
             })
             .then((response) => {
                 if (!cancelled) {
-                    articles = response.data?.data ?? [];
+                    articles = response.data;
                 }
             })
             .catch(() => {
@@ -57,8 +55,12 @@
     });
 </script>
 
-<aside class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-neutral-900">
-    <div class="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
+<aside
+    class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-neutral-900"
+>
+    <div
+        class="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300"
+    >
         📊 Популярное
     </div>
 
@@ -84,12 +86,16 @@
     <div class="space-y-3">
         {#if loading}
             <div class="space-y-3">
-                {#each Array.from({ length: 3 }) as _, index (`loading-${index}`)}
-                    <div class="h-26 animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5"></div>
+                {#each Array.from( { length: 3 }, ) as _, index (`loading-${index}`)}
+                    <div
+                        class="h-26 animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5"
+                    ></div>
                 {/each}
             </div>
         {:else if articles.length === 0}
-            <div class="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
+            <div
+                class="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400"
+            >
                 Пока нет данных по популярным статьям.
             </div>
         {:else}

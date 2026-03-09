@@ -29,15 +29,21 @@
 </script>
 
 {#if lastPage > 1}
-    <div class="rounded-[2rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-4 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div
+        class="rounded-[2rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-4 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]"
+    >
+        <div
+            class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+        >
             <div class="space-y-1">
                 {#if label}
                     <div class="text-sm text-slate-500 dark:text-slate-400">
                         {label}
                     </div>
                 {/if}
-                <div class="text-xs font-semibold tracking-[0.22em] text-slate-400 uppercase">
+                <div
+                    class="text-xs font-semibold tracking-[0.22em] text-slate-400 uppercase"
+                >
                     Страница {currentPage} из {lastPage}
                 </div>
             </div>
@@ -54,7 +60,9 @@
                     Назад
                 </button>
 
-                <div class="flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/80 px-2 py-1.5 dark:border-white/10 dark:bg-black/10">
+                <div
+                    class="flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/80 px-2 py-1.5 dark:border-white/10 dark:bg-black/10"
+                >
                     {#each visiblePages as pageNumber (pageNumber)}
                         <button
                             type="button"

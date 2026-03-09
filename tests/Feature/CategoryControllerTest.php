@@ -118,4 +118,11 @@ it('returns category articles with filters', function () {
     $items = $payload['data']['data'] ?? $payload['data'] ?? [];
 
     expect($items)->toHaveCount(1);
+
+    $response->assertJsonStructure([
+        'data' => [
+            '*' => ['id', 'title', 'slug', 'category'],
+        ],
+        'meta' => ['current_page', 'last_page', 'total', 'total_results'],
+    ]);
 });
