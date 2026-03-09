@@ -231,6 +231,7 @@ class ArticlesTable
                 TrashedFilter::make(),
             ])
             ->defaultSort('published_at', 'desc')
+            ->columnManager(false)
             ->recordActions([
                 Action::make('editRecord')
                     ->label('Открыть')

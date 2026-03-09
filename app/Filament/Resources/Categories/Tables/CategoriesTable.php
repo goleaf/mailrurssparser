@@ -84,6 +84,7 @@ class CategoriesTable
                     ->label('Показывать в меню'),
             ])
             ->defaultSort('order')
+            ->columnManager(false)
             ->reorderable('order')
             ->reorderRecordsTriggerAction(
                 fn (Action $action, bool $isReordering): Action => $action

@@ -86,6 +86,7 @@ class RssFeedsTable
                 TernaryFilter::make('auto_featured')
                     ->label('Автовыделение'),
             ])
+            ->columnManager(false)
             ->emptyStateIcon(Heroicon::OutlinedRss)
             ->emptyStateHeading('RSS-ленты ещё не настроены')
             ->emptyStateDescription('Добавьте первую ленту, чтобы запустить парсинг и наполнить портал новостями.')

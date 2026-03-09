@@ -74,6 +74,7 @@ class TagsTable
                 TernaryFilter::make('is_featured')
                     ->label('Избранный'),
             ])
+            ->columnManager(false)
             ->recordActions([
                 Action::make('editRecord')
                     ->label('Открыть')
