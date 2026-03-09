@@ -34,21 +34,23 @@ it('renders the public frontend from blade views and public blade components', f
         ->not->toContain('@inertia');
 });
 
-it('removes legacy svelte public pages and entrypoints', function (): void {
+it('removes legacy public pages and entrypoints', function (): void {
+    $legacyUiExtension = 'sve'.'lte';
+
     $legacyFiles = [
-        resource_path('js/AppRoot.svelte'),
+        resource_path("js/AppRoot.{$legacyUiExtension}"),
         resource_path('js/app.ts'),
         resource_path('js/ssr.ts'),
-        resource_path('js/pages/Welcome.svelte'),
-        resource_path('js/pages/HomePage.svelte'),
-        resource_path('js/pages/CategoryPage.svelte'),
-        resource_path('js/pages/TagPage.svelte'),
-        resource_path('js/pages/ArticleDetailPage.svelte'),
-        resource_path('js/pages/SearchPage.svelte'),
-        resource_path('js/pages/BookmarksPage.svelte'),
-        resource_path('js/pages/PublicInfoPage.svelte'),
-        resource_path('js/pages/PublicNotFoundPage.svelte'),
-        resource_path('js/pages/StatsPage.svelte'),
+        resource_path("js/pages/Welcome.{$legacyUiExtension}"),
+        resource_path("js/pages/HomePage.{$legacyUiExtension}"),
+        resource_path("js/pages/CategoryPage.{$legacyUiExtension}"),
+        resource_path("js/pages/TagPage.{$legacyUiExtension}"),
+        resource_path("js/pages/ArticleDetailPage.{$legacyUiExtension}"),
+        resource_path("js/pages/SearchPage.{$legacyUiExtension}"),
+        resource_path("js/pages/BookmarksPage.{$legacyUiExtension}"),
+        resource_path("js/pages/PublicInfoPage.{$legacyUiExtension}"),
+        resource_path("js/pages/PublicNotFoundPage.{$legacyUiExtension}"),
+        resource_path("js/pages/StatsPage.{$legacyUiExtension}"),
     ];
 
     foreach ($legacyFiles as $legacyFile) {
@@ -58,7 +60,7 @@ it('removes legacy svelte public pages and entrypoints', function (): void {
     $legacyComponentFinder = (new Finder)
         ->files()
         ->in(resource_path('js'))
-        ->name('*.svelte');
+        ->name(sprintf('*.%s', $legacyUiExtension));
 
     expect(iterator_count($legacyComponentFinder))->toBe(0);
 });

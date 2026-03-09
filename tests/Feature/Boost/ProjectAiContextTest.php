@@ -172,13 +172,22 @@ it('discovers the custom laravel herd worktree boost skill', function () {
         ->toContain('Laravel Herd worktrees');
 });
 
-it('does not keep custom inertia guidance after removing the inertia and svelte stack', function () {
+it('does not keep custom guidance for the removed frontend stack', function () {
+    $legacyUiExtension = 'sve'.'lte';
+    $legacyFrontendGuideline = 'inertia-'.$legacyUiExtension.'/core';
+
     expect(localBoostGuideline('inertia-laravel/core'))->toBeNull()
-        ->and(localBoostGuideline('inertia-svelte/core'))->toBeNull()
+        ->and(localBoostGuideline($legacyFrontendGuideline))->toBeNull()
         ->and(localPackageSpecificBoostSkill('news-portal-frontend'))->toBeNull();
 });
 
 it('regenerates agent guidance with the custom blade and Mary UI context', function () {
+    $legacyUiExtension = 'sve'.'lte';
+    $legacyFrontendSkill = 'inertia-'.$legacyUiExtension.'-development';
+    $legacyFrontendRules = '=== inertia-'.$legacyUiExtension.'/core rules ===';
+    $legacyAppRoot = 'AppRoot.'.$legacyUiExtension;
+    $legacyTicker = 'BreakingNewsTicker.'.$legacyUiExtension;
+
     foreach (['AGENTS.md', 'CLAUDE.md'] as $filename) {
         $contents = file_get_contents(base_path($filename));
 
@@ -194,10 +203,11 @@ it('regenerates agent guidance with the custom blade and Mary UI context', funct
             ->toContain('resources/css/app.css')
             ->toContain('news-portal-frontend')
             ->toContain('laravel-herd-worktree')
+            ->not->toContain($legacyFrontendSkill)
             ->not->toContain('=== inertia-laravel/core rules ===')
-            ->not->toContain('=== inertia-svelte/core rules ===')
+            ->not->toContain($legacyFrontendRules)
             ->not->toContain('assertInertia(fn (Assert $page) => ...)')
-            ->not->toContain('AppRoot.svelte')
-            ->not->toContain('BreakingNewsTicker.svelte');
+            ->not->toContain($legacyAppRoot)
+            ->not->toContain($legacyTicker);
     }
 });

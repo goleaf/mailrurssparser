@@ -67,7 +67,7 @@ return [
         public_path('manifest.json'),
         public_path('sw.js'),
     ],
-    'reference_extensions' => ['css', 'js', 'json', 'md', 'php', 'svelte', 'ts', 'txt'],
+    'reference_extensions' => ['css', 'js', 'json', 'md', 'php', 'ts', 'txt'],
     'backup_path' => storage_path('app/private/asset-cleaner'),
     'table_limit' => 50,
 ];

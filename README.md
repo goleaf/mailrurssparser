@@ -3,14 +3,14 @@
 ![Laravel 12](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)
 ![PHP 8.5](https://img.shields.io/badge/PHP-8.5-777BB4?logo=php&logoColor=white)
 ![Filament 5](https://img.shields.io/badge/Filament-5-F59E0B)
-![Inertia 2](https://img.shields.io/badge/Inertia-2-9553E9)
-![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte&logoColor=white)
+![Mary UI](https://img.shields.io/badge/Mary%20UI-Livewire-0F172A)
+![Livewire 4](https://img.shields.io/badge/Livewire-4-FB70A9)
 ![Tailwind 4](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white)
 
 > Screenshot placeholder: add a homepage or admin dashboard screenshot here.
 
-Новостной портал на Laravel 12, Filament 5 и Inertia + Svelte с RSS-агрегацией из внешних RSS-источников, API для публичного фронтенда, админкой для редакторов и автоматическим парсингом по расписанию.
+Новостной портал на Laravel 12, Filament 5, Livewire и Blade + Mary UI с RSS-агрегацией из внешних RSS-источников, публичным API, админкой для редакторов и автоматическим парсингом по расписанию.
 
 ## ✅ Features
 
