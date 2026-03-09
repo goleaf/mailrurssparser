@@ -26,6 +26,7 @@ class NewsletterSubscribersTable
                     ->sortable(),
                 TextColumn::make('name')
                     ->searchable()
+                    ->sortable()
                     ->placeholder('—'),
                 TextColumn::make('categories_summary')
                     ->label('Интересы')
@@ -39,31 +40,55 @@ class NewsletterSubscribersTable
                             ->implode(', ');
                     })
                     ->placeholder('Все рубрики')
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $categoryIds = Category::query()
+                            ->where('name', 'like', '%'.$search.'%')
+                            ->pluck('id');
+
+                        if ($categoryIds->isEmpty()) {
+                            return $query->whereRaw('0 = 1');
+                        }
+
+                        return $query->where(function (Builder $query) use ($categoryIds): void {
+                            foreach ($categoryIds as $categoryId) {
+                                $query->orWhereJsonContains('category_ids', (int) $categoryId);
+                            }
+                        });
+                    })
+                    ->sortable(['category_ids'])
                     ->toggleable(),
                 IconColumn::make('confirmed')
-                    ->boolean(),
+                    ->boolean()
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('confirmed_at')
                     ->label('Подтверждён')
                     ->dateTime()
+                    ->searchable()
                     ->sortable()
                     ->placeholder('—'),
                 TextColumn::make('unsubscribed_at')
                     ->label('Отписка')
                     ->dateTime()
+                    ->searchable()
                     ->sortable()
                     ->placeholder('—'),
                 TextColumn::make('country_code')
                     ->label('Страна')
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('timezone')
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('locale')
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->dateTime()
+                    ->searchable()
                     ->sortable(),
             ])
             ->filters([

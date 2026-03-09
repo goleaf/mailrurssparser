@@ -20,58 +20,83 @@ class RssFeedsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('title')
             ->columns([
                 TextColumn::make('title')
                     ->toggleable()
-                    ->searchable(['title', 'url', 'source_name', 'last_error']),
+                    ->searchable(['title', 'url', 'source_name', 'last_error'])
+                    ->sortable(),
                 TextColumn::make('source_name')
                     ->label('Источник')
                     ->toggleable()
+                    ->searchable()
+                    ->sortable()
                     ->placeholder('—'),
                 TextColumn::make('category.name')
                     ->toggleable()
-                    ->badge(),
+                    ->badge()
+                    ->searchable()
+                    ->sortable(),
                 ToggleColumn::make('is_active')
-                    ->toggleable(),
+                    ->toggleable()
+                    ->searchable()
+                    ->sortable(),
                 IconColumn::make('auto_publish')
                     ->label('Автопубл.')
                     ->boolean()
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('auto_featured')
                     ->label('Авто-featured')
                     ->boolean()
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('articles_count')
                     ->label('Статей')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('parse_logs_count')
                     ->label('Логов')
                     ->numeric()
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('fetch_interval')
                     ->label('Интервал')
                     ->suffix(' мин')
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('last_parsed_at')
                     ->toggleable()
-                    ->since(),
+                    ->since()
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('next_parse_at')
                     ->label('Следующий запуск')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->since(),
+                    ->since()
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('last_run_new_count')
                     ->badge()
                     ->toggleable()
+                    ->searchable()
+                    ->sortable()
                     ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'success' : 'gray'),
                 TextColumn::make('consecutive_failures')
                     ->badge()
                     ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable()
+                    ->sortable()
                     ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'danger' : 'gray'),
                 TextColumn::make('last_error')
                     ->limit(30)
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->color(fn (?string $state): string => filled($state) ? 'danger' : 'gray'),
             ])

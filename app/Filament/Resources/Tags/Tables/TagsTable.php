@@ -26,28 +26,39 @@ class TagsTable
                     ->sortable(),
                 TextColumn::make('slug')
                     ->toggleable()
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('description')
                     ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable()
+                    ->sortable()
                     ->limit(50)
                     ->placeholder('—'),
                 ColorColumn::make('color')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('articles_count')
                     ->label('Статей')
                     ->numeric()
                     ->toggleable()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('usage_count')
                     ->numeric()
                     ->toggleable()
+                    ->searchable()
                     ->sortable(),
                 IconColumn::make('is_trending')
                     ->toggleable()
-                    ->boolean(),
+                    ->boolean()
+                    ->searchable()
+                    ->sortable(),
                 IconColumn::make('is_featured')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->boolean(),
+                    ->boolean()
+                    ->searchable()
+                    ->sortable(),
             ])
             ->filters([
                 Filter::make('search_fields')

@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use Attla\EncodedAttributes\HasEncodedAttributes;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -83,9 +83,7 @@ class SubCategory extends Model
     {
         return $query
             ->with('category')
-            ->withCount('articles')
-            ->orderBy('order')
-            ->orderBy('name');
+            ->withCount('articles');
     }
 
     protected static function booted(): void

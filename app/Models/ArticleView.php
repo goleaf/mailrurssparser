@@ -100,7 +100,6 @@ class ArticleView extends Model
     public function scopeForAdminIndex(Builder $query): Builder
     {
         return $query
-            ->with(['article.category', 'article.subCategory', 'article.rssFeed'])
-            ->latest('viewed_at');
+            ->with(['article.category', 'article.subCategory', 'article.rssFeed']);
     }
 }

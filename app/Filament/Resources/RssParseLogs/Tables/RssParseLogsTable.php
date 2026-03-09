@@ -17,40 +17,54 @@ class RssParseLogsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('started_at', 'desc')
             ->columns([
                 TextColumn::make('rssFeed.title')
                     ->label('Лента')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('rssFeed.category.name')
                     ->label('Рубрика')
                     ->badge()
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('started_at')
                     ->dateTime()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('duration_ms')
                     ->label('Длительность')
                     ->suffix(' ms')
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('new_count')
                     ->label('Новые')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('skip_count')
                     ->label('Пропущено')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('error_count')
                     ->label('Ошибки')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 IconColumn::make('success')
-                    ->boolean(),
+                    ->boolean()
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('triggered_by')
                     ->badge()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('error_message')
                     ->limit(40)
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->placeholder('—'),
             ])

@@ -6,14 +6,20 @@ use App\Filament\Resources\Articles\ArticleResource;
 use App\Filament\Resources\Articles\Pages\EditArticle;
 use App\Filament\Resources\Articles\Pages\ListArticles;
 use App\Filament\Resources\ArticleViews\ArticleViewResource;
+use App\Filament\Resources\ArticleViews\Pages\ListArticleViews;
 use App\Filament\Resources\Bookmarks\BookmarkResource;
+use App\Filament\Resources\Bookmarks\Pages\ListBookmarks;
 use App\Filament\Resources\Categories\CategoryResource;
 use App\Filament\Resources\Categories\Pages\ListCategories;
 use App\Filament\Resources\Metrics\MetricResource;
+use App\Filament\Resources\Metrics\Pages\ListMetrics;
 use App\Filament\Resources\NewsletterSubscribers\NewsletterSubscriberResource;
+use App\Filament\Resources\NewsletterSubscribers\Pages\ListNewsletterSubscribers;
 use App\Filament\Resources\RssFeeds\Pages\ListRssFeeds;
 use App\Filament\Resources\RssFeeds\RssFeedResource;
+use App\Filament\Resources\RssParseLogs\Pages\ListRssParseLogs;
 use App\Filament\Resources\RssParseLogs\RssParseLogResource;
+use App\Filament\Resources\SubCategories\Pages\ListSubCategories;
 use App\Filament\Resources\SubCategories\SubCategoryResource;
 use App\Filament\Resources\Tags\Pages\ListTags;
 use App\Filament\Resources\Tags\TagResource;
@@ -23,11 +29,13 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
 use App\Services\ArticleStatus;
+use Filament\Enums\ThemeMode;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Filament\Schemas\Components\Tabs;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Enums\Width;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -39,6 +47,59 @@ dataset('cms_list_pages', [
     ListCategories::class,
     ListTags::class,
     ListRssFeeds::class,
+]);
+
+dataset('admin_table_columns', [
+    'articles table' => [
+        ListArticles::class,
+        ['title', 'category.name', 'subCategory.name', 'rssFeed.title', 'editor.name', 'tags_summary', 'content_type', 'status', 'is_featured', 'is_breaking', 'is_pinned', 'importance', 'views_count', 'bookmarked_by_count', 'related_articles_count', 'published_at'],
+        ['title', 'category.name', 'subCategory.name', 'rssFeed.title', 'editor.name', 'tags_summary', 'content_type', 'status', 'is_featured', 'is_breaking', 'is_pinned', 'importance', 'views_count', 'bookmarked_by_count', 'related_articles_count', 'published_at'],
+    ],
+    'article views table' => [
+        ListArticleViews::class,
+        ['article.title', 'article.category.name', 'device_type', 'referrer_type', 'country_code', 'locale', 'referrer_domain', 'session_hash', 'viewed_at'],
+        ['article.title', 'article.category.name', 'device_type', 'referrer_type', 'country_code', 'locale', 'referrer_domain', 'session_hash', 'viewed_at'],
+    ],
+    'bookmarks table' => [
+        ListBookmarks::class,
+        ['article.title', 'article.category.name', 'article.subCategory.name', 'session_hash', 'created_at'],
+        ['article.title', 'article.category.name', 'article.subCategory.name', 'session_hash', 'created_at'],
+    ],
+    'categories table' => [
+        ListCategories::class,
+        ['icon', 'name', 'slug', 'rss_key', 'color', 'order', 'is_active', 'show_in_menu', 'sub_categories_count', 'rss_feeds_count', 'articles_count_cache'],
+        ['icon', 'name', 'slug', 'rss_key', 'color', 'order', 'is_active', 'show_in_menu', 'sub_categories_count', 'rss_feeds_count', 'articles_count_cache'],
+    ],
+    'metrics table' => [
+        ListMetrics::class,
+        ['name', 'category', 'measurable_type', 'measurable_id', 'value', 'bucket_start', 'bucket_date', 'fingerprint'],
+        ['name', 'category', 'measurable_type', 'measurable_id', 'value', 'bucket_start', 'bucket_date', 'fingerprint'],
+    ],
+    'newsletter subscribers table' => [
+        ListNewsletterSubscribers::class,
+        ['email', 'name', 'categories_summary', 'confirmed', 'confirmed_at', 'unsubscribed_at', 'country_code', 'timezone', 'locale', 'created_at'],
+        ['email', 'name', 'categories_summary', 'confirmed', 'confirmed_at', 'unsubscribed_at', 'country_code', 'timezone', 'locale', 'created_at'],
+    ],
+    'rss feeds table' => [
+        ListRssFeeds::class,
+        ['title', 'source_name', 'category.name', 'is_active', 'auto_publish', 'auto_featured', 'articles_count', 'parse_logs_count', 'fetch_interval', 'last_parsed_at', 'next_parse_at', 'last_run_new_count', 'consecutive_failures', 'last_error'],
+        ['title', 'source_name', 'category.name', 'is_active', 'auto_publish', 'auto_featured', 'articles_count', 'parse_logs_count', 'fetch_interval', 'last_parsed_at', 'next_parse_at', 'last_run_new_count', 'consecutive_failures', 'last_error'],
+    ],
+    'rss parse logs table' => [
+        ListRssParseLogs::class,
+        ['rssFeed.title', 'rssFeed.category.name', 'started_at', 'duration_ms', 'new_count', 'skip_count', 'error_count', 'success', 'triggered_by', 'error_message'],
+        ['rssFeed.title', 'rssFeed.category.name', 'started_at', 'duration_ms', 'new_count', 'skip_count', 'error_count', 'success', 'triggered_by', 'error_message'],
+    ],
+    'subcategories table' => [
+        ListSubCategories::class,
+        ['category.name', 'name', 'slug', 'articles_count', 'is_active', 'order', 'updated_at'],
+        ['category.name', 'name', 'slug', 'articles_count', 'is_active', 'order', 'updated_at'],
+    ],
+    'tags table' => [
+        ListTags::class,
+        ['name', 'slug', 'description', 'color', 'articles_count', 'usage_count', 'is_trending', 'is_featured'],
+        ['name', 'slug', 'description', 'color', 'articles_count', 'usage_count', 'is_trending', 'is_featured'],
+    ],
 ]);
 
 dataset('grouped_navigation_items', [
@@ -73,6 +134,19 @@ it('registers configured article resource views for the admin panel', function (
         ->toBeTrue()
         ->and(str_ends_with(ArticleResource::getUrl(configuration: 'published'), '/admin/published-articles'))
         ->toBeTrue();
+});
+
+it('uses a light-only full-width admin panel shell', function () {
+    $panel = Filament::getCurrentPanel();
+
+    expect($panel->hasDarkMode())
+        ->toBeFalse()
+        ->and($panel->getDefaultThemeMode())
+        ->toBe(ThemeMode::Light)
+        ->and($panel->getMaxContentWidth())
+        ->toBe(Width::Full)
+        ->and($panel->getSimplePageMaxContentWidth())
+        ->toBe(Width::Full);
 });
 
 it('keeps admin navigation groups iconized and labeled through the enum', function () {
@@ -139,6 +213,24 @@ it('keeps cms list pages free from modal column managers', function (string $pag
     expect($table->hasColumnManager())
         ->toBeFalse();
 })->with('cms_list_pages');
+
+it('keeps admin resource tables searchable and sortable across their configured columns', function (
+    string $pageClass,
+    array $searchableColumns,
+    array $sortableColumns,
+) {
+    $this->actingAs(User::factory()->create());
+
+    $livewire = Livewire::test($pageClass);
+
+    foreach ($searchableColumns as $columnName) {
+        $livewire->assertTableColumnExists($columnName, fn ($column): bool => $column->isSearchable());
+    }
+
+    foreach ($sortableColumns as $columnName) {
+        $livewire->assertTableColumnExists($columnName, fn ($column): bool => $column->isSortable());
+    }
+})->with('admin_table_columns');
 
 it('keeps the dense article table configurable through toggleable columns instead of modal tools', function () {
     $this->actingAs(User::factory()->create());

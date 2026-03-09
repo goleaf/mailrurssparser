@@ -21,6 +21,8 @@ class CategoriesTable
         return $table
             ->columns([
                 TextColumn::make('icon')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Иконка'),
                 TextColumn::make('name')
@@ -29,34 +31,45 @@ class CategoriesTable
                     ->sortable(),
                 TextColumn::make('slug')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('rss_key')
                     ->toggleable()
+                    ->searchable()
+                    ->sortable()
                     ->badge(),
                 ColorColumn::make('color')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('order')
                     ->toggleable()
+                    ->searchable()
                     ->sortable(),
                 ToggleColumn::make('is_active')
                     ->toggleable()
+                    ->searchable()
                     ->sortable(),
                 ToggleColumn::make('show_in_menu')
                     ->label('В меню')
                     ->toggleable()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('sub_categories_count')
                     ->label('Подкатегорий')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('rss_feeds_count')
                     ->label('Лент')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('articles_count_cache')
                     ->numeric()
                     ->toggleable()
                     ->label('Статей')
+                    ->searchable()
                     ->sortable(),
             ])
             ->filters([

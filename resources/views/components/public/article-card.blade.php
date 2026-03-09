@@ -8,6 +8,7 @@
 @php
     $categoryColor = $article->category?->color ?: '#0284c7';
     $visibleTags = $article->tags->take($compact ? 2 : 3);
+    $hasCompactImage = $compact && filled($article->image_url);
     $cardRadiusClass = $compact ? 'rounded-[1.5rem]' : 'rounded-[1.75rem]';
     $contentGapClass = $compact ? 'gap-4' : 'gap-5';
     $headerGapClass = $compact ? 'gap-1.5' : 'gap-2';
@@ -16,12 +17,19 @@
         ? 'text-balance text-xl font-black leading-7 transition hover:text-sky-600 dark:hover:text-sky-300 sm:text-[1.35rem]'
         : 'text-balance text-2xl font-black leading-tight transition hover:text-sky-600 dark:hover:text-sky-300';
     $excerptClass = $compact
-        ? 'line-clamp-2 text-sm leading-6 text-base-content/65'
+        ? 'line-clamp-3 text-sm leading-6 text-base-content/70'
         : 'text-sm leading-7 text-base-content/70';
     $footerClass = $compact
-        ? 'mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-base-300/70 pt-3 text-[0.8125rem] text-base-content/60'
-        : 'mt-auto flex flex-wrap items-center justify-between gap-4 border-t border-base-300/70 pt-4 text-sm text-base-content/60';
-    $metaClass = $compact ? 'flex flex-wrap items-center gap-x-3 gap-y-1.5' : 'flex flex-wrap items-center gap-4';
+        ? 'mt-auto flex flex-col gap-3 border-t border-base-300/70 pt-3 text-[0.8125rem] text-base-content/60 sm:flex-row sm:items-end sm:justify-between'
+        : 'mt-auto flex flex-col gap-4 border-t border-base-300/70 pt-4 text-sm text-base-content/60 lg:flex-row lg:items-center lg:justify-between';
+    $metaClass = $compact ? 'flex flex-wrap gap-2' : 'flex flex-wrap gap-2.5';
+    $metaChipClass = $compact
+        ? 'inline-flex items-center gap-2 rounded-full bg-base-200/70 px-2.5 py-1 ring-1 ring-base-300/60'
+        : 'inline-flex items-center gap-2.5 rounded-full bg-base-200/70 px-3 py-1.5 ring-1 ring-base-300/60';
+    $metaLabelClass = $compact
+        ? 'text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-base-content/45'
+        : 'text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-base-content/45';
+    $metaValueClass = 'whitespace-nowrap font-medium text-base-content/75';
     $actionClass = $compact ? 'flex items-center gap-1.5' : 'flex items-center gap-2';
     $readLabel = $compact ? 'Открыть' : 'Читать';
 @endphp
@@ -55,23 +63,50 @@
             @endforeach
         </div>
 
-        <div class="{{ $bodySpacingClass }}">
-            <a class="block {{ $titleClass }}" href="{{ route('articles.show', ['slug' => $article->slug]) }}">
-                {{ $article->title }}
-            </a>
-
-            @if($showExcerpt && filled($article->short_description))
-                <p class="{{ $excerptClass }}">
-                    {{ $article->short_description }}
-                </p>
+        <div class="{{ $hasCompactImage ? 'flex flex-col gap-4 sm:flex-row sm:items-start' : $bodySpacingClass }}">
+            @if($hasCompactImage)
+                <a
+                    class="block w-full overflow-hidden rounded-[1.25rem] bg-base-200/70 ring-1 ring-base-300/60 sm:h-28 sm:w-32 sm:shrink-0 lg:h-32 lg:w-36"
+                    href="{{ route('articles.show', ['slug' => $article->slug]) }}"
+                >
+                    <img
+                        src="{{ $article->image_url }}"
+                        alt="{{ $article->title }}"
+                        class="aspect-[4/3] h-full w-full object-cover object-center"
+                        loading="lazy"
+                    >
+                </a>
             @endif
+
+            <div class="{{ $hasCompactImage ? 'min-w-0 flex-1 space-y-2.5' : $bodySpacingClass }}">
+                <a class="block {{ $titleClass }}" href="{{ route('articles.show', ['slug' => $article->slug]) }}">
+                    {{ $article->title }}
+                </a>
+
+                @if($showExcerpt && filled($article->short_description))
+                    <p class="{{ $excerptClass }}">
+                        {{ $article->short_description }}
+                    </p>
+                @endif
+            </div>
         </div>
 
         <div class="{{ $footerClass }}">
             <div class="{{ $metaClass }}">
-                <span>{{ $article->published_at?->translatedFormat('d M Y, H:i') }}</span>
-                <span>{{ $article->reading_time_text }}</span>
-                <span>{{ number_format((int) $article->views_count, 0, ',', ' ') }} просмотров</span>
+                <span class="{{ $metaChipClass }}">
+                    <span class="{{ $metaLabelClass }}">Дата</span>
+                    <span class="{{ $metaValueClass }}">{{ $article->published_at?->translatedFormat('d M Y, H:i') }}</span>
+                </span>
+
+                <span class="{{ $metaChipClass }}">
+                    <span class="{{ $metaLabelClass }}">Чтение</span>
+                    <span class="{{ $metaValueClass }}">{{ $article->reading_time_text }}</span>
+                </span>
+
+                <span class="{{ $metaChipClass }}">
+                    <span class="{{ $metaLabelClass }}">Просмотры</span>
+                    <span class="{{ $metaValueClass }}">{{ number_format((int) $article->views_count, 0, ',', ' ') }}</span>
+                </span>
             </div>
 
             <div class="{{ $actionClass }}">

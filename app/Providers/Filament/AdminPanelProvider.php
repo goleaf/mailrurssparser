@@ -11,6 +11,7 @@ use App\Filament\Widgets\StatsOverviewWidget;
 use App\Filament\Widgets\ViewsChartWidget;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
+use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -19,6 +20,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -35,6 +37,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->topbar(false)
+            ->darkMode(false)
+            ->defaultThemeMode(ThemeMode::Light)
+            ->maxContentWidth(Width::Full)
+            ->simplePageMaxContentWidth(Width::Full)
             ->login()
             ->profile(isSimple: false)
             ->multiFactorAuthentication([

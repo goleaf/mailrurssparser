@@ -33,6 +33,8 @@ it('renders the redesigned rss manager page over http', function () {
         ->assertSeeText($feed->title)
         ->assertSee('data-rss-manager-summary', false)
         ->assertSee('data-rss-feed-card', false)
+        ->assertSee('h-2.5 w-2.5 shrink-0', false)
+        ->assertSee('whitespace-nowrap', false)
         ->assertDontSee('data-rss-manager-results', false);
 });
 

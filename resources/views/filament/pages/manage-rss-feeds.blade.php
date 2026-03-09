@@ -167,8 +167,8 @@
                     <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                         <div class="space-y-2">
                             <div class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-white/5 dark:text-gray-300">
-                                <span class="h-2.5 w-2.5 rounded-full" style="background-color: {{ $categoryColor }}"></span>
-                                {{ $categoryName }}
+                                <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {{ $categoryColor }}"></span>
+                                <span class="whitespace-nowrap">{{ $categoryName }}</span>
                             </div>
 
                             <div>

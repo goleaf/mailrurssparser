@@ -14,23 +14,31 @@ class BookmarksTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('article.title')
                     ->label('Статья')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('article.category.name')
                     ->label('Рубрика')
                     ->badge()
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('article.subCategory.name')
                     ->label('Подкатегория')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->placeholder('—'),
                 TextColumn::make('session_hash')
                     ->searchable()
+                    ->sortable()
                     ->limit(18),
                 TextColumn::make('created_at')
                     ->dateTime()
+                    ->searchable()
                     ->sortable(),
             ])
             ->filters([

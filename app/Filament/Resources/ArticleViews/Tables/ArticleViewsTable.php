@@ -15,34 +15,51 @@ class ArticleViewsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('viewed_at', 'desc')
             ->columns([
                 TextColumn::make('article.title')
                     ->label('Статья')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('article.category.name')
                     ->label('Рубрика')
                     ->badge()
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('device_type')
                     ->badge()
+                    ->searchable()
+                    ->sortable()
                     ->placeholder('—'),
                 TextColumn::make('referrer_type')
                     ->badge()
+                    ->searchable()
+                    ->sortable()
                     ->placeholder('—'),
                 TextColumn::make('country_code')
                     ->label('Страна')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('locale')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('referrer_domain')
                     ->label('Домен')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->placeholder('—'),
                 TextColumn::make('session_hash')
+                    ->searchable()
+                    ->sortable()
                     ->limit(18)
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('viewed_at')
                     ->dateTime()
+                    ->searchable()
                     ->sortable(),
             ])
             ->filters([

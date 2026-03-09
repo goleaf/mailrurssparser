@@ -23,6 +23,28 @@ it('loads parse logs on the history page', function () {
         ->assertSee('Timeout');
 });
 
+it('renders the redesigned parse history page over http', function () {
+    $this->actingAs(User::factory()->create(['email_verified_at' => now()]));
+
+    $feed = RssFeed::factory()->create(['title' => 'Timeline feed']);
+
+    RssParseLog::factory()->create([
+        'rss_feed_id' => $feed->id,
+        'success' => true,
+    ]);
+
+    $this->get(route('filament.admin.pages.parse-history'))
+        ->assertSuccessful()
+        ->assertSeeText('История запусков и диагностика RSS')
+        ->assertSeeText('Открыть RSS менеджер')
+        ->assertSeeText('Журнал запусков')
+        ->assertSeeText($feed->title)
+        ->assertSee('data-parse-history-summary', false)
+        ->assertSee('data-parse-log-card', false)
+        ->assertSee('h-2 w-2 shrink-0', false)
+        ->assertSee('whitespace-nowrap', false);
+});
+
 it('filters parse logs by feed and status', function () {
     $this->actingAs(User::factory()->create());
 
@@ -45,6 +67,59 @@ it('filters parse logs by feed and status', function () {
         ->assertSee('Sport feed')
         ->call('toggleExpanded', $failedLog->id)
         ->assertSee('HTTP 500');
+});
+
+it('summarizes the filtered parse log selection', function () {
+    $this->actingAs(User::factory()->create());
+
+    $successFeed = RssFeed::factory()->create(['title' => 'Main feed']);
+    $failedFeed = RssFeed::factory()->create(['title' => 'Problem feed']);
+
+    RssParseLog::factory()->create([
+        'rss_feed_id' => $failedFeed->id,
+        'success' => false,
+        'new_count' => 1,
+        'skip_count' => 3,
+        'error_count' => 2,
+        'error_message' => 'Gateway timeout',
+    ]);
+
+    RssParseLog::factory()->create([
+        'rss_feed_id' => $failedFeed->id,
+        'success' => false,
+        'new_count' => 0,
+        'skip_count' => 2,
+        'error_count' => 1,
+        'error_message' => 'Malformed XML',
+    ]);
+
+    RssParseLog::factory()->create([
+        'rss_feed_id' => $successFeed->id,
+        'success' => true,
+        'new_count' => 7,
+        'skip_count' => 1,
+        'error_count' => 0,
+    ]);
+
+    $component = Livewire::test(ParseHistory::class)
+        ->set('feed', (string) $failedFeed->id)
+        ->set('status', 'failure');
+
+    expect($component->instance()->filteredSummary)
+        ->toMatchArray([
+            'total_runs' => 2,
+            'successful_runs' => 0,
+            'failed_runs' => 2,
+            'total_new' => 1,
+            'total_skip' => 5,
+            'total_errors' => 3,
+            'unique_feeds' => 1,
+        ])
+        ->and($component->instance()->activeFilters)
+        ->toContain(
+            ['label' => 'Лента', 'value' => 'Problem feed'],
+            ['label' => 'Статус', 'value' => 'Сбой'],
+        );
 });
 
 it('expands a parse log row to show item errors', function () {

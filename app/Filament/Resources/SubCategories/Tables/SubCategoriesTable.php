@@ -20,27 +20,37 @@ class SubCategoriesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort(
+                fn (Builder $query): Builder => $query->orderBy('order')->orderBy('name'),
+            )
             ->columns([
                 TextColumn::make('category.name')
                     ->label('Рубрика')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('name')
                     ->searchable(['name', 'slug', 'description'])
                     ->sortable(),
                 TextColumn::make('slug')
                     ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('articles_count')
                     ->label('Статей')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 IconColumn::make('is_active')
-                    ->boolean(),
+                    ->boolean()
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('order')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('updated_at')
                     ->dateTime()
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

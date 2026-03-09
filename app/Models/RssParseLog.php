@@ -91,8 +91,7 @@ class RssParseLog extends Model
     public function scopeForAdminIndex(Builder $query): Builder
     {
         return $query
-            ->with(['rssFeed.category'])
-            ->latest('started_at');
+            ->with(['rssFeed.category']);
     }
 
     private function normalizeMoment(DateTimeInterface|string|null $moment): CarbonImmutable

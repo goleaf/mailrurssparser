@@ -37,23 +37,38 @@ class ParseHistory extends Page
      */
     public array $expandedLogs = [];
 
+    public function resetFilters(): void
+    {
+        $this->feed = '';
+        $this->status = '';
+        $this->dateFrom = '';
+        $this->dateTo = '';
+        $this->expandedLogs = [];
+
+        $this->resetPage();
+    }
+
     public function updatedFeed(): void
     {
+        $this->expandedLogs = [];
         $this->resetPage();
     }
 
     public function updatedStatus(): void
     {
+        $this->expandedLogs = [];
         $this->resetPage();
     }
 
     public function updatedDateFrom(): void
     {
+        $this->expandedLogs = [];
         $this->resetPage();
     }
 
     public function updatedDateTo(): void
     {
+        $this->expandedLogs = [];
         $this->resetPage();
     }
 
@@ -69,7 +84,7 @@ class ParseHistory extends Page
     }
 
     /**
-     * @return array<int, string>
+     * @return array<string, string>
      */
     public function getFeedOptionsProperty(): array
     {
@@ -99,10 +114,74 @@ class ParseHistory extends Page
         ];
     }
 
+    /**
+     * @return array{total_runs: int, successful_runs: int, failed_runs: int, total_new: int, total_skip: int, total_errors: int, unique_feeds: int}
+     */
+    public function getFilteredSummaryProperty(): array
+    {
+        $query = $this->getFilteredLogsQuery();
+        $totalRuns = (clone $query)->count();
+        $failedRuns = (clone $query)->where('success', false)->count();
+
+        return [
+            'total_runs' => $totalRuns,
+            'successful_runs' => $totalRuns - $failedRuns,
+            'failed_runs' => $failedRuns,
+            'total_new' => (int) ((clone $query)->sum('new_count') ?? 0),
+            'total_skip' => (int) ((clone $query)->sum('skip_count') ?? 0),
+            'total_errors' => (int) ((clone $query)->sum('error_count') ?? 0),
+            'unique_feeds' => (int) ((clone $query)->distinct()->count('rss_feed_id') ?? 0),
+        ];
+    }
+
+    /**
+     * @return list<array{label: string, value: string}>
+     */
+    public function getActiveFiltersProperty(): array
+    {
+        $filters = [];
+
+        if ($this->feed !== '') {
+            $filters[] = [
+                'label' => 'Лента',
+                'value' => $this->feedOptions[$this->feed] ?? 'Неизвестная лента',
+            ];
+        }
+
+        if ($this->status !== '') {
+            $filters[] = [
+                'label' => 'Статус',
+                'value' => $this->status === 'success' ? 'Успешно' : 'Сбой',
+            ];
+        }
+
+        if ($this->dateFrom !== '') {
+            $filters[] = [
+                'label' => 'Дата от',
+                'value' => CarbonImmutable::parse($this->dateFrom)->format('d.m.Y'),
+            ];
+        }
+
+        if ($this->dateTo !== '') {
+            $filters[] = [
+                'label' => 'Дата до',
+                'value' => CarbonImmutable::parse($this->dateTo)->format('d.m.Y'),
+            ];
+        }
+
+        return $filters;
+    }
+
     public function getLogsProperty(): LengthAwarePaginator
     {
+        return $this->getFilteredLogsQuery()
+            ->paginate(15);
+    }
+
+    protected function getFilteredLogsQuery(): Builder
+    {
         return RssParseLog::query()
-            ->with('rssFeed')
+            ->forAdminIndex()
             ->when($this->feed !== '', fn (Builder $query): Builder => $query->where('rss_feed_id', (int) $this->feed))
             ->when($this->status !== '', fn (Builder $query): Builder => $query->where('success', $this->status === 'success'))
             ->when(
@@ -126,8 +205,6 @@ class ParseHistory extends Page
             ->when(
                 $this->dateFrom === '' && $this->dateTo !== '',
                 fn (Builder $query): Builder => $query->where('started_at', '<=', CarbonImmutable::parse($this->dateTo)->endOfDay()),
-            )
-            ->latest('started_at')
-            ->paginate(15);
+            );
     }
 }

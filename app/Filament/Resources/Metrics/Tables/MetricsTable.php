@@ -15,6 +15,7 @@ class MetricsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('bucket_start', 'desc')
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
@@ -25,23 +26,30 @@ class MetricsTable
                     ->placeholder('—'),
                 TextColumn::make('measurable_type')
                     ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->placeholder('Глобальная'),
                 TextColumn::make('measurable_id')
                     ->numeric()
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('value')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('bucket_start')
                     ->dateTime()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('bucket_date')
                     ->date()
+                    ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('fingerprint')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->limit(18),
             ])
