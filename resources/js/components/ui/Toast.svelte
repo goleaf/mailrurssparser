@@ -12,6 +12,11 @@
     import X from 'lucide-svelte/icons/x';
     import { fade, fly } from 'svelte/transition';
     import { onMount } from 'svelte';
+    import {
+        prefersReducedMotion,
+        resolveFadeTransition,
+        resolveFlyTransition,
+    } from '@/lib/motion';
     import { cn } from '@/lib/utils';
     import {
         dismissToast,
@@ -20,6 +25,18 @@
     } from '@/components/ui/toast-state';
 
     let toasts = $state<ToastItem[]>([]);
+
+    const toastEnterTransition = $derived(
+        resolveFlyTransition($prefersReducedMotion, {
+            duration: 180,
+            x: 24,
+        }),
+    );
+    const toastExitTransition = $derived(
+        resolveFadeTransition($prefersReducedMotion, {
+            duration: 160,
+        }),
+    );
 
     const toneClasses: Record<string, string> = {
         success: 'border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100',
@@ -40,8 +57,8 @@
                 'pointer-events-auto rounded-2xl border px-4 py-3 shadow-xl backdrop-blur',
                 toneClasses[toast.type] ?? toneClasses.info,
             )}
-            in:fly={{ x: 24, duration: 180 }}
-            out:fade={{ duration: 160 }}
+            in:fly={toastEnterTransition}
+            out:fade={toastExitTransition}
         >
             <div class="flex items-start gap-3">
                 <div class="min-w-0 flex-1 text-sm font-medium">

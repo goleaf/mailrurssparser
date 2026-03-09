@@ -20,6 +20,10 @@
         toggleTag,
     } from '@/features/articles/state/articles.svelte.js';
     import { appTrendingTags } from '@/features/portal/state/app.svelte.js';
+    import {
+        prefersReducedMotion,
+        resolveSlideTransition,
+    } from '@/lib/motion';
     import { cn, debounce } from '@/lib/utils';
 
     type Tag = {
@@ -54,6 +58,11 @@
         Number(pagination?.total ?? pagination?.total_results ?? 0),
     );
     const activeCount = $derived($activeFiltersCount);
+    const advancedFiltersTransition = $derived(
+        resolveSlideTransition($prefersReducedMotion, {
+            duration: 220,
+        }),
+    );
     const selectedTags = $derived($filters.tags as string[]);
     const trendingTags = $derived(($appTrendingTags ?? []) as Tag[]);
     const filteredTagSuggestions = $derived.by(() => {
@@ -225,7 +234,7 @@
     {#if showAdvanced}
         <div
             class="mt-5 space-y-5 rounded-[1.75rem] border border-slate-200/80 bg-white/70 p-4 dark:border-white/10 dark:bg-black/10"
-            transition:slide
+            transition:slide={advancedFiltersTransition}
         >
             <div>
                 <div

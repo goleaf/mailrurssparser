@@ -3,6 +3,10 @@
     import { getContext } from 'svelte';
     import X from 'lucide-svelte/icons/x';
     import { fly } from 'svelte/transition';
+    import {
+        prefersReducedMotion,
+        resolveFlyTransition,
+    } from '@/lib/motion';
     import { cn } from '@/lib/utils';
     import { SHEET_CONTEXT, type SheetContext } from './context';
 
@@ -44,7 +48,11 @@
                     ? { x: 0, y: -320 }
                     : { x: 0, y: 320 };
 
-        return { ...axis, duration: 260, opacity: 1 };
+        return resolveFlyTransition($prefersReducedMotion, {
+            ...axis,
+            duration: 260,
+            opacity: 1,
+        });
     };
 </script>
 

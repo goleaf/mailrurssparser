@@ -1,6 +1,7 @@
 <script lang="ts">
     import X from 'lucide-svelte/icons/x';
     import { onMount } from 'svelte';
+    import { slide } from 'svelte/transition';
     import { showToast } from '@/components/ui/Toast.svelte';
     import { usePolling } from '@/composables/usePolling.js';
     import type { ApiArticleListItem } from '@/features/portal/data/api';
@@ -15,15 +16,27 @@
         initApp,
         setBreakingNews,
     } from '@/features/portal/state/app.svelte.js';
+    import {
+        prefersReducedMotion,
+        resolveSlideTransition,
+    } from '@/lib/motion';
 
     let dismissed = $state(false);
     let paused = $state(false);
     let hasHydrated = $state(false);
+    let motionReady = $state(false);
     let seenBreakingIds = $state<Array<number | string>>([]);
 
     const breakingNews = $derived($appBreakingNews as ApiArticleListItem[]);
+    const canToggleTicker = $derived(motionReady && !$prefersReducedMotion);
+    const showStaticHeadlines = $derived(paused || !canToggleTicker);
     const tickerText = $derived(
         breakingNews.map((article) => article.title).join(' | '),
+    );
+    const tickerTransition = $derived(
+        resolveSlideTransition($prefersReducedMotion, {
+            duration: 220,
+        }),
     );
     const durationSeconds = $derived(
         Math.max(16, Math.ceil(tickerText.length / 10)),
@@ -62,8 +75,17 @@
     }
 
     onMount(() => {
+        motionReady = true;
         void initializeTicker();
     });
+
+    function handleTickerToggle(): void {
+        if (!canToggleTicker) {
+            return;
+        }
+
+        paused = !paused;
+    }
 
     $effect(() => {
         const nextItems = breakingPolling.data;
@@ -102,17 +124,8 @@
 {#if !dismissed && breakingNews.length > 0}
     <div
         class="relative z-30 border-b border-red-300/60 bg-linear-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-lg shadow-red-900/20"
-        role="button"
-        tabindex="0"
-        onclick={() => {
-            paused = !paused;
-        }}
-        onkeydown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                paused = !paused;
-            }
-        }}
+        in:slide={tickerTransition}
+        out:slide={tickerTransition}
     >
         <div
             class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 lg:px-6"
@@ -124,7 +137,7 @@
             </div>
 
             <div class="min-w-0 flex-1 overflow-hidden">
-                {#if paused}
+                {#if showStaticHeadlines}
                     <div
                         class="flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium"
                     >
@@ -167,17 +180,29 @@
                 {/if}
             </div>
 
-            <button
-                type="button"
-                class="shrink-0 rounded-full border border-white/15 bg-white/10 p-2 transition hover:bg-white/20"
-                onclick={(event) => {
-                    event.stopPropagation();
-                    dismissTicker();
-                }}
-                aria-label="Скрыть срочные новости"
-            >
-                <X class="size-4" />
-            </button>
+            <div class="flex shrink-0 items-center gap-2">
+                {#if canToggleTicker}
+                    <button
+                        type="button"
+                        class="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition hover:bg-white/20"
+                        onclick={handleTickerToggle}
+                    >
+                        {paused ? 'Старт' : 'Пауза'}
+                    </button>
+                {/if}
+
+                <button
+                    type="button"
+                    class="rounded-full border border-white/15 bg-white/10 p-2 transition hover:bg-white/20"
+                    onclick={(event) => {
+                        event.stopPropagation();
+                        dismissTicker();
+                    }}
+                    aria-label="Скрыть срочные новости"
+                >
+                    <X class="size-4" />
+                </button>
+            </div>
         </div>
     </div>
 {/if}

@@ -6,6 +6,7 @@
         onDestroy,
         onMount,
     } from 'svelte';
+    import { fade, fly } from 'svelte/transition';
     import {
         resetFilters,
         setCategory,
@@ -27,6 +28,11 @@
         SearchAutocompleteItem,
         SearchSuggestions,
     } from '@/features/search/data/searchAutocomplete';
+    import {
+        prefersReducedMotion,
+        resolveFadeTransition,
+        resolveFlyTransition,
+    } from '@/lib/motion';
 
     const RECENT_SEARCHES_KEY = 'news-portal-recent-searches';
     const noop = (): void => {};
@@ -48,6 +54,19 @@
     let autocompleteRequestVersion = 0;
     let focusTimer: ReturnType<typeof setTimeout> | null = null;
     let autocompleteTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const modalBackdropTransition = $derived(
+        resolveFadeTransition($prefersReducedMotion, {
+            duration: 180,
+        }),
+    );
+    const modalPanelTransition = $derived(
+        resolveFlyTransition($prefersReducedMotion, {
+            duration: 220,
+            opacity: 1,
+            y: 28,
+        }),
+    );
 
     function readRecentSearches(): string[] {
         if (typeof localStorage === 'undefined') {
@@ -338,6 +357,8 @@
             class="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
             onclick={close}
             aria-label="Закрыть поиск"
+            in:fade={modalBackdropTransition}
+            out:fade={modalBackdropTransition}
         ></button>
 
         <div
@@ -345,6 +366,8 @@
         >
             <div
                 class="mt-8 w-full overflow-hidden rounded-[2rem] border border-white/10 bg-white p-6 shadow-2xl shadow-black/30 dark:bg-neutral-950 sm:p-8"
+                in:fly={modalPanelTransition}
+                out:fly={modalPanelTransition}
             >
                 <div class="mb-6 flex items-start justify-between gap-4">
                     <div>

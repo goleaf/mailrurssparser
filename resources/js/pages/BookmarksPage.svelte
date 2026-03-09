@@ -6,6 +6,11 @@
     import { loadBookmarks, toggleBookmark } from '@/features/bookmarks';
     import { AppHead, homeUrl, searchUrl } from '@/features/portal';
     import * as api from '@/features/portal';
+    import {
+        prefersReducedMotion,
+        resolveFlipAnimation,
+        resolveFlyTransition,
+    } from '@/lib/motion';
 
     type Category = {
         id: number | string;
@@ -41,7 +46,19 @@
     let loading = $state(true);
     let clearing = $state(false);
 
+    const bookmarkListFlip = $derived(
+        resolveFlipAnimation($prefersReducedMotion, {
+            duration: 250,
+        }),
+    );
     const count = $derived(articles.length);
+    const bookmarkExitTransition = $derived(
+        resolveFlyTransition($prefersReducedMotion, {
+            duration: 220,
+            opacity: 0,
+            y: 24,
+        }),
+    );
     const savedCategoryCount = $derived(
         new Set(articles.map((article) => article.category.slug)).size,
     );
@@ -227,8 +244,8 @@
                 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                     {#each articles as article (article.id)}
                         <div
-                            animate:flip={{ duration: 250 }}
-                            out:fly={{ y: 24, duration: 220, opacity: 0 }}
+                            animate:flip={bookmarkListFlip}
+                            out:fly={bookmarkExitTransition}
                         >
                             <ArticleCard
                                 {article}

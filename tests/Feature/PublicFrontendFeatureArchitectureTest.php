@@ -288,3 +288,43 @@ it('uses custom component events instead of callback props for presentational co
             ->not->toContain('onBookmarkToggle=');
     }
 });
+
+it('centralizes reduced-motion handling for purposeful Svelte transitions', function (): void {
+    $motionHelper = file_get_contents(resource_path('js/lib/motion.ts'));
+    $appCss = file_get_contents(resource_path('css/app.css'));
+    $toast = file_get_contents(resource_path('js/components/ui/Toast.svelte'));
+    $bookmarksPage = file_get_contents(resource_path('js/pages/BookmarksPage.svelte'));
+    $ticker = file_get_contents(resource_path('js/features/portal/components/BreakingNewsTicker.svelte'));
+    $filterBar = file_get_contents(resource_path('js/features/articles/components/FilterBar.svelte'));
+    $searchModal = file_get_contents(resource_path('js/features/search/components/SearchModal.svelte'));
+
+    expect($motionHelper)
+        ->toContain('prefersReducedMotion')
+        ->toContain('resolveFadeTransition')
+        ->toContain('resolveFlyTransition')
+        ->toContain('resolveFlipAnimation')
+        ->toContain('resolveSlideTransition');
+
+    expect($appCss)
+        ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->toContain('transition-duration: 1ms !important;');
+
+    expect($toast)
+        ->toContain('resolveFlyTransition($prefersReducedMotion')
+        ->toContain('resolveFadeTransition($prefersReducedMotion');
+
+    expect($bookmarksPage)
+        ->toContain('animate:flip={bookmarkListFlip}')
+        ->toContain('resolveFlipAnimation($prefersReducedMotion');
+
+    expect($ticker)
+        ->toContain('in:slide={tickerTransition}')
+        ->toContain('showStaticHeadlines = $derived(paused || !canToggleTicker)');
+
+    expect($filterBar)
+        ->toContain('transition:slide={advancedFiltersTransition}');
+
+    expect($searchModal)
+        ->toContain('in:fade={modalBackdropTransition}')
+        ->toContain('in:fly={modalPanelTransition}');
+});

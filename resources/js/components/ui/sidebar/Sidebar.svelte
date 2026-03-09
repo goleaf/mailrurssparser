@@ -3,6 +3,11 @@
     import { getContext } from 'svelte';
     import { cubicOut } from 'svelte/easing';
     import { fade, fly } from 'svelte/transition';
+    import {
+        prefersReducedMotion,
+        resolveFadeTransition,
+        resolveFlyTransition,
+    } from '@/lib/motion';
     import { cn } from '@/lib/utils';
     import {
         SIDEBAR_CONTEXT,
@@ -42,7 +47,10 @@
                 class="fixed inset-0 bg-black/50"
                 aria-label="Close"
                 onclick={() => setOpenMobile(false)}
-                transition:fade={{ duration: 200 }}
+                transition:fade={resolveFadeTransition(
+                    $prefersReducedMotion,
+                    { duration: 200 },
+                )}
             ></button>
             <div
                 data-sidebar="sidebar"
@@ -54,7 +62,15 @@
                     className,
                 )}
                 style={`--sidebar-width: ${SIDEBAR_WIDTH_MOBILE};`}
-                transition:fly={{ x: side === 'left' ? -320 : 320, duration: 300, opacity: 1, easing: cubicOut }}
+                transition:fly={resolveFlyTransition(
+                    $prefersReducedMotion,
+                    {
+                        duration: 300,
+                        easing: cubicOut,
+                        opacity: 1,
+                        x: side === 'left' ? -320 : 320,
+                    },
+                )}
             >
                 <div class="flex h-full w-full flex-col">
                     {@render children?.()}
