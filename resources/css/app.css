@@ -181,12 +181,28 @@
         @apply min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.18),_transparent_32%),linear-gradient(180deg,_rgba(15,23,42,0.04),_rgba(15,23,42,0))] bg-base-200;
     }
 
+    .portal-header-shell {
+        @apply rounded-[2rem] border border-base-300/70 bg-[linear-gradient(135deg,_rgba(2,132,199,0.1),_rgba(255,255,255,0.9),_rgba(16,185,129,0.08))] shadow-xl shadow-slate-900/5 backdrop-blur-xl;
+    }
+
     .portal-surface {
         @apply border border-base-300/70 bg-base-100/90 shadow-sm backdrop-blur-sm;
     }
 
     .portal-hero {
         @apply overflow-hidden rounded-[2rem] border border-base-300/70 bg-[linear-gradient(135deg,_rgba(2,132,199,0.18),_rgba(16,185,129,0.12),_rgba(248,250,252,0.92))] p-8 shadow-xl shadow-slate-900/5;
+    }
+
+    .portal-menu-chip {
+        @apply inline-flex items-center gap-3 rounded-[1.2rem] border border-base-300/70 bg-base-100/85 px-4 py-3 text-sm font-semibold text-base-content/75 transition hover:-translate-y-0.5 hover:border-sky-400/50 hover:bg-sky-500/8 hover:text-base-content;
+    }
+
+    .portal-menu-chip-active {
+        @apply border-transparent bg-[linear-gradient(135deg,_rgba(2,132,199,0.95),_rgba(16,185,129,0.82))] text-white shadow-lg shadow-sky-500/20;
+    }
+
+    .portal-category-chip {
+        @apply inline-flex items-center gap-2 rounded-full border border-base-300/70 bg-base-100/80 px-4 py-2.5 text-sm font-medium text-base-content/75 transition hover:-translate-y-0.5 hover:border-emerald-400/50 hover:bg-emerald-500/8 hover:text-base-content;
     }
 
     .portal-prose {
@@ -202,6 +218,10 @@
     .portal-prose h4 {
         @apply mb-4 mt-8 text-balance font-black text-base-content;
     }
+}
+
+.dark .portal-header-shell {
+    @apply bg-[linear-gradient(135deg,_rgba(2,132,199,0.18),_rgba(15,23,42,0.92),_rgba(16,185,129,0.12))];
 }
 
 .mary-table-pagination span[aria-current='page'] > span {

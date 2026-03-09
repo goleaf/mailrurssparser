@@ -29,6 +29,10 @@ it('renders the public frontend from blade views and public blade components', f
             "@vite(['resources/css/app.css', 'resources/js/app.js'])",
             'x-mary-button',
             'data-theme-toggle',
+            'data-header-search',
+            'data-primary-menu',
+            'data-category-menu',
+            'portal-header-shell',
         )
         ->not->toContain('@inertiaHead')
         ->not->toContain('@inertia');
