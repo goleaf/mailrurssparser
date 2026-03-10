@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ArticleViews\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -14,6 +15,8 @@ class ArticleViewInfolist
         return $schema
             ->components([
                 Section::make('Просмотр материала')
+                    ->icon(AdminUiIconResolver::section('Просмотр материала'))
+                    ->columnSpanFull()
                     ->description('Основная карточка просмотра с таймингом и типом визита.')
                     ->columns(2)
                     ->schema([
@@ -46,6 +49,8 @@ class ArticleViewInfolist
                             }),
                     ]),
                 Section::make('Сессия и устройство')
+                    ->icon(AdminUiIconResolver::section('Сессия и устройство'))
+                    ->columnSpanFull()
                     ->description('Технические идентификаторы просмотра и браузерный след.')
                     ->columns(2)
                     ->schema([
@@ -71,6 +76,8 @@ class ArticleViewInfolist
                             ->wrap(),
                     ]),
                 Section::make('Маршрут перехода')
+                    ->icon(AdminUiIconResolver::section('Маршрут перехода'))
+                    ->columnSpanFull()
                     ->description('Откуда пришёл читатель и какие региональные признаки определены.')
                     ->columns(2)
                     ->schema([

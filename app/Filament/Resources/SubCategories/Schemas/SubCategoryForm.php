@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SubCategories\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use App\Filament\Support\SlugGeneratorAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -20,6 +21,8 @@ class SubCategoryForm
         return $schema
             ->components([
                 Section::make('Подкатегория')
+                    ->icon(AdminUiIconResolver::section('Подкатегория'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([

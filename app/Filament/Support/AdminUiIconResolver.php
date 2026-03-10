@@ -17,7 +17,7 @@ class AdminUiIconResolver
         return self::fieldMatch($name) ?? self::fieldMatch(Str::afterLast($name, '.'));
     }
 
-    public static function section(string|null $heading): string|BackedEnum|null
+    public static function section(?string $heading): string|BackedEnum|null
     {
         if (! is_string($heading) || $heading === '') {
             return null;
@@ -48,7 +48,7 @@ class AdminUiIconResolver
         };
     }
 
-    public static function tab(string|null $label): string|BackedEnum|null
+    public static function tab(?string $label): string|BackedEnum|null
     {
         if (! is_string($label) || $label === '') {
             return null;
@@ -67,7 +67,7 @@ class AdminUiIconResolver
     /**
      * @return array{on: string|BackedEnum, off: string|BackedEnum}
      */
-    public static function toggle(string|null $name): array
+    public static function toggle(?string $name): array
     {
         return match ($name) {
             'is_active' => [
@@ -93,7 +93,8 @@ class AdminUiIconResolver
             'rss_content', 'full_description', 'error_message', 'meta_title', 'meta_description' => Heroicon::OutlinedDocumentText,
             'category.name', 'category_id', 'category_ids' => Heroicon::OutlinedFolder,
             'subCategory.name', 'sub_category_id' => Heroicon::OutlinedFolderOpen,
-            'tags', 'tag', 'name' => Heroicon::OutlinedTag,
+            'tags', 'tag' => Heroicon::OutlinedTag,
+            'name' => Heroicon::OutlinedIdentification,
             'slug', 'canonical_url', 'author_url', 'referer', 'source_url' => Heroicon::OutlinedLink,
             'color' => Heroicon::OutlinedSwatch,
             'icon' => Heroicon::OutlinedSparkles,

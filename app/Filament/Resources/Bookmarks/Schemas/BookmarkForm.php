@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bookmarks\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
@@ -15,6 +16,8 @@ class BookmarkForm
         return $schema
             ->components([
                 Section::make('Закладка')
+                    ->icon(AdminUiIconResolver::section('Закладка'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([

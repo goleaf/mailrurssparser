@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\RssFeeds;
 
-use BackedEnum;
 use App\Filament\Resources\RssFeeds\Pages\CreateRssFeed;
 use App\Filament\Resources\RssFeeds\Pages\EditRssFeed;
 use App\Filament\Resources\RssFeeds\Pages\ListRssFeeds;
@@ -10,8 +9,10 @@ use App\Filament\Resources\RssFeeds\Pages\ViewRssFeed;
 use App\Filament\Resources\RssFeeds\Schemas\RssFeedForm;
 use App\Filament\Resources\RssFeeds\Tables\RssFeedsTable;
 use App\Filament\Support\AdminNavigationGroup;
+use App\Filament\Support\AdminUiIconResolver;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
+use BackedEnum;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn as RepeatableTableColumn;
@@ -52,6 +53,8 @@ class RssFeedResource extends Resource
         return $schema
             ->components([
                 Section::make('Обзор ленты')
+                    ->icon(AdminUiIconResolver::section('Обзор ленты'))
+                    ->columnSpanFull()
                     ->columns(2)
                     ->schema([
                         TextEntry::make('title')
@@ -80,6 +83,8 @@ class RssFeedResource extends Resource
                             ->color(fn (bool $state): string => $state ? 'success' : 'gray'),
                     ]),
                 Section::make('Состояние парсера')
+                    ->icon(AdminUiIconResolver::section('Состояние парсера'))
+                    ->columnSpanFull()
                     ->columns(3)
                     ->schema([
                         TextEntry::make('last_parsed_at')
@@ -109,6 +114,8 @@ class RssFeedResource extends Resource
                             ->placeholder('Свежих ошибок нет.'),
                     ]),
                 Section::make('Переопределения ленты')
+                    ->icon(AdminUiIconResolver::section('Переопределения ленты'))
+                    ->columnSpanFull()
                     ->schema([
                         EmptyState::make('Переопределения не заданы')
                             ->description('Сейчас эта лента использует общие настройки импортера.')
@@ -119,6 +126,8 @@ class RssFeedResource extends Resource
                             ->hidden(fn (RssFeed $record): bool => blank($record->extra_settings)),
                     ]),
                 Section::make('Последние запуски парсинга')
+                    ->icon(Heroicon::OutlinedClock)
+                    ->columnSpanFull()
                     ->schema([
                         EmptyState::make('Запусков парсинга ещё не было')
                             ->description('Запустите эту ленту вручную или дождитесь первого запуска по расписанию.')

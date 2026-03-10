@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -48,6 +49,7 @@ class ArticleForm
     private static function contentTab(): Tab
     {
         return Tab::make('Контент')
+            ->icon(Heroicon::OutlinedDocumentText)
             ->schema([
                 TextInput::make('title')
                     ->required()
@@ -130,6 +132,7 @@ class ArticleForm
     private static function mediaTab(): Tab
     {
         return Tab::make('Медиа и источник')
+            ->icon(Heroicon::OutlinedPhoto)
             ->schema([
                 FileUpload::make('uploaded_image')
                     ->label('Загрузить изображение')
@@ -195,6 +198,7 @@ class ArticleForm
     private static function classificationTab(): Tab
     {
         return Tab::make('Теги и Классификация')
+            ->icon(Heroicon::OutlinedTag)
             ->badge(fn (?Article $record, Get $get): int => self::resolveTagBadgeCount($record, $get('tags')))
             ->badgeColor(fn (?Article $record, Get $get): string => self::resolveTagBadgeCount($record, $get('tags')) > 0 ? 'success' : 'gray')
             ->deferBadge(fn (?Article $record): bool => $record !== null)
@@ -249,6 +253,7 @@ class ArticleForm
     private static function publishingTab(): Tab
     {
         return Tab::make('Публикация')
+            ->icon(Heroicon::OutlinedCheckCircle)
             ->schema([
                 Select::make('status')
                     ->required()
@@ -284,6 +289,7 @@ class ArticleForm
     private static function seoTab(): Tab
     {
         return Tab::make('SEO')
+            ->icon(Heroicon::OutlinedMagnifyingGlass)
             ->schema([
                 TextInput::make('meta_title')
                     ->nullable()

@@ -18,13 +18,18 @@ use App\Filament\Resources\NewsletterSubscribers\Pages\ListNewsletterSubscribers
 use App\Filament\Resources\RssFeeds\Pages\ListRssFeeds;
 use App\Filament\Resources\RssFeeds\RssFeedResource;
 use App\Filament\Resources\RssParseLogs\Pages\ListRssParseLogs;
+use App\Filament\Resources\RssParseLogs\Pages\ViewRssParseLog;
 use App\Filament\Resources\RssParseLogs\RssParseLogResource;
 use App\Filament\Resources\SubCategories\Pages\ListSubCategories;
 use App\Filament\Resources\SubCategories\SubCategoryResource;
+use App\Filament\Resources\Tags\Pages\EditTag;
 use App\Filament\Resources\Tags\Pages\ListTags;
 use App\Filament\Resources\Tags\TagResource;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\Article;
+use App\Models\Category;
+use App\Models\RssFeed;
+use App\Models\RssParseLog;
 use App\Models\Tag;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
@@ -150,25 +155,23 @@ it('uses a light-only full-width admin panel shell', function () {
 });
 
 it('keeps admin navigation groups iconized and labeled through the enum', function () {
-    expect(class_implements(AdminNavigationGroup::class))
+    $contracts = class_implements(AdminNavigationGroup::class);
+
+    expect($contracts)
         ->toHaveKey(HasLabel::class)
-        ->toHaveKey(HasIcon::class)
-        ->and(collect(AdminNavigationGroup::cases())->every(
-            fn (AdminNavigationGroup $group): bool => filled($group->getIcon()),
-        ))
-        ->toBeTrue();
+        ->not()->toHaveKey(HasIcon::class)
+        ->and(array_key_exists(HasIcon::class, $contracts))
+        ->toBeFalse();
 });
 
-it('removes item icons when the navigation group already provides the icon', function (
+it('keeps grouped navigation items iconized after removing group icons', function (
     string $navigationItemClass,
     AdminNavigationGroup $navigationGroup,
 ) {
     expect($navigationItemClass::getNavigationGroup())
         ->toBe($navigationGroup)
-        ->and($navigationGroup->getIcon())
-        ->not()->toBeNull()
         ->and($navigationItemClass::getNavigationIcon())
-        ->toBeNull();
+        ->not()->toBeNull();
 })->with('grouped_navigation_items');
 
 it('renders the admin dashboard without group and item icon conflicts', function () {
@@ -263,14 +266,58 @@ it('marks the article classification tab badge as deferred for existing records'
     $schema = $page->getSchema('form');
 
     $tabs = $schema->getComponents()[0];
+    $contentTab = $tabs->getChildSchema()->getComponents()[0];
     $classificationTab = $tabs->getChildSchema()->getComponents()[2];
+    $seoTab = $tabs->getChildSchema()->getComponents()[4];
 
     expect($tabs)
         ->toBeInstanceOf(Tabs::class)
         ->and(str_ends_with($tabs->getKey(), 'article-editor-tabs'))
         ->toBeTrue()
+        ->and($contentTab->getIcon())
+        ->not()->toBeNull()
         ->and($classificationTab->isBadgeDeferred())
         ->toBeTrue()
+        ->and($classificationTab->getIcon())
+        ->not()->toBeNull()
+        ->and($seoTab->getIcon())
+        ->not()->toBeNull()
         ->and($classificationTab->getBadge())
         ->toBe(1);
+});
+
+it('spans edit form sections across the full resource content width', function () {
+    $this->actingAs(User::factory()->create());
+
+    $tag = Tag::factory()->create();
+
+    $page = Livewire::test(EditTag::class, ['record' => $tag->getRouteKey()])->instance();
+    $schema = $page->getSchema('form');
+    $section = $schema->getComponents()[0];
+
+    expect($section->getColumnSpan('default'))
+        ->toBe('full')
+        ->and($section->getIcon())
+        ->not()->toBeNull();
+});
+
+it('adds explicit icons to grouped infolist sections on resource detail pages', function () {
+    $this->actingAs(User::factory()->create());
+
+    $category = Category::factory()->create();
+    $feed = RssFeed::factory()->create(['category_id' => $category->id]);
+    $log = RssParseLog::factory()->create(['rss_feed_id' => $feed->id]);
+
+    $page = Livewire::test(ViewRssParseLog::class, ['record' => $log->getRouteKey()])->instance();
+    $schema = $page->getSchema('infolist');
+    $sections = $schema->getComponents();
+
+    expect($sections)
+        ->toHaveCount(3)
+        ->and($sections[0]->getIcon())
+        ->not()->toBeNull()
+        ->and($sections[1]->getIcon())
+        ->not()->toBeNull()
+        ->and($sections[2]->getIcon())
+        ->not()->toBeNull();
 });

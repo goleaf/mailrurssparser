@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\NewsletterSubscribers\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -15,6 +16,8 @@ class NewsletterSubscriberInfolist
         return $schema
             ->components([
                 Section::make('Профиль подписчика')
+                    ->icon(AdminUiIconResolver::section('Профиль подписчика'))
+                    ->columnSpanFull()
                     ->description('Кто подписан и какие рубрики интересуют этого читателя.')
                     ->columns(2)
                     ->schema([
@@ -35,6 +38,8 @@ class NewsletterSubscriberInfolist
                             ->columnSpanFull(),
                     ]),
                 Section::make('Статус подписки')
+                    ->icon(AdminUiIconResolver::section('Статус подписки'))
+                    ->columnSpanFull()
                     ->description('Подтверждение подписки и жизненный цикл подписчика.')
                     ->columns(2)
                     ->schema([
@@ -59,6 +64,8 @@ class NewsletterSubscriberInfolist
                             ->placeholder('—'),
                     ]),
                 Section::make('География и атрибуция')
+                    ->icon(AdminUiIconResolver::section('География и атрибуция'))
+                    ->columnSpanFull()
                     ->columns(2)
                     ->schema([
                         TextEntry::make('ip_address')

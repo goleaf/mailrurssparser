@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\RssParseLogs\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
@@ -18,6 +19,8 @@ class RssParseLogForm
         return $schema
             ->components([
                 Section::make('Лог запуска')
+                    ->icon(AdminUiIconResolver::section('Лог запуска'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -45,6 +48,8 @@ class RssParseLogForm
                             ]),
                     ]),
                 Section::make('Результат')
+                    ->icon(AdminUiIconResolver::section('Результат'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([

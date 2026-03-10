@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RssFeeds\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use App\Models\RssFeed;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
@@ -25,6 +26,8 @@ class RssFeedForm
         return $schema
             ->components([
                 Section::make('Лента')
+                    ->icon(AdminUiIconResolver::section('Лента'))
+                    ->columnSpanFull()
                     ->schema([
                         Select::make('category_id')
                             ->relationship('category', 'name')
@@ -60,6 +63,8 @@ class RssFeedForm
                     ])
                     ->columns(2),
                 Section::make('Переопределения ленты')
+                    ->icon(AdminUiIconResolver::section('Переопределения ленты'))
+                    ->columnSpanFull()
                     ->description('Переопределите значения, которые RSS-парсер подставляет в импортируемые статьи.')
                     ->schema([
                         Repeater::make('extra_settings_rows')
@@ -102,6 +107,8 @@ class RssFeedForm
                             }),
                     ]),
                 Section::make('Состояние (только чтение)')
+                    ->icon(AdminUiIconResolver::section('Состояние (только чтение)'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(3)
                             ->schema([

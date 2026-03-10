@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Metrics\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
@@ -16,6 +17,8 @@ class MetricForm
         return $schema
             ->components([
                 Section::make('Метрика')
+                    ->icon(AdminUiIconResolver::section('Метрика'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([

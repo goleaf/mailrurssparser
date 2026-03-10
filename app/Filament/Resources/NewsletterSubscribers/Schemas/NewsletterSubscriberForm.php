@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\NewsletterSubscribers\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use App\Models\Category;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -18,6 +19,8 @@ class NewsletterSubscriberForm
         return $schema
             ->components([
                 Section::make('Подписчик')
+                    ->icon(AdminUiIconResolver::section('Подписчик'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -41,6 +44,8 @@ class NewsletterSubscriberForm
                             ]),
                     ]),
                 Section::make('Статус и атрибуция')
+                    ->icon(AdminUiIconResolver::section('Статус и атрибуция'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([

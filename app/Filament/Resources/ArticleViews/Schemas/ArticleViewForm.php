@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ArticleViews\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -16,6 +17,8 @@ class ArticleViewForm
         return $schema
             ->components([
                 Section::make('Просмотр')
+                    ->icon(AdminUiIconResolver::section('Просмотр'))
+                    ->columnSpanFull()
                     ->schema([
                         Select::make('article_id')
                             ->relationship('article', 'title')
@@ -26,6 +29,8 @@ class ArticleViewForm
                             ->required(),
                     ]),
                 Section::make('Контекст пользователя')
+                    ->icon(AdminUiIconResolver::section('Контекст пользователя'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([

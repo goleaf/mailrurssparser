@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SubCategories\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -15,6 +16,8 @@ class SubCategoryInfolist
         return $schema
             ->components([
                 Section::make('Подкатегория')
+                    ->icon(AdminUiIconResolver::section('Подкатегория'))
+                    ->columnSpanFull()
                     ->description('Основные данные подрубрики и её позиция внутри категории.')
                     ->columns(2)
                     ->schema([
@@ -38,6 +41,8 @@ class SubCategoryInfolist
                             ->wrap(),
                     ]),
                 Section::make('Публикация')
+                    ->icon(AdminUiIconResolver::section('Публикация'))
+                    ->columnSpanFull()
                     ->columns(2)
                     ->schema([
                         IconEntry::make('is_active')

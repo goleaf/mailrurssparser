@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Categories\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use App\Filament\Support\SlugGeneratorAction;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Textarea;
@@ -20,6 +21,8 @@ class CategoryForm
         return $schema
             ->components([
                 Section::make('Информация')
+                    ->icon(AdminUiIconResolver::section('Информация'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -69,6 +72,8 @@ class CategoryForm
                     ])
                     ->columns(2),
                 Section::make('Настройки')
+                    ->icon(AdminUiIconResolver::section('Настройки'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(4)
                             ->schema([

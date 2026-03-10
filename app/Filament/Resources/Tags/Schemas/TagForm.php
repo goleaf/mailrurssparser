@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tags\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use App\Filament\Support\SlugGeneratorAction;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Textarea;
@@ -20,6 +21,8 @@ class TagForm
         return $schema
             ->components([
                 Section::make('Информация')
+                    ->icon(AdminUiIconResolver::section('Информация'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(2)
                             ->schema([

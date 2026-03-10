@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RssParseLogs\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -15,6 +16,8 @@ class RssParseLogInfolist
         return $schema
             ->components([
                 Section::make('Запуск и источник')
+                    ->icon(AdminUiIconResolver::section('Запуск и источник'))
+                    ->columnSpanFull()
                     ->description('Где, когда и каким способом был запущен проход RSS-парсера.')
                     ->columns(2)
                     ->schema([
@@ -53,6 +56,8 @@ class RssParseLogInfolist
                             ->formatStateUsing(fn (?int $state): string => filled($state) ? number_format($state).' ms' : '—'),
                     ]),
                 Section::make('Итог обработки')
+                    ->icon(AdminUiIconResolver::section('Итог обработки'))
+                    ->columnSpanFull()
                     ->description('Сводка по количеству импортированных, пропущенных и проблемных элементов.')
                     ->columns(4)
                     ->schema([
@@ -78,6 +83,8 @@ class RssParseLogInfolist
                             ->numeric(),
                     ]),
                 Section::make('Ошибки и диагностика')
+                    ->icon(AdminUiIconResolver::section('Ошибки и диагностика'))
+                    ->columnSpanFull()
                     ->description('Подробности сбоя и служебные отметки для разбора проблемных импортов.')
                     ->columns(2)
                     ->schema([

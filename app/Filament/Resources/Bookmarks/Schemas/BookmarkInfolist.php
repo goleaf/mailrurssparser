@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bookmarks\Schemas;
 
+use App\Filament\Support\AdminUiIconResolver;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -14,6 +15,8 @@ class BookmarkInfolist
         return $schema
             ->components([
                 Section::make('Сводка закладки')
+                    ->icon(AdminUiIconResolver::section('Сводка закладки'))
+                    ->columnSpanFull()
                     ->description('Основная информация о сохранённом материале и сессии читателя.')
                     ->columns(2)
                     ->schema([
