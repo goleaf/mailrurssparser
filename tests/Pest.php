@@ -1,9 +1,14 @@
 <?php
 
+use App\Providers\Filament\AdminPanelProvider;
+use Filament\Facades\Filament;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\Factory as EloquentFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithCachedConfig;
 use Illuminate\Foundation\Testing\WithCachedRoutes;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 /*
 |--------------------------------------------------------------------------
@@ -67,4 +72,51 @@ function withoutExpandedFactoryRelationships(callable $callback): mixed
     } finally {
         EloquentFactory::expandRelationshipsByDefault();
     }
+}
+
+function filamentAdminUser(array $attributes = []): \App\Models\User
+{
+    if (! Filament::getCurrentPanel()) {
+        Filament::setCurrentPanel((new AdminPanelProvider(app()))->panel(new Panel));
+    }
+
+    $guardName = Filament::getCurrentPanel()?->getAuthGuard()
+        ?? Filament::getPanel('admin')?->getAuthGuard()
+        ?? config('auth.defaults.guard', 'web');
+
+    $permissions = collect([
+        'article',
+        'article_view',
+        'bookmark',
+        'category',
+        'metric',
+        'newsletter_subscriber',
+        'rss_feed',
+        'rss_parse_log',
+        'sub_category',
+        'tag',
+    ])->flatMap(function (string $resource) use ($guardName): array {
+        return collect([
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'force_delete',
+            'force_delete_any',
+            'restore',
+            'restore_any',
+        ])->map(function (string $prefix) use ($resource, $guardName): string {
+            return Permission::findOrCreate("{$prefix}_{$resource}", $guardName)->name;
+        })->all();
+    })->all();
+
+    Role::findOrCreate('admin', $guardName);
+    Role::findOrCreate('super_admin', $guardName)->syncPermissions($permissions);
+
+    $user = \App\Models\User::factory()->create($attributes);
+    $user->assignRole('super_admin');
+
+    return $user;
 }

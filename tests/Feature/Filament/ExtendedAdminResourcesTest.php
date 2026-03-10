@@ -19,11 +19,10 @@ use App\Models\Category;
 use App\Models\NewsletterSubscriber;
 use App\Models\RssFeed;
 use App\Models\SubCategory;
-use App\Models\User;
 use Livewire\Livewire;
 
 it('creates a subcategory with the page-based resource form', function () {
-    $this->actingAs(User::factory()->create(['email_verified_at' => now()]));
+    $this->actingAs(filamentAdminUser());
 
     $category = Category::factory()->create();
 
@@ -45,7 +44,7 @@ it('creates a subcategory with the page-based resource form', function () {
 });
 
 it('sorts subcategories across the admin table columns', function () {
-    $this->actingAs(User::factory()->create(['email_verified_at' => now()]));
+    $this->actingAs(filamentAdminUser());
 
     $alphaCategory = Category::factory()->create(['name' => 'Alpha category']);
     $betaCategory = Category::factory()->create(['name' => 'Beta category']);
@@ -124,7 +123,7 @@ it('loads admin relations for article views and bookmarks', function () {
 });
 
 it('creates a newsletter subscriber with category interests', function () {
-    $this->actingAs(User::factory()->create(['email_verified_at' => now()]));
+    $this->actingAs(filamentAdminUser());
 
     $categories = Category::factory()->count(2)->create();
 
@@ -152,7 +151,7 @@ it('creates a newsletter subscriber with category interests', function () {
 });
 
 it('creates an article view, bookmark, parse log, and metric through admin pages', function () {
-    $this->actingAs(User::factory()->create(['email_verified_at' => now()]));
+    $this->actingAs(filamentAdminUser());
 
     $category = Category::factory()->create();
     $article = Article::factory()->create(['category_id' => $category->id]);

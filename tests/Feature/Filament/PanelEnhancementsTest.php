@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Pages\ChartsPage;
 use App\Filament\Pages\ManageRssFeeds;
 use App\Filament\Pages\ParseHistory;
 use App\Filament\Resources\Articles\ArticleResource;
@@ -31,9 +32,9 @@ use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
 use App\Models\Tag;
-use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
 use App\Services\ArticleStatus;
+use Awcodes\StickyHeader\StickyHeaderPlugin;
 use Filament\Enums\ThemeMode;
 use Filament\Facades\Filament;
 use Filament\Panel;
@@ -41,6 +42,7 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 use Filament\Support\Enums\Width;
+use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -120,6 +122,7 @@ dataset('grouped_navigation_items', [
     'article view resource' => [ArticleViewResource::class, AdminNavigationGroup::Audience],
     'bookmark resource' => [BookmarkResource::class, AdminNavigationGroup::Audience],
     'metric resource' => [MetricResource::class, AdminNavigationGroup::Analytics],
+    'charts page' => [ChartsPage::class, AdminNavigationGroup::Analytics],
 ]);
 
 it('registers configured article resource views for the admin panel', function () {
@@ -154,6 +157,21 @@ it('uses a light-only full-width admin panel shell', function () {
         ->toBe(Width::Full);
 });
 
+it('registers the sticky header and apex charts plugins plus the admin panel theme', function () {
+    $panel = Filament::getCurrentPanel();
+
+    expect($panel->hasPlugin('awcodes-sticky-header'))
+        ->toBeTrue()
+        ->and($panel->getPlugin('awcodes-sticky-header'))
+        ->toBeInstanceOf(StickyHeaderPlugin::class)
+        ->and($panel->hasPlugin('filament-apex-charts'))
+        ->toBeTrue()
+        ->and($panel->getPlugin('filament-apex-charts'))
+        ->toBeInstanceOf(FilamentApexChartsPlugin::class)
+        ->and($panel->getViteTheme())
+        ->toBe('resources/css/filament/admin/theme.css');
+});
+
 it('keeps admin navigation groups iconized and labeled through the enum', function () {
     $contracts = class_implements(AdminNavigationGroup::class);
 
@@ -175,7 +193,7 @@ it('keeps grouped navigation items iconized after removing group icons', functio
 })->with('grouped_navigation_items');
 
 it('renders the admin dashboard without group and item icon conflicts', function () {
-    $this->actingAs(User::factory()->create(['email_verified_at' => now()]));
+    $this->actingAs(filamentAdminUser());
 
     $this->get(route('filament.admin.pages.dashboard'))
         ->assertSuccessful();
@@ -209,7 +227,7 @@ it('scopes configured article resource queries by status', function () {
 });
 
 it('keeps cms list pages free from modal column managers', function (string $pageClass) {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $table = Livewire::test($pageClass)->instance()->getTable();
 
@@ -222,7 +240,7 @@ it('keeps admin resource tables searchable and sortable across their configured 
     array $searchableColumns,
     array $sortableColumns,
 ) {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $livewire = Livewire::test($pageClass);
 
@@ -236,7 +254,7 @@ it('keeps admin resource tables searchable and sortable across their configured 
 })->with('admin_table_columns');
 
 it('keeps the dense article table configurable through toggleable columns instead of modal tools', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $table = Livewire::test(ListArticles::class)->instance()->getTable();
 
@@ -251,7 +269,7 @@ it('keeps the dense article table configurable through toggleable columns instea
 });
 
 it('marks the article classification tab badge as deferred for existing records', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $tag = Tag::factory()->create();
 
@@ -287,7 +305,7 @@ it('marks the article classification tab badge as deferred for existing records'
 });
 
 it('spans edit form sections across the full resource content width', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $tag = Tag::factory()->create();
 
@@ -302,7 +320,7 @@ it('spans edit form sections across the full resource content width', function (
 });
 
 it('adds explicit icons to grouped infolist sections on resource detail pages', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $category = Category::factory()->create();
     $feed = RssFeed::factory()->create(['category_id' => $category->id]);

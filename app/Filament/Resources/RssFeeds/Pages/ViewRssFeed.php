@@ -10,6 +10,11 @@ class ViewRssFeed extends ViewRecord
 {
     protected static string $resource = RssFeedResource::class;
 
+    public function getSubheading(): ?string
+    {
+        return 'Паспорт ленты, текущее состояние парсинга и история последних проходов в одном профиле.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

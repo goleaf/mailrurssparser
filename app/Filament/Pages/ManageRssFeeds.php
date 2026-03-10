@@ -2,10 +2,11 @@
 
 namespace App\Filament\Pages;
 
-use BackedEnum;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\RssFeed;
+use App\Models\RssParseLog;
 use App\Services\RssParserService;
+use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -40,6 +41,17 @@ class ManageRssFeeds extends Page
     public ?int $parsingFeedId = null;
 
     public string $filterCategory = '';
+
+    public string $search = '';
+
+    public string $status = 'all';
+
+    public function resetFilters(): void
+    {
+        $this->filterCategory = '';
+        $this->search = '';
+        $this->status = 'all';
+    }
 
     public function resetFilterCategory(): void
     {
@@ -144,11 +156,9 @@ class ManageRssFeeds extends Page
     public function getFilteredFeedsProperty(): array
     {
         return array_values(array_filter($this->feeds, function (array $feed): bool {
-            if ($this->filterCategory === '') {
-                return true;
-            }
-
-            return data_get($feed, 'category.slug') === $this->filterCategory;
+            return $this->matchesCategoryFilter($feed)
+                && $this->matchesSearchFilter($feed)
+                && $this->matchesStatusFilter($feed);
         }));
     }
 
@@ -178,17 +188,105 @@ class ManageRssFeeds extends Page
     public function getSummaryProperty(): array
     {
         $filteredFeeds = collect($this->filteredFeeds);
+        $activeFeeds = $filteredFeeds->filter(fn (array $feed): bool => (bool) ($feed['is_active'] ?? false));
+        $dueFeeds = $filteredFeeds->filter(fn (array $feed): bool => $this->isFeedDue($feed));
+        $failingFeeds = $filteredFeeds->filter(fn (array $feed): bool => filled($feed['last_error'] ?? null));
+        $inactiveFeeds = $filteredFeeds->reject(fn (array $feed): bool => (bool) ($feed['is_active'] ?? false));
 
         return [
             'total_feeds' => count($this->feeds),
             'filtered_feeds' => $filteredFeeds->count(),
-            'active_feeds' => $filteredFeeds->filter(fn (array $feed): bool => (bool) ($feed['is_active'] ?? false))->count(),
-            'due_feeds' => $filteredFeeds->filter(fn (array $feed): bool => $this->isFeedDue($feed))->count(),
-            'failing_feeds' => $filteredFeeds->filter(fn (array $feed): bool => filled($feed['last_error'] ?? null))->count(),
+            'active_feeds' => $activeFeeds->count(),
+            'due_feeds' => $dueFeeds->count(),
+            'failing_feeds' => $failingFeeds->count(),
+            'inactive_feeds' => $inactiveFeeds->count(),
+            'healthy_feeds' => $activeFeeds
+                ->reject(fn (array $feed): bool => filled($feed['last_error'] ?? null))
+                ->reject(fn (array $feed): bool => $this->isFeedDue($feed))
+                ->count(),
             'categories' => count($this->groupedFeeds),
             'articles_parsed_total' => $filteredFeeds->sum(fn (array $feed): int => (int) ($feed['articles_parsed_total'] ?? 0)),
             'new_last_run_total' => $filteredFeeds->sum(fn (array $feed): int => (int) ($feed['last_run_new_count'] ?? 0)),
         ];
+    }
+
+    /**
+     * @return list<array{label: string, value: string}>
+     */
+    public function getActiveFiltersProperty(): array
+    {
+        $filters = [];
+
+        if ($this->search !== '') {
+            $filters[] = [
+                'label' => 'Поиск',
+                'value' => $this->search,
+            ];
+        }
+
+        if ($this->filterCategory !== '') {
+            $filters[] = [
+                'label' => 'Рубрика',
+                'value' => $this->categoryOptions[$this->filterCategory] ?? 'Неизвестно',
+            ];
+        }
+
+        if ($this->status !== 'all') {
+            $filters[] = [
+                'label' => 'Статус',
+                'value' => $this->statusLabel($this->status),
+            ];
+        }
+
+        return $filters;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function getPriorityFeedsProperty(): array
+    {
+        return collect($this->filteredFeeds)
+            ->map(fn (array $feed): array => [
+                'feed' => $feed,
+                'score' => $this->priorityScore($feed),
+            ])
+            ->filter(fn (array $item): bool => $item['score'] > 0)
+            ->sortByDesc('score')
+            ->take(6)
+            ->map(fn (array $item): array => $item['feed'])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function getLatestRunsProperty(): array
+    {
+        return RssParseLog::query()
+            ->forAdminIndex()
+            ->latest('started_at')
+            ->limit(6)
+            ->get()
+            ->map(function (RssParseLog $log): array {
+                return [
+                    'id' => $log->id,
+                    'feed_title' => $log->rssFeed?->title ?? 'Неизвестная лента',
+                    'category_name' => $log->rssFeed?->category?->name,
+                    'category_color' => $log->rssFeed?->category?->color ?? '#94A3B8',
+                    'success' => $log->success,
+                    'triggered_by' => $this->triggeredByLabel($log->triggered_by),
+                    'started_at_label' => $log->started_at?->format('d.m.Y H:i') ?? '—',
+                    'started_at_human' => $log->started_at?->diffForHumans() ?? '—',
+                    'duration_ms' => (int) ($log->duration_ms ?? 0),
+                    'new_count' => (int) ($log->new_count ?? 0),
+                    'skip_count' => (int) ($log->skip_count ?? 0),
+                    'error_count' => (int) ($log->error_count ?? 0),
+                    'error_message' => $log->error_message,
+                ];
+            })
+            ->all();
     }
 
     /**
@@ -232,5 +330,89 @@ class ManageRssFeeds extends Page
         }
 
         return Carbon::parse($nextParseAt)->lte(now());
+    }
+
+    private function matchesCategoryFilter(array $feed): bool
+    {
+        if ($this->filterCategory === '') {
+            return true;
+        }
+
+        return data_get($feed, 'category.slug') === $this->filterCategory;
+    }
+
+    private function matchesSearchFilter(array $feed): bool
+    {
+        $search = trim(mb_strtolower($this->search));
+
+        if ($search === '') {
+            return true;
+        }
+
+        $haystack = implode(' ', array_filter([
+            (string) ($feed['title'] ?? ''),
+            (string) ($feed['url'] ?? ''),
+            (string) ($feed['source_name'] ?? ''),
+            (string) ($feed['last_error'] ?? ''),
+            (string) data_get($feed, 'category.name', ''),
+        ]));
+
+        return str_contains(mb_strtolower($haystack), $search);
+    }
+
+    private function matchesStatusFilter(array $feed): bool
+    {
+        return match ($this->status) {
+            'active' => (bool) ($feed['is_active'] ?? false),
+            'inactive' => ! (bool) ($feed['is_active'] ?? false),
+            'due' => $this->isFeedDue($feed),
+            'failing' => filled($feed['last_error'] ?? null),
+            'healthy' => (bool) ($feed['is_active'] ?? false)
+                && ! filled($feed['last_error'] ?? null)
+                && ! $this->isFeedDue($feed),
+            default => true,
+        };
+    }
+
+    private function priorityScore(array $feed): int
+    {
+        $score = 0;
+
+        if (filled($feed['last_error'] ?? null)) {
+            $score += 1000;
+        }
+
+        if ($this->isFeedDue($feed)) {
+            $score += 500;
+        }
+
+        if (! ($feed['is_active'] ?? false)) {
+            $score += 150;
+        }
+
+        return $score + ((int) ($feed['consecutive_failures'] ?? 0) * 50);
+    }
+
+    private function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'active' => 'Активные',
+            'inactive' => 'Отключённые',
+            'due' => 'Ждут запуска',
+            'failing' => 'С ошибкой',
+            'healthy' => 'Стабильные',
+            default => 'Все',
+        };
+    }
+
+    private function triggeredByLabel(?string $triggeredBy): string
+    {
+        return match ((string) $triggeredBy) {
+            'scheduler' => 'Планировщик',
+            'manual' => 'Вручную',
+            'api' => 'API',
+            'filament' => 'Filament',
+            default => 'Неизвестно',
+        };
     }
 }

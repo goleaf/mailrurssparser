@@ -27,39 +27,57 @@ class RssFeedForm
             ->components([
                 Section::make('Лента')
                     ->icon(AdminUiIconResolver::section('Лента'))
+                    ->description('Паспорт источника, расписание обработки и публикационная стратегия для конкретной RSS-ленты.')
                     ->columnSpanFull()
                     ->schema([
                         Select::make('category_id')
+                            ->label('Рубрика')
+                            ->prefixIcon(AdminUiIconResolver::field('category_id'))
                             ->relationship('category', 'name')
                             ->required()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->placeholder('Выберите рубрику'),
                         TextInput::make('title')
+                            ->label('Название ленты')
+                            ->prefixIcon(AdminUiIconResolver::field('title'))
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->placeholder('Например, Экономика Mail.ru'),
                         TextInput::make('url')
+                            ->prefixIcon(AdminUiIconResolver::field('url'))
                             ->url()
                             ->required()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true),
+                            ->unique(ignoreRecord: true)
+                            ->placeholder('https://news.mail.ru/rss/90/'),
                         TextInput::make('source_name')
+                            ->label('Отображаемый источник')
+                            ->prefixIcon(AdminUiIconResolver::field('source_name'))
                             ->required()
                             ->default((string) config('rss.source_name', ''))
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->placeholder('Mail.ru Новости'),
                         Grid::make(3)
                             ->schema([
                                 Toggle::make('is_active')
+                                    ->label('Активна')
                                     ->default(true),
                                 Toggle::make('auto_publish')
+                                    ->label('Автопубликация')
                                     ->default(true),
                                 Toggle::make('auto_featured')
+                                    ->label('Автовыделение')
                                     ->default(false),
                             ]),
                         TextInput::make('fetch_interval')
+                            ->label('Интервал обновления')
+                            ->prefixIcon(AdminUiIconResolver::field('fetch_interval'))
                             ->numeric()
                             ->integer()
                             ->default(15)
-                            ->suffix('мин'),
+                            ->suffix('мин')
+                            ->helperText('Через сколько минут лента снова попадёт в очередь обработки.'),
                     ])
                     ->columns(2),
                 Section::make('Переопределения ленты')
@@ -88,11 +106,13 @@ class RssFeedForm
                                     ->native(false)
                                     ->live()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->options(self::extraSettingOptions()),
+                                    ->options(self::extraSettingOptions())
+                                    ->prefixIcon(AdminUiIconResolver::field('key')),
                                 TextInput::make('value')
                                     ->label('Значение')
                                     ->required()
                                     ->live(onBlur: true)
+                                    ->prefixIcon(AdminUiIconResolver::field('value'))
                                     ->placeholder(fn (Get $get): ?string => self::extraSettingPlaceholder($get('key')))
                                     ->helperText(fn (Get $get): ?string => self::extraSettingHelperText($get('key'))),
                             ])
@@ -109,6 +129,7 @@ class RssFeedForm
                 Section::make('Состояние (только чтение)')
                     ->icon(AdminUiIconResolver::section('Состояние (только чтение)'))
                     ->columnSpanFull()
+                    ->description('Поля обновляются после запуска парсинга и помогают быстро понять, где лента выпала из графика.')
                     ->schema([
                         Grid::make(3)
                             ->schema([

@@ -19,7 +19,7 @@ afterEach(function () {
 });
 
 it('publishes selected articles from the bulk action', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $articles = Article::withoutSyncingToSearch(function () {
         return Article::factory()
@@ -39,7 +39,7 @@ it('publishes selected articles from the bulk action', function () {
 });
 
 it('uses the full create page instead of an inline import modal', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     Livewire::test(ListArticles::class)
         ->assertDontSee('Импорт из ссылки')
@@ -85,7 +85,7 @@ it('eager loads the article cms relations in the resource query', function () {
 });
 
 it('creates an article through the cms form tabs', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $category = Category::factory()->create();
     $subCategory = SubCategory::factory()->create([

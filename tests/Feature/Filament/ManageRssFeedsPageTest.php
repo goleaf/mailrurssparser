@@ -3,7 +3,6 @@
 use App\Filament\Pages\ManageRssFeeds;
 use App\Models\Category;
 use App\Models\RssFeed;
-use App\Models\User;
 use App\Services\RssParserService;
 use Livewire\Livewire;
 
@@ -12,7 +11,7 @@ afterEach(function () {
 });
 
 it('loads feeds on the custom page', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create(['title' => 'Main feed']);
 
@@ -21,25 +20,29 @@ it('loads feeds on the custom page', function () {
 });
 
 it('renders the redesigned rss manager page over http', function () {
-    $this->actingAs(User::factory()->create(['email_verified_at' => now()]));
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create(['title' => 'Operations feed']);
 
     $this->get(route('filament.admin.pages.manage-rss-feeds'))
         ->assertSuccessful()
-        ->assertSeeText('Операционный центр RSS')
-        ->assertSeeText('Обновить весь контур')
+        ->assertSeeText('RSS Ops')
+        ->assertSeeText('Операционный пульт RSS')
+        ->assertSeeText('Запустить весь контур')
+        ->assertSeeText('Приоритетная очередь')
+        ->assertSeeText('Живой контур запусков')
         ->assertSeeText('Каталог лент')
         ->assertSeeText($feed->title)
         ->assertSee('data-rss-manager-summary', false)
+        ->assertSee('data-rss-manager-priority', false)
+        ->assertSee('data-rss-manager-activity', false)
         ->assertSee('data-rss-feed-card', false)
-        ->assertSee('h-2.5 w-2.5 shrink-0', false)
-        ->assertSee('whitespace-nowrap', false)
+        ->assertSee('data-rss-filter-search', false)
         ->assertDontSee('data-rss-manager-results', false);
 });
 
 it('parses all feeds from the custom page', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $parser = \Mockery::mock(RssParserService::class);
     $parser->shouldReceive('parseAllFeeds')
@@ -64,7 +67,7 @@ it('parses all feeds from the custom page', function () {
 });
 
 it('parses a single feed from the custom page', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create();
 
@@ -89,7 +92,7 @@ it('parses a single feed from the custom page', function () {
 });
 
 it('toggles a feed active state from the custom page', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create(['is_active' => true]);
 
@@ -99,7 +102,7 @@ it('toggles a feed active state from the custom page', function () {
 });
 
 it('summarizes filtered feed health on the custom page', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $category = Category::factory()->create([
         'name' => 'Politics',
@@ -156,4 +159,57 @@ it('summarizes filtered feed health on the custom page', function () {
             'articles_parsed_total' => 17,
             'new_last_run_total' => 3,
         ]);
+});
+
+it('filters feeds by search, category, and status on the custom page', function () {
+    $this->actingAs(filamentAdminUser());
+
+    $economy = Category::factory()->create([
+        'name' => 'Economy',
+        'slug' => 'economy',
+    ]);
+
+    $sports = Category::factory()->create([
+        'name' => 'Sports',
+        'slug' => 'sports',
+    ]);
+
+    RssFeed::factory()->create([
+        'category_id' => $economy->id,
+        'title' => 'Economy Daily',
+        'source_name' => 'Daily source',
+        'is_active' => true,
+        'next_parse_at' => now()->subMinutes(5),
+    ]);
+
+    RssFeed::factory()->create([
+        'category_id' => $economy->id,
+        'title' => 'Economy Stable',
+        'source_name' => 'Stable source',
+        'is_active' => true,
+        'next_parse_at' => now()->addMinutes(30),
+    ]);
+
+    RssFeed::factory()->create([
+        'category_id' => $sports->id,
+        'title' => 'Sports Daily',
+        'source_name' => 'Daily source',
+        'is_active' => true,
+        'next_parse_at' => now()->subMinutes(15),
+    ]);
+
+    $component = Livewire::test(ManageRssFeeds::class)
+        ->set('search', 'daily')
+        ->set('filterCategory', $economy->slug)
+        ->set('status', 'due');
+
+    expect($component->instance()->filteredFeeds)
+        ->toHaveCount(1)
+        ->and($component->instance()->filteredFeeds[0]['title'])->toBe('Economy Daily')
+        ->and($component->instance()->activeFilters)
+        ->toContain(
+            ['label' => 'Поиск', 'value' => 'daily'],
+            ['label' => 'Рубрика', 'value' => 'Economy'],
+            ['label' => 'Статус', 'value' => 'Ждут запуска'],
+        );
 });

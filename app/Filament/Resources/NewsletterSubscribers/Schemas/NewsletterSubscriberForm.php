@@ -30,6 +30,7 @@ class NewsletterSubscriberForm
                                     ->required()
                                     ->unique(ignoreRecord: true),
                                 TextInput::make('name')
+                                    ->label('Имя')
                                     ->maxLength(255),
                                 Select::make('category_ids')
                                     ->label('Интересующие рубрики')

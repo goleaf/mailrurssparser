@@ -5,7 +5,6 @@ use App\Filament\Resources\RssFeeds\Pages\ListRssFeeds;
 use App\Filament\Resources\RssFeeds\Pages\ViewRssFeed;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
-use App\Models\User;
 use App\Services\RssParserService;
 use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
@@ -20,7 +19,7 @@ function configuredFeedUrl(string $path): string
 }
 
 it('parses a feed from the table action', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create();
 
@@ -43,7 +42,7 @@ it('parses a feed from the table action', function () {
 });
 
 it('parses all feeds from the header action', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     RssFeed::factory()->count(2)->create();
 
@@ -75,7 +74,7 @@ it('parses all feeds from the header action', function () {
 });
 
 it('creates an rss feed with the extended feed settings form', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     Livewire::test(CreateRssFeed::class)
         ->fillForm([
@@ -122,11 +121,12 @@ it('creates an rss feed with the extended feed settings form', function () {
         ]);
 });
 
-it('renders the recent parse logs footer below the rss feeds table', function () {
-    $this->actingAs(User::factory()->create());
+it('renders the rss feeds dashboard with attention signals and recent parse logs', function () {
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create([
         'title' => 'Politics feed',
+        'last_error' => 'Feed timed out',
     ]);
 
     RssParseLog::factory()->create([
@@ -137,13 +137,41 @@ it('renders the recent parse logs footer below the rss feeds table', function ()
     ]);
 
     Livewire::test(ListRssFeeds::class)
-        ->assertSee('Последние логи парсинга')
+        ->assertSee('Контур RSS-лент')
+        ->assertSee('Сигналы и приоритеты')
+        ->assertSee('Журнал последних запусков')
+        ->assertSee('Каталог и настройки лент')
         ->assertSee('Politics feed')
+        ->assertSee('Feed timed out')
         ->assertSee('850 ms');
 });
 
+it('renders the redesigned rss feeds index page over http', function () {
+    $this->actingAs(filamentAdminUser(['email_verified_at' => now()]));
+
+    $feed = RssFeed::factory()->create([
+        'title' => 'Economy feed',
+        'last_error' => 'Source unavailable',
+    ]);
+
+    RssParseLog::factory()->create([
+        'rss_feed_id' => $feed->id,
+        'success' => false,
+    ]);
+
+    $this->get(route('filament.admin.resources.rss-feeds.index'))
+        ->assertSuccessful()
+        ->assertSeeText('Контур RSS-лент')
+        ->assertSeeText('Каталог и настройки лент')
+        ->assertSeeText('Журнал последних запусков')
+        ->assertSeeText('Economy feed')
+        ->assertSee('data-rss-feeds-overview', false)
+        ->assertSee('data-rss-feeds-attention', false)
+        ->assertSee('data-rss-feeds-table-shell', false);
+});
+
 it('renders the rss feeds empty state when no feeds exist', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     Livewire::test(ListRssFeeds::class)
         ->assertSee('RSS-ленты ещё не настроены')
@@ -152,7 +180,7 @@ it('renders the rss feeds empty state when no feeds exist', function () {
 });
 
 it('shows a feed summary and recent parse runs on the view page', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create([
         'title' => 'Politics feed',
@@ -179,6 +207,8 @@ it('shows a feed summary and recent parse runs on the view page', function () {
         ->assertOk()
         ->assertSee('Обзор ленты')
         ->assertSee('Politics feed')
+        ->assertSee('Статей в базе')
+        ->assertSee('Запусков в журнале')
         ->assertSee('Переопределения ленты')
         ->assertSee('status')
         ->assertSee('Custom Source')
@@ -190,7 +220,7 @@ it('shows a feed summary and recent parse runs on the view page', function () {
 });
 
 it('shows a custom empty state on the feed view page before any parse runs exist', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create();
 

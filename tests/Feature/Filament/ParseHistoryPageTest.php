@@ -3,12 +3,11 @@
 use App\Filament\Pages\ParseHistory;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
-use App\Models\User;
 use Carbon\Carbon;
 use Livewire\Livewire;
 
 it('loads parse logs on the history page', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create(['title' => 'Politics feed']);
     $log = RssParseLog::factory()->create([
@@ -24,7 +23,7 @@ it('loads parse logs on the history page', function () {
 });
 
 it('renders the redesigned parse history page over http', function () {
-    $this->actingAs(User::factory()->create(['email_verified_at' => now()]));
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create(['title' => 'Timeline feed']);
 
@@ -46,7 +45,7 @@ it('renders the redesigned parse history page over http', function () {
 });
 
 it('filters parse logs by feed and status', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $successFeed = RssFeed::factory()->create(['title' => 'Main feed']);
     $failedFeed = RssFeed::factory()->create(['title' => 'Sport feed']);
@@ -70,7 +69,7 @@ it('filters parse logs by feed and status', function () {
 });
 
 it('summarizes the filtered parse log selection', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $successFeed = RssFeed::factory()->create(['title' => 'Main feed']);
     $failedFeed = RssFeed::factory()->create(['title' => 'Problem feed']);
@@ -123,7 +122,7 @@ it('summarizes the filtered parse log selection', function () {
 });
 
 it('expands a parse log row to show item errors', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create();
     $log = RssParseLog::factory()->create([
@@ -140,7 +139,7 @@ it('expands a parse log row to show item errors', function () {
 it('shows the running parse count in the summary cards', function () {
     Carbon::setTestNow('2026-03-08 12:00:00');
 
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     RssParseLog::factory()->create([
         'started_at' => Carbon::parse('2026-03-08 11:50:00'),
@@ -164,7 +163,7 @@ it('shows the running parse count in the summary cards', function () {
 });
 
 it('includes logs that overlap the selected date range', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $spanningFeed = RssFeed::factory()->create(['title' => 'Spanning feed']);
     $outsideFeed = RssFeed::factory()->create(['title' => 'Outside feed']);

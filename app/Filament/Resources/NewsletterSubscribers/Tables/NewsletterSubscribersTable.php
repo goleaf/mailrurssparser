@@ -25,6 +25,7 @@ class NewsletterSubscribersTable
                     ->searchable(['email', 'name', 'ip_address'])
                     ->sortable(),
                 TextColumn::make('name')
+                    ->label('Имя')
                     ->searchable()
                     ->sortable()
                     ->placeholder('—'),

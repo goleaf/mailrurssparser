@@ -23,8 +23,10 @@ class MetricForm
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('name')
+                                    ->label('Имя')
                                     ->required(),
-                                TextInput::make('category'),
+                                TextInput::make('category')
+                                    ->label('Категория'),
                                 TextInput::make('measurable_type')
                                     ->placeholder('Например, App\\Models\\Article'),
                                 TextInput::make('measurable_id')

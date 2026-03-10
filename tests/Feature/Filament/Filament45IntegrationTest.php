@@ -10,22 +10,29 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
 use App\Services\StorageDisk;
+use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Panel;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
     Filament::setCurrentPanel((new AdminPanelProvider(app()))->panel(new Panel));
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 });
 
 function pageField(string $pageClass, string $field): Field
@@ -62,19 +69,32 @@ it('enables the filament profile page and multi factor authentication providers'
         ]))->toBeTrue();
 });
 
-it('supports the filament mfa traits on the user model', function () {
-    $user = User::factory()->create();
-    $unverifiedUser = User::factory()->unverified()->create();
+it('supports the filament mfa traits on the user model and role-based panel access', function () {
+    $guardName = Filament::getCurrentPanel()->getAuthGuard();
+    $superAdmin = User::factory()->create();
+    $admin = User::factory()->create();
+    $editor = User::factory()->create();
+    $plainUser = User::factory()->create();
 
-    $user->saveAppAuthenticationSecret('secret-key');
-    $user->saveAppAuthenticationRecoveryCodes(['code-1']);
-    $user->toggleEmailAuthentication(true);
+    Role::findOrCreate('super_admin', $guardName);
+    Role::findOrCreate('admin', $guardName);
+    Role::findOrCreate('editor', $guardName);
 
-    expect($user->fresh()->getAppAuthenticationSecret())->toBe('secret-key')
-        ->and($user->fresh()->getAppAuthenticationRecoveryCodes())->toBe(['code-1'])
-        ->and($user->fresh()->hasEmailAuthentication())->toBeTrue()
-        ->and($user->canAccessPanel(Filament::getCurrentPanel()))->toBeTrue()
-        ->and($unverifiedUser->canAccessPanel(Filament::getCurrentPanel()))->toBeFalse();
+    $superAdmin->assignRole('super_admin');
+    $admin->assignRole('admin');
+    $editor->assignRole('editor');
+
+    $superAdmin->saveAppAuthenticationSecret('secret-key');
+    $superAdmin->saveAppAuthenticationRecoveryCodes(['code-1']);
+    $superAdmin->toggleEmailAuthentication(true);
+
+    expect($superAdmin->fresh()->getAppAuthenticationSecret())->toBe('secret-key')
+        ->and($superAdmin->fresh()->getAppAuthenticationRecoveryCodes())->toBe(['code-1'])
+        ->and($superAdmin->fresh()->hasEmailAuthentication())->toBeTrue()
+        ->and($superAdmin->canAccessPanel(Filament::getCurrentPanel()))->toBeTrue()
+        ->and($admin->canAccessPanel(Filament::getCurrentPanel()))->toBeTrue()
+        ->and($editor->canAccessPanel(Filament::getCurrentPanel()))->toBeFalse()
+        ->and($plainUser->canAccessPanel(Filament::getCurrentPanel()))->toBeFalse();
 });
 
 it('registers category and tag mentions for article rich content rendering', function () {
@@ -177,4 +197,26 @@ it('adds slug generation actions to the category and tag forms', function () {
         ->toHaveCount(1)
         ->and($tagNameField->getChildSchema(Field::AFTER_CONTENT_SCHEMA_KEY)?->getComponents())
         ->toHaveCount(1);
+});
+
+it('translates shared filament labels to russian', function () {
+    $importanceField = Select::make('importance');
+    $seoPreview = Placeholder::make('seo_preview')->label('SEO Preview');
+    $sessionEntry = TextEntry::make('session_id')->label('Session ID');
+    $rssColumn = TextColumn::make('last_parsed_at');
+    $categoryFilter = SelectFilter::make('category');
+    $featureAction = Action::make('featureArticle')->label('Отметить как featured');
+
+    expect((string) $importanceField->getLabel())
+        ->toBe('Важность')
+        ->and((string) $seoPreview->getLabel())
+        ->toBe('SEO-превью')
+        ->and((string) $sessionEntry->getLabel())
+        ->toBe('Идентификатор сессии')
+        ->and((string) $rssColumn->getLabel())
+        ->toBe('Последний запуск')
+        ->and((string) $categoryFilter->getLabel())
+        ->toBe('Рубрика')
+        ->and((string) $featureAction->getLabel())
+        ->toBe('Пометить как рекомендуемое');
 });

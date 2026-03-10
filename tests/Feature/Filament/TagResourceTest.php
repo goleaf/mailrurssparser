@@ -4,11 +4,10 @@ use App\Filament\Resources\Tags\Pages\CreateTag;
 use App\Filament\Resources\Tags\Pages\ListTags;
 use App\Models\Article;
 use App\Models\Tag;
-use App\Models\User;
 use Livewire\Livewire;
 
 it('creates a tag with the cms form fields', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     Livewire::test(CreateTag::class)
         ->fillForm([
@@ -33,7 +32,7 @@ it('creates a tag with the cms form fields', function () {
 });
 
 it('recalculates tag usage counts from the header action', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $tag = Tag::factory()->create([
         'usage_count' => 0,

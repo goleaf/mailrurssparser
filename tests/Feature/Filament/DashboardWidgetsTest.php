@@ -1,5 +1,7 @@
 <?php
 
+use App\Filament\Widgets\Charts\DailyViewsChartWidget;
+use App\Filament\Widgets\Charts\RssFeedParseActivityWidget;
 use App\Filament\Widgets\FeedStatusWidget;
 use App\Filament\Widgets\LatestArticlesWidget;
 use App\Filament\Widgets\ParseLogsWidget;
@@ -10,7 +12,6 @@ use App\Models\ArticleView;
 use App\Models\RssFeed;
 use App\Models\RssParseLog;
 use App\Models\Tag;
-use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
 use App\Services\MetricTracker;
 use App\Services\RssParserService;
@@ -49,6 +50,8 @@ it('registers the dashboard widgets in the configured order', function () {
         LatestArticlesWidget::class,
         FeedStatusWidget::class,
         ParseLogsWidget::class,
+        DailyViewsChartWidget::class,
+        RssFeedParseActivityWidget::class,
     ]);
 });
 
@@ -152,7 +155,7 @@ it('builds the stats overview widget metrics', function () {
 });
 
 it('renders the latest articles widget rows', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $article = Article::withoutSyncingToSearch(function (): Article {
         return Article::factory()->create([
@@ -169,7 +172,7 @@ it('renders the latest articles widget rows', function () {
 });
 
 it('parses a feed from the feed status widget action', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create([
         'title' => 'Sport feed',
@@ -196,7 +199,7 @@ it('parses a feed from the feed status widget action', function () {
 });
 
 it('renders the parse logs widget rows', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     $feed = RssFeed::factory()->create([
         'title' => 'Politics feed',

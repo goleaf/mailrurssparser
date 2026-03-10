@@ -18,9 +18,11 @@ class MetricsTable
             ->defaultSort('bucket_start', 'desc')
             ->columns([
                 TextColumn::make('name')
+                    ->label('Имя')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('category')
+                    ->label('Категория')
                     ->searchable()
                     ->sortable()
                     ->placeholder('—'),
@@ -55,8 +57,10 @@ class MetricsTable
             ])
             ->filters([
                 SelectFilter::make('name')
+                    ->label('Имя')
                     ->options(fn (): array => Metric::query()->distinct()->orderBy('name')->pluck('name', 'name')->all()),
                 SelectFilter::make('category')
+                    ->label('Категория')
                     ->options(fn (): array => Metric::query()
                         ->whereNotNull('category')
                         ->distinct()

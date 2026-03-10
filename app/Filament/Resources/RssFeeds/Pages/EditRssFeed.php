@@ -14,6 +14,11 @@ class EditRssFeed extends EditRecord
 
     protected static string $resource = RssFeedResource::class;
 
+    public function getSubheading(): ?string
+    {
+        return 'Изменяйте расписание, публикационные флаги и parser-override настройки, не теряя контекст по последним запускам.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

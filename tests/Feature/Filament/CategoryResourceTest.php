@@ -6,7 +6,6 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\RssFeed;
 use App\Models\SubCategory;
-use App\Models\User;
 use Livewire\Livewire;
 
 it('loads articles_count in the resource query', function () {
@@ -53,7 +52,7 @@ it('loads relation counts needed for the category admin index', function () {
 });
 
 it('creates a category with the cms form fields', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 
     Livewire::test(CreateCategory::class)
         ->fillForm([

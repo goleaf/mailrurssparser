@@ -3,7 +3,6 @@
 use App\Filament\Resources\Articles\Pages\CreateArticle;
 use App\Filament\Resources\RssFeeds\Pages\CreateRssFeed;
 use App\Models\Article;
-use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Field;
@@ -14,7 +13,7 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     Filament::setCurrentPanel((new AdminPanelProvider(app()))->panel(new Panel));
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(filamentAdminUser());
 });
 
 function filament41PageField(string $pageClass, string $field): Field

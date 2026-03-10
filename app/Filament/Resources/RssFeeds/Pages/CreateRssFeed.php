@@ -12,6 +12,11 @@ class CreateRssFeed extends CreateRecord
 
     protected static string $resource = RssFeedResource::class;
 
+    public function getSubheading(): ?string
+    {
+        return 'Подключите новый источник, задайте ритм обработки и при необходимости добавьте локальные parser-override правила.';
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

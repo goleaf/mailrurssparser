@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\RssFeeds\Tables;
 
 use App\Filament\Resources\RssFeeds\RssFeedResource;
+use App\Filament\Support\AdminUiIconResolver;
 use App\Models\RssFeed;
 use App\Services\RssParserService;
 use Filament\Actions\Action;
@@ -21,23 +22,36 @@ class RssFeedsTable
     {
         return $table
             ->defaultSort('title')
+            ->striped()
             ->columns([
                 TextColumn::make('title')
+                    ->label('Лента')
+                    ->icon(Heroicon::OutlinedRss)
                     ->toggleable()
                     ->searchable(['title', 'url', 'source_name', 'last_error'])
+                    ->description(fn (RssFeed $record): string => $record->source_name ?: (parse_url((string) $record->url, PHP_URL_HOST) ?: 'Источник не определён'))
+                    ->wrapHeader()
                     ->sortable(),
                 TextColumn::make('source_name')
                     ->label('Источник')
+                    ->icon(Heroicon::OutlinedGlobeAlt)
                     ->toggleable()
                     ->searchable()
                     ->sortable()
-                    ->placeholder('—'),
+                    ->placeholder('—')
+                    ->description(fn (RssFeed $record): string => $record->fetch_interval.' мин · '.$record->url),
                 TextColumn::make('category.name')
+                    ->label('Рубрика')
+                    ->icon(Heroicon::OutlinedFolder)
                     ->toggleable()
                     ->badge()
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('Без рубрики'),
                 ToggleColumn::make('is_active')
+                    ->label('Активна')
+                    ->onIcon(AdminUiIconResolver::toggle('is_active')['on'])
+                    ->offIcon(AdminUiIconResolver::toggle('is_active')['off'])
                     ->toggleable()
                     ->searchable()
                     ->sortable(),
@@ -66,35 +80,49 @@ class RssFeedsTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('fetch_interval')
                     ->label('Интервал')
+                    ->badge()
+                    ->color('info')
                     ->suffix(' мин')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('last_parsed_at')
+                    ->label('Последний запуск')
+                    ->icon(Heroicon::OutlinedClock)
                     ->toggleable()
                     ->since()
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('Никогда')
+                    ->description(fn (RssFeed $record): string => $record->next_parse_at?->diffForHumans() ? 'Следующий: '.$record->next_parse_at?->diffForHumans() : 'Следующий запуск не назначен'),
                 TextColumn::make('next_parse_at')
                     ->label('Следующий запуск')
+                    ->icon(Heroicon::OutlinedArrowPath)
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->since()
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('Не назначен'),
                 TextColumn::make('last_run_new_count')
+                    ->label('Новых')
                     ->badge()
                     ->toggleable()
                     ->searchable()
                     ->sortable()
                     ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'success' : 'gray'),
                 TextColumn::make('consecutive_failures')
+                    ->label('Сбоев подряд')
                     ->badge()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable()
                     ->sortable()
                     ->color(fn (?int $state): string => ($state ?? 0) > 0 ? 'danger' : 'gray'),
                 TextColumn::make('last_error')
-                    ->limit(30)
+                    ->label('Последняя ошибка')
+                    ->icon(Heroicon::OutlinedExclamationTriangle)
+                    ->limit(60)
+                    ->wrap()
+                    ->placeholder('Без ошибок')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -146,7 +174,7 @@ class RssFeedsTable
                             ->send();
                     }),
                 Action::make('viewRecord')
-                    ->label('Просмотр')
+                    ->label('Профиль')
                     ->icon(Heroicon::OutlinedEye)
                     ->url(fn (RssFeed $record): string => RssFeedResource::getUrl('view', ['record' => $record])),
                 Action::make('editRecord')
