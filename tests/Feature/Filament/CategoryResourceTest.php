@@ -63,11 +63,16 @@ it('creates a category with the cms form fields', function () {
             'rss_url' => rtrim((string) config('rss.feed_origin'), '/').'/rss/politics/',
             'rss_key' => 'politics',
             'description' => 'Политические новости.',
-            'meta_title' => 'Политика',
-            'meta_description' => 'Новости политики.',
             'order' => 3,
             'is_active' => true,
             'show_in_menu' => true,
+            'seo' => [
+                'title' => 'Политика',
+                'description' => 'Новости политики.',
+                'robots' => 'index, follow',
+                'image' => 'https://cdn.example.test/categories/politics.jpg',
+                'canonical_url' => 'https://news.example.test/category/politics',
+            ],
         ])
         ->call('create')
         ->assertHasNoFormErrors()
@@ -80,5 +85,9 @@ it('creates a category with the cms form fields', function () {
         ->not()->toBeNull()
         ->and($category?->rss_key)->toBe('politics')
         ->and($category?->show_in_menu)->toBeTrue()
-        ->and($category?->color)->toBe('#DC2626');
+        ->and($category?->color)->toBe('#DC2626')
+        ->and($category?->seo?->title)->toBe('Политика')
+        ->and($category?->seo?->description)->toBe('Новости политики.')
+        ->and($category?->seo?->image)->toBe('https://cdn.example.test/categories/politics.jpg')
+        ->and($category?->seo?->canonical_url)->toBe('https://news.example.test/category/politics');
 });

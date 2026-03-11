@@ -17,6 +17,7 @@ class TagResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'color' => $this->color,
+            'seo' => $this->resource->getSeoData(),
             'usage_count' => $this->usage_count,
             'is_trending' => $this->is_trending,
             'is_featured' => $this->is_featured,

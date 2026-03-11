@@ -23,7 +23,7 @@ class ArticleListResource extends JsonResource
             'title' => $this->title,
             'slug' => $this->slug,
             'short_description' => $this->short_description,
-            'image_url' => $this->image_url,
+            'image_url' => $this->effective_image_url,
             'image_caption' => $this->image_caption,
             'source_url' => $this->source_url,
             'author' => $this->author,

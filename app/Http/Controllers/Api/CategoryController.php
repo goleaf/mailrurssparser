@@ -16,7 +16,7 @@ class CategoryController extends Controller
 {
     public function index(ArticleCacheService $cacheService): JsonResponse
     {
-        $categories = $cacheService->getCategories()->load('subCategories');
+        $categories = $cacheService->getCategories()->load(['subCategories', 'seo']);
 
         return CategoryResource::collection($categories)
             ->response()
@@ -28,7 +28,7 @@ class CategoryController extends Controller
         $category = Category::query()
             ->where('slug', $slug)
             ->withCount(['articles' => fn (Builder $query) => $query->published()])
-            ->with(['subCategories', 'rssFeeds'])
+            ->with(['subCategories', 'rssFeeds', 'seo'])
             ->firstOrFail();
 
         return response()->json([

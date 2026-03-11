@@ -21,6 +21,7 @@ class CategoryResource extends JsonResource
             'color' => $this->color,
             'icon' => $this->icon,
             'description' => $this->description,
+            'seo' => $this->resource->getSeoData(),
             'articles_count_cache' => (int) $articlesCount,
             'sub_categories' => $this->whenLoaded('subCategories', function () {
                 return $this->subCategories->map(fn ($subCategory): array => [

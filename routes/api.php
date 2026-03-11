@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\RssApiController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ShareController;
 use App\Http\Controllers\Api\StatsController;
+use App\Http\Controllers\Api\SubCategoryController;
 use App\Http\Controllers\Api\TagController;
 use App\Services\ApiRateLimiter;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -35,6 +36,15 @@ Route::middleware(['api.context', ThrottleRequests::using(ApiRateLimiter::Api)])
         Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::get('categories/{slug}', [CategoryController::class, 'show'])->name('categories.show');
         Route::get('categories/{slug}/articles', [CategoryController::class, 'articles'])->name('categories.articles');
+        Route::get('categories/{slug}/sub-categories', [SubCategoryController::class, 'index'])->name('categories.sub-categories.index');
+
+        Route::get('sub-categories', [SubCategoryController::class, 'index'])->name('sub-categories.index');
+        Route::get('sub-categories/{identifier}', [SubCategoryController::class, 'show'])->name('sub-categories.show');
+        Route::middleware(['web', 'auth'])->group(function (): void {
+            Route::post('sub-categories', [SubCategoryController::class, 'store'])->name('sub-categories.store');
+            Route::put('sub-categories/{identifier}', [SubCategoryController::class, 'update'])->name('sub-categories.update');
+            Route::delete('sub-categories/{identifier}', [SubCategoryController::class, 'destroy'])->name('sub-categories.destroy');
+        });
 
         Route::get('tags', [TagController::class, 'index'])->name('tags.index');
         Route::get('tags/trending', [TagController::class, 'trending'])->name('tags.trending');

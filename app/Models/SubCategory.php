@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use RalphJSmit\Laravel\SEO\Support\HasSEO;
+use RalphJSmit\Laravel\SEO\Support\SEOData;
 
 class SubCategory extends Model
 {
@@ -16,6 +18,8 @@ class SubCategory extends Model
 
     /** @use HasFactory<\Database\Factories\SubCategoryFactory> */
     use HasFactory;
+
+    use HasSEO;
 
     /**
      * @var list<string>
@@ -25,6 +29,8 @@ class SubCategory extends Model
         'name',
         'slug',
         'description',
+        'color',
+        'icon',
         'is_active',
         'order',
     ];
@@ -61,6 +67,19 @@ class SubCategory extends Model
         return $query->where('category_id', $categoryId);
     }
 
+    public function scopeByCategory(Builder $query, Category|int $category): Builder
+    {
+        return $query->inCategory($category);
+    }
+
+    public function scopePopular(Builder $query): Builder
+    {
+        return $query
+            ->withCount('articles')
+            ->orderByDesc('articles_count')
+            ->orderBy('name');
+    }
+
     public function scopeSearch(Builder $query, string $term): Builder
     {
         $term = trim($term);
@@ -84,6 +103,65 @@ class SubCategory extends Model
         return $query
             ->with('category')
             ->withCount('articles');
+    }
+
+    public static function findBySlug(string $slug): ?self
+    {
+        return static::query()
+            ->where('slug', $slug)
+            ->first();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getSeoData(): array
+    {
+        $title = $this->seo?->title ?: $this->name;
+        $description = $this->seo?->description ?: Str::limit((string) $this->description, 160);
+        $image = $this->seo?->image;
+        $canonicalUrl = $this->seo?->canonical_url;
+
+        if (($canonicalUrl === null || $canonicalUrl === '') && $this->category !== null) {
+            $canonicalUrl = route('category.show', [
+                'slug' => $this->category->slug,
+                'sub' => $this->slug,
+            ]);
+        }
+
+        $robots = $this->seo?->robots ?: config('seo.robots.default', 'index, follow');
+
+        return [
+            'title' => $title,
+            'description' => $description,
+            'image' => $image,
+            'robots' => $robots,
+            'canonical_url' => $canonicalUrl,
+            'og_title' => $title,
+            'og_description' => $description,
+            'og_image' => $image,
+            'twitter_title' => $title,
+            'twitter_description' => $description,
+            'twitter_image' => $image,
+            'meta_title' => $title,
+            'meta_description' => $description,
+        ];
+    }
+
+    public function getDynamicSEOData(): SEOData
+    {
+        $seoData = $this->getSeoData();
+
+        return new SEOData(
+            title: $seoData['title'],
+            description: $seoData['description'],
+            image: $seoData['image'],
+            url: $seoData['canonical_url'],
+            site_name: config('app.name'),
+            robots: $seoData['robots'],
+            canonical_url: $seoData['canonical_url'],
+            openGraphTitle: $seoData['og_title'],
+        );
     }
 
     protected static function booted(): void

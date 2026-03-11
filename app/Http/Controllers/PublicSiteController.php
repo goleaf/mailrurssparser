@@ -70,13 +70,19 @@ class PublicSiteController extends Controller
 
     public function category(ArticleIndexRequest $request, string $slug): View
     {
+        $validated = $request->validated();
         $category = Category::query()
             ->active()
-            ->with('activeSubCategories')
+            ->with(['activeSubCategories.category', 'activeSubCategories.seo', 'seo'])
             ->where('slug', $slug)
             ->firstOrFail();
+        $selectedSubCategory = null;
 
-        $validated = $request->validated();
+        if (filled($validated['sub'] ?? null)) {
+            $selectedSubCategory = $category->activeSubCategories->firstWhere('slug', $validated['sub']);
+        }
+
+        $seoData = ($selectedSubCategory ?? $category)->getSeoData();
         $articlesQuery = Article::query()
             ->published()
             ->with(['category', 'subCategory', 'tags'])
@@ -103,15 +109,20 @@ class PublicSiteController extends Controller
         return view('public.category', $this->sharedViewData($request, 'category', [
             'articles' => $articles,
             'category' => $category,
-            'metaTitle' => ($category->meta_title ?: $category->name).' - '.config('app.name'),
-            'metaDescription' => $category->meta_description ?: Str::limit((string) $category->description, 160),
+            'canonicalUrl' => $seoData['canonical_url'],
+            'metaDescription' => $seoData['description'],
+            'metaImage' => $seoData['image'],
+            'metaTitle' => $seoData['title'],
             'pinnedArticles' => $pinnedArticles,
+            'robots' => $seoData['robots'],
+            'selectedSubCategory' => $selectedSubCategory,
         ]));
     }
 
     public function tag(ArticleIndexRequest $request, string $slug): View
     {
-        $tag = Tag::query()->where('slug', $slug)->firstOrFail();
+        $tag = Tag::query()->with('seo')->where('slug', $slug)->firstOrFail();
+        $seoData = $tag->getSeoData();
         $validated = $request->validated();
 
         $articlesQuery = Article::query()
@@ -136,9 +147,12 @@ class PublicSiteController extends Controller
 
         return view('public.tag', $this->sharedViewData($request, 'tag', [
             'articles' => $articles,
-            'metaTitle' => '#'.$tag->name.' - '.config('app.name'),
-            'metaDescription' => $tag->description ?: 'Подборка материалов по тегу '.$tag->name.'.',
+            'canonicalUrl' => $seoData['canonical_url'],
+            'metaDescription' => $seoData['description'],
+            'metaImage' => $seoData['image'],
+            'metaTitle' => $seoData['title'],
             'relatedTags' => $relatedTags,
+            'robots' => $seoData['robots'],
             'tag' => $tag,
         ]));
     }
@@ -147,7 +161,7 @@ class PublicSiteController extends Controller
     {
         $article = Article::query()
             ->published()
-            ->with(['category', 'subCategory', 'tags', 'rssFeed'])
+            ->with(['category', 'subCategory', 'tags', 'rssFeed', 'seo'])
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -172,11 +186,13 @@ class PublicSiteController extends Controller
         return view('public.article', $this->sharedViewData($request, 'article', [
             'article' => $article,
             'canonicalUrl' => $seoData['canonical_url'] ?? route('articles.show', ['slug' => $article->slug]),
-            'metaDescription' => $seoData['meta_description'] ?? $article->meta_description,
-            'metaTitle' => $seoData['meta_title'] ?? $article->meta_title,
+            'metaDescription' => $seoData['description'] ?? $article->meta_description,
+            'metaImage' => $seoData['image'] ?? $article->image_url,
+            'metaTitle' => $seoData['title'] ?? $article->meta_title,
             'moreFromCategory' => $moreFromCategory,
             'popularArticles' => $popularArticles,
             'relatedArticles' => $relatedArticles,
+            'robots' => $seoData['robots'] ?? config('seo.robots.default', 'index, follow'),
             'similarArticles' => $similarArticles,
             'structuredData' => $seoData['structured_data'] ?? null,
         ]));
@@ -348,9 +364,11 @@ class PublicSiteController extends Controller
             'bookmarkedArticleIds' => $bookmarkedArticleIds,
             'canonicalUrl' => url()->current(),
             'metaDescription' => 'Лента новостей, аналитики и тематических подборок.',
+            'metaImage' => null,
             'metaTitle' => config('app.name', 'Новостной Портал'),
             'navigationCategories' => $this->articleCache->getCategories()->take(8),
             'navigationTags' => $this->articleCache->getTrendingTags(10),
+            'robots' => config('seo.robots.default', 'index, follow'),
             'structuredData' => null,
         ], $payload);
     }

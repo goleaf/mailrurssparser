@@ -114,10 +114,27 @@
                         </div>
 
                         <div class="mt-4 flex flex-wrap gap-2">
+                            <a
+                                class="@class([
+                                    'badge rounded-full px-3 py-3 text-xs font-medium transition',
+                                    'border border-sky-300 bg-sky-100/80 text-sky-700 dark:border-sky-500/50 dark:bg-sky-500/10 dark:text-sky-200' => blank(request('sub')),
+                                    'badge-ghost hover:border-sky-300 hover:text-sky-700 dark:hover:border-sky-500/50 dark:hover:text-sky-200' => filled(request('sub')),
+                                ])"
+                                href="{{ route('category.show', ['slug' => $category->slug]) }}"
+                            >
+                                Все
+                            </a>
                             @foreach($category->activeSubCategories as $subCategory)
-                                <span class="badge badge-ghost rounded-full px-3 py-3 text-xs font-medium">
+                                <a
+                                    class="@class([
+                                        'badge rounded-full px-3 py-3 text-xs font-medium transition',
+                                        'border border-sky-300 bg-sky-100/80 text-sky-700 dark:border-sky-500/50 dark:bg-sky-500/10 dark:text-sky-200' => request('sub') === $subCategory->slug,
+                                        'badge-ghost hover:border-sky-300 hover:text-sky-700 dark:hover:border-sky-500/50 dark:hover:text-sky-200' => request('sub') !== $subCategory->slug,
+                                    ])"
+                                    href="{{ route('category.show', ['slug' => $category->slug, 'sub' => $subCategory->slug]) }}"
+                                >
                                     {{ $subCategory->name }}
-                                </span>
+                                </a>
                             @endforeach
                         </div>
                     </section>

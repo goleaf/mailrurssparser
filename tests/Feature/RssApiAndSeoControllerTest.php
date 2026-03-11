@@ -189,6 +189,7 @@ it('returns a sitemap xml response', function () {
     $article = Article::factory()->create([
         'category_id' => $category->id,
         'slug' => 'breaking-news',
+        'canonical_url' => null,
         'status' => 'published',
         'published_at' => now()->subHour(),
         'updated_at' => now(),
@@ -204,6 +205,43 @@ it('returns a sitemap xml response', function () {
     expect($response->getContent())->toContain('<?xml version="1.0" encoding="UTF-8"?>')
         ->and($response->getContent())->toContain('/category/'.$category->slug)
         ->and($response->getContent())->toContain('/articles/'.$article->slug);
+});
+
+it('excludes noindex articles and prefers canonical urls in the sitemap', function () {
+    $category = Category::factory()->create(['slug' => 'economy']);
+    $category->seo()->update([
+        'canonical_url' => 'https://news.example.test/category/economy',
+    ]);
+
+    $indexableArticle = Article::factory()->create([
+        'category_id' => $category->id,
+        'slug' => 'indexable-story',
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+    $indexableArticle->seo()->update([
+        'canonical_url' => 'https://news.example.test/articles/indexable-story',
+        'robots' => 'index, follow',
+    ]);
+
+    $noindexArticle = Article::factory()->create([
+        'category_id' => $category->id,
+        'slug' => 'hidden-story',
+        'status' => 'published',
+        'published_at' => now()->subHours(2),
+    ]);
+    $noindexArticle->seo()->update([
+        'canonical_url' => 'https://news.example.test/articles/hidden-story',
+        'robots' => 'noindex, follow',
+    ]);
+
+    $response = $this->get(route('sitemap'));
+
+    $response->assertSuccessful();
+
+    expect($response->getContent())->toContain('https://news.example.test/category/economy')
+        ->and($response->getContent())->toContain('https://news.example.test/articles/indexable-story')
+        ->and($response->getContent())->not->toContain('https://news.example.test/articles/hidden-story');
 });
 
 it('returns a portal rss xml response', function () {

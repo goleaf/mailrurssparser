@@ -9,7 +9,7 @@
 
         <title>{{ $metaTitle ?? config('app.name', 'Новостной Портал') }}</title>
         <meta name="description" content="{{ $metaDescription ?? 'Актуальные новости политики, экономики, общества и спорта' }}">
-        <meta name="robots" content="index, follow">
+        <meta name="robots" content="{{ $robots ?? config('seo.robots.default', 'index, follow') }}">
         <link rel="canonical" href="{{ $canonicalUrl ?? request()->fullUrl() }}">
 
         <meta property="og:type" content="website">
@@ -18,6 +18,16 @@
         <meta property="og:title" content="{{ $metaTitle ?? config('app.name', 'Новостной Портал') }}">
         <meta property="og:description" content="{{ $metaDescription ?? 'Актуальные новости политики, экономики, общества и спорта' }}">
         <meta property="og:url" content="{{ $canonicalUrl ?? request()->fullUrl() }}">
+        @if(filled($metaImage ?? null))
+            <meta property="og:image" content="{{ $metaImage }}">
+        @endif
+
+        <meta name="twitter:card" content="{{ filled($metaImage ?? null) ? 'summary_large_image' : 'summary' }}">
+        <meta name="twitter:title" content="{{ $metaTitle ?? config('app.name', 'Новостной Портал') }}">
+        <meta name="twitter:description" content="{{ $metaDescription ?? 'Актуальные новости политики, экономики, общества и спорта' }}">
+        @if(filled($metaImage ?? null))
+            <meta name="twitter:image" content="{{ $metaImage }}">
+        @endif
 
         <link rel="manifest" href="/manifest.json">
         <meta name="theme-color" content="#1D4ED8">
@@ -66,10 +76,18 @@
             }
         </script>
 
-        @if(isset($structuredData) && $structuredData)
-            <script type="application/ld+json">
-                @json($structuredData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-            </script>
+        @if(isset($structuredData) && filled($structuredData))
+            @php
+                $structuredDataPayload = is_string($structuredData)
+                    ? json_decode($structuredData, true)
+                    : $structuredData;
+            @endphp
+
+            @if(is_array($structuredDataPayload))
+                <script type="application/ld+json">
+                    @json($structuredDataPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                </script>
+            @endif
         @endif
     </head>
     <body class="portal-shell h-full text-base-content antialiased">

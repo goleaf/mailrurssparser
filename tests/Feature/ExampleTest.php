@@ -22,7 +22,14 @@ test('public category page renders server-side article content', function () {
         'slug' => 'world',
     ]);
 
-    SubCategory::factory()->count(2)->forCategory($category)->create();
+    $firstSubCategory = SubCategory::factory()->forCategory($category)->create([
+        'name' => 'Глобальное',
+        'slug' => 'globalnoe',
+    ]);
+    $secondSubCategory = SubCategory::factory()->forCategory($category)->create([
+        'name' => 'Локальное',
+        'slug' => 'lokalnoe',
+    ]);
 
     $article = Article::factory()
         ->published()
@@ -63,7 +70,47 @@ test('public category page renders server-side article content', function () {
         ->assertSeeText('Чтение')
         ->assertSeeText('Просмотры')
         ->assertSee('whitespace-nowrap', false)
-        ->assertSeeText('Открыть');
+        ->assertSeeText('Открыть')
+        ->assertSee(route('category.show', ['slug' => $category->slug, 'sub' => $firstSubCategory->slug]), false)
+        ->assertSee(route('category.show', ['slug' => $category->slug, 'sub' => $secondSubCategory->slug]), false);
+});
+
+test('public category page filters articles by sub category query string', function () {
+    $category = Category::factory()->create([
+        'name' => 'Общество',
+        'slug' => 'society',
+    ]);
+
+    $localSubCategory = SubCategory::factory()->forCategory($category)->create([
+        'name' => 'Жизнь',
+        'slug' => 'zhizn',
+    ]);
+    $citySubCategory = SubCategory::factory()->forCategory($category)->create([
+        'name' => 'Город',
+        'slug' => 'gorod',
+    ]);
+
+    Article::factory()
+        ->published()
+        ->forSubCategory($localSubCategory)
+        ->create([
+            'title' => 'Материал про жизнь',
+            'slug' => 'material-pro-zhizn',
+        ]);
+
+    Article::factory()
+        ->published()
+        ->forSubCategory($citySubCategory)
+        ->create([
+            'title' => 'Материал про город',
+            'slug' => 'material-pro-gorod',
+        ]);
+
+    $response = $this->get(route('category.show', ['slug' => $category->slug, 'sub' => $localSubCategory->slug]));
+
+    $response->assertOk()
+        ->assertSeeText('Материал про жизнь')
+        ->assertDontSeeText('Материал про город');
 });
 
 test('public pagination summary is localized to russian', function () {

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SubCategories\Schemas;
 
 use App\Filament\Support\AdminUiIconResolver;
+use Filament\Infolists\Components\ColorEntry;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -31,6 +32,12 @@ class SubCategoryInfolist
                             ->weight('bold'),
                         TextEntry::make('slug')
                             ->label('Slug'),
+                        ColorEntry::make('color')
+                            ->label('Цвет')
+                            ->placeholder('—'),
+                        TextEntry::make('icon')
+                            ->label('Иконка')
+                            ->placeholder('—'),
                         TextEntry::make('order')
                             ->label('Порядок')
                             ->numeric(),

@@ -34,6 +34,7 @@ use App\Models\RssParseLog;
 use App\Models\Tag;
 use App\Providers\Filament\AdminPanelProvider;
 use App\Services\ArticleStatus;
+use Awcodes\Curator\CuratorPlugin;
 use Awcodes\StickyHeader\StickyHeaderPlugin;
 use Filament\Enums\ThemeMode;
 use Filament\Facades\Filament;
@@ -99,8 +100,8 @@ dataset('admin_table_columns', [
     ],
     'subcategories table' => [
         ListSubCategories::class,
-        ['category.name', 'name', 'slug', 'articles_count', 'is_active', 'order', 'updated_at'],
-        ['category.name', 'name', 'slug', 'articles_count', 'is_active', 'order', 'updated_at'],
+        ['color', 'category.name', 'name', 'slug', 'articles_count', 'is_active', 'order', 'updated_at'],
+        ['color', 'category.name', 'name', 'slug', 'articles_count', 'is_active', 'order', 'created_at', 'updated_at'],
     ],
     'tags table' => [
         ListTags::class,
@@ -159,6 +160,7 @@ it('uses a light-only full-width admin panel shell', function () {
 
 it('registers the sticky header and apex charts plugins plus the admin panel theme', function () {
     $panel = Filament::getCurrentPanel();
+    $curatorPlugin = $panel->getPlugin('awcodes/curator');
 
     expect($panel->hasPlugin('awcodes-sticky-header'))
         ->toBeTrue()
@@ -168,6 +170,22 @@ it('registers the sticky header and apex charts plugins plus the admin panel the
         ->toBeTrue()
         ->and($panel->getPlugin('filament-apex-charts'))
         ->toBeInstanceOf(FilamentApexChartsPlugin::class)
+        ->and($panel->hasPlugin('awcodes/curator'))
+        ->toBeTrue()
+        ->and($panel->getPlugin('awcodes/curator'))
+        ->toBeInstanceOf(CuratorPlugin::class)
+        ->and($curatorPlugin->getLabel())
+        ->toBe('Media')
+        ->and($curatorPlugin->getPluralLabel())
+        ->toBe('Media Library')
+        ->and($curatorPlugin->getNavigationGroup())
+        ->toBe('Media')
+        ->and($curatorPlugin->getNavigationSort())
+        ->toBe(10)
+        ->and($curatorPlugin->shouldRegisterNavigation())
+        ->toBeTrue()
+        ->and($curatorPlugin->shouldShowBadge())
+        ->toBeTrue()
         ->and($panel->getViteTheme())
         ->toBe('resources/css/filament/admin/theme.css');
 });
@@ -266,6 +284,14 @@ it('keeps the dense article table configurable through toggleable columns instea
         ->toBeTrue()
         ->and($table->getColumn('tags_summary')->isToggledHiddenByDefault())
         ->toBeTrue();
+});
+
+it('renders curator-aware article image columns in the admin table', function () {
+    $this->actingAs(filamentAdminUser());
+
+    Livewire::test(ListArticles::class)
+        ->assertTableColumnExists('featured_image')
+        ->assertTableColumnExists('curatorMedia');
 });
 
 it('marks the article classification tab badge as deferred for existing records', function () {

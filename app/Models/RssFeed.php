@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Services\StorageDisk;
 use Attla\EncodedAttributes\HasEncodedAttributes;
+use Awcodes\Curator\Models\Media as CuratorMedia;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,19 +12,26 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
-class RssFeed extends Model
+class RssFeed extends Model implements HasMedia
 {
     use HasEncodedAttributes;
 
     /** @use HasFactory<\Database\Factories\RssFeedFactory> */
     use HasFactory;
 
+    use InteractsWithMedia;
+
     /**
      * @var list<string>
      */
     protected $fillable = [
         'category_id',
+        'curator_logo_id',
         'title',
         'url',
         'source_name',
@@ -60,6 +69,38 @@ class RssFeed extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function logoMedia(): BelongsTo
+    {
+        return $this->belongsTo(CuratorMedia::class, 'curator_logo_id');
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('logo')
+            ->useDisk(StorageDisk::Public->value)
+            ->singleFile()
+            ->acceptsMimeTypes([
+                'image/jpeg',
+                'image/png',
+                'image/webp',
+                'image/svg+xml',
+                'image/x-icon',
+                'image/vnd.microsoft.icon',
+            ]);
+    }
+
+    public function registerMediaConversions(?SpatieMedia $media = null): void
+    {
+        if (in_array($media?->mime_type, ['image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon'], true)) {
+            return;
+        }
+
+        $this->addMediaConversion('icon')
+            ->fit(Fit::Crop, 64, 64)
+            ->format('webp')
+            ->nonQueued();
     }
 
     public function articles(): HasMany

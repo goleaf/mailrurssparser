@@ -13,6 +13,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use RalphJSmit\Filament\SEO\SEO;
 
 class TagForm
 {
@@ -62,6 +63,26 @@ class TagForm
                                     ->default(false),
                                 Toggle::make('is_featured')
                                     ->default(false),
+                            ]),
+                    ]),
+                Section::make('SEO & Meta')
+                    ->icon(AdminUiIconResolver::section('SEO & Meta'))
+                    ->columnSpanFull()
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        SEO::make(['title', 'description', 'robots']),
+                        Grid::make(2)
+                            ->relationship('seo')
+                            ->schema([
+                                TextInput::make('image')
+                                    ->label('Social image URL')
+                                    ->url()
+                                    ->nullable(),
+                                TextInput::make('canonical_url')
+                                    ->label('Canonical URL')
+                                    ->url()
+                                    ->nullable(),
                             ]),
                     ]),
             ]);

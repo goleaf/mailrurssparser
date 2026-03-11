@@ -27,7 +27,7 @@ class TagController extends Controller
 
         return response()->json([
             'data' => TagResource::collection(
-                $query->limit($limit)->get(),
+                $query->with('seo')->limit($limit)->get(),
             )->resolve(),
         ]);
     }
@@ -39,6 +39,7 @@ class TagController extends Controller
                 Tag::query()
                     ->trending()
                     ->whereHas('articles', fn (Builder $query): Builder => $query->published())
+                    ->with('seo')
                     ->popular()
                     ->limit(30)
                     ->get(),
@@ -48,7 +49,7 @@ class TagController extends Controller
 
     public function show(string $slug): JsonResponse
     {
-        $tag = Tag::query()->where('slug', $slug)->withCount('articles')->firstOrFail();
+        $tag = Tag::query()->where('slug', $slug)->with(['seo'])->withCount('articles')->firstOrFail();
 
         return response()->json([
             'data' => array_merge((new TagResource($tag))->resolve(), [

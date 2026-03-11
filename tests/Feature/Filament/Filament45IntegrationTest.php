@@ -10,6 +10,7 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
 use App\Services\StorageDisk;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
@@ -19,6 +20,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Panel;
@@ -129,6 +131,8 @@ it('configures the article editor with rich content and image workflow enhanceme
     $titleField = pageField(CreateArticle::class, 'title');
     $richEditor = pageField(CreateArticle::class, 'full_description');
     $uploadField = pageField(CreateArticle::class, 'uploaded_image');
+    $featuredImageField = pageField(CreateArticle::class, 'featured_image');
+    $curatorPicker = pageField(CreateArticle::class, 'curator_media_id');
 
     expect($titleField)->toBeInstanceOf(TextInput::class)
         ->and($titleField->getChildSchema(Field::AFTER_CONTENT_SCHEMA_KEY)?->getComponents())
@@ -147,7 +151,35 @@ it('configures the article editor with rich content and image workflow enhanceme
         ->and($uploadField->getImageAspectRatio())->toBe('16:9')
         ->and($uploadField->shouldAutomaticallyOpenImageEditorForAspectRatio())->toBeTrue()
         ->and($uploadField->hasImageEditor())->toBeTrue()
-        ->and($uploadField->isSaved())->toBeFalse();
+        ->and($uploadField->isSaved())->toBeFalse()
+        ->and($featuredImageField)->toBeInstanceOf(SpatieMediaLibraryFileUpload::class)
+        ->and($featuredImageField->getCollection())->toBe('featured_image')
+        ->and($featuredImageField->getDiskName())->toBe(StorageDisk::Public->value)
+        ->and($featuredImageField->getVisibility())->toBe('public')
+        ->and($featuredImageField->getConversion())->toBe('card')
+        ->and($featuredImageField->hasResponsiveImages())->toBeTrue()
+        ->and($featuredImageField->getAcceptedFileTypes())->toBe([
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+        ])
+        ->and($curatorPicker)->toBeInstanceOf(CuratorPicker::class)
+        ->and($curatorPicker->getRelationshipName())->toBe('curatorMedia')
+        ->and($curatorPicker->isConstrained())->toBeTrue()
+        ->and($curatorPicker->getDiskName())->toBe(StorageDisk::Public->value)
+        ->and($curatorPicker->getDirectory())->toBe('curator')
+        ->and($curatorPicker->getVisibility())->toBe('public')
+        ->and($curatorPicker->getMaxSize())->toBe(10240)
+        ->and($curatorPicker->getAcceptedFileTypes())->toBe([
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+            'image/svg+xml',
+            'image/x-icon',
+            'image/vnd.microsoft.icon',
+        ]);
 });
 
 it('stores uploaded article images on the public disk and maps them to image_url', function () {
@@ -187,6 +219,64 @@ it('uses saved(false) for read only filament helper fields', function () {
     expect(pageField(CreateArticle::class, 'rss_content')->isSaved())->toBeFalse()
         ->and(pageField(CreateTag::class, 'usage_count')->isSaved())->toBeFalse()
         ->and(pageField(CreateRssFeed::class, 'last_error')->isSaved())->toBeFalse();
+});
+
+it('configures curator pickers for category and rss feed media fields', function () {
+    $categoryMediaField = pageField(CreateCategory::class, 'cover_image');
+    $categoryPicker = pageField(CreateCategory::class, 'curator_cover_id');
+    $feedMediaField = pageField(CreateRssFeed::class, 'logo');
+    $feedPicker = pageField(CreateRssFeed::class, 'curator_logo_id');
+
+    expect($categoryMediaField)->toBeInstanceOf(SpatieMediaLibraryFileUpload::class)
+        ->and($categoryMediaField->getCollection())->toBe('cover_image')
+        ->and($categoryMediaField->getDiskName())->toBe(StorageDisk::Public->value)
+        ->and($categoryMediaField->getVisibility())->toBe('public')
+        ->and($categoryMediaField->getConversion())->toBe('banner')
+        ->and($categoryMediaField->hasResponsiveImages())->toBeTrue()
+        ->and($categoryPicker)->toBeInstanceOf(CuratorPicker::class)
+        ->and($categoryPicker->getRelationshipName())->toBe('coverImage')
+        ->and($categoryPicker->isConstrained())->toBeTrue()
+        ->and($categoryPicker->getDiskName())->toBe(StorageDisk::Public->value)
+        ->and($categoryPicker->getDirectory())->toBe('curator')
+        ->and($categoryPicker->getMaxSize())->toBe(10240)
+        ->and($feedMediaField)->toBeInstanceOf(SpatieMediaLibraryFileUpload::class)
+        ->and($feedMediaField->getCollection())->toBe('logo')
+        ->and($feedMediaField->getDiskName())->toBe(StorageDisk::Public->value)
+        ->and($feedMediaField->getVisibility())->toBe('public')
+        ->and($feedMediaField->getConversion())->toBe('icon')
+        ->and($feedPicker)->toBeInstanceOf(CuratorPicker::class)
+        ->and($feedPicker->getRelationshipName())->toBe('logoMedia')
+        ->and($feedPicker->isConstrained())->toBeTrue()
+        ->and($feedPicker->getDiskName())->toBe(StorageDisk::Public->value)
+        ->and($feedPicker->getDirectory())->toBe('curator')
+        ->and($feedPicker->getMaxSize())->toBe(10240);
+});
+
+it('keeps curator storage defaults aligned with the public filesystem disk', function () {
+    $publicDisk = config('filesystems.disks.public');
+
+    expect($publicDisk['driver'])->toBe('local')
+        ->and($publicDisk['root'])->toBe(storage_path('app/public'))
+        ->and($publicDisk['url'])->toBe(rtrim((string) env('APP_URL', 'http://localhost'), '/').'/storage')
+        ->and($publicDisk['visibility'])->toBe('public')
+        ->and($publicDisk['throw'])->toBeFalse()
+        ->and(config('curator.default_disk'))->toBe(StorageDisk::Public->value)
+        ->and(config('curator.default_directory'))->toBe('curator')
+        ->and(config('curator.resource.label'))->toBe('Media')
+        ->and(config('curator.resource.plural_label'))->toBe('Media Library')
+        ->and(config('curator.resource.navigation.group'))->toBe('Media')
+        ->and(config('curator.resource.navigation.sort'))->toBe(10)
+        ->and(config('curator.resource.navigation.should_show_badge'))->toBeTrue()
+        ->and(config('media-library.disk_name'))->toBe(StorageDisk::Public->value)
+        ->and(config('media-library.max_file_size'))->toBe(1024 * 1024 * 10)
+        ->and(config('media-library.queue_connection_name'))->toBe(config('queue.default'))
+        ->and(config('media-library.queue_conversions_by_default'))->toBeTrue()
+        ->and(config('media-library.responsive_images.width_calculator'))->toBe(App\Support\MediaLibrary\NewsPortalWidthCalculator::class)
+        ->and(Schema::hasTable('curator'))->toBeTrue()
+        ->and(Schema::hasTable('media'))->toBeTrue()
+        ->and(Schema::hasColumns('articles', ['curator_media_id']))->toBeTrue()
+        ->and(Schema::hasColumns('categories', ['curator_cover_id']))->toBeTrue()
+        ->and(Schema::hasColumns('rss_feeds', ['curator_logo_id']))->toBeTrue();
 });
 
 it('adds slug generation actions to the category and tag forms', function () {

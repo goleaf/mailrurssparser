@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Tag;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
+use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -15,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -30,6 +32,18 @@ class ArticlesTable
     {
         return $table
             ->columns([
+                SpatieMediaLibraryImageColumn::make('featured_image')
+                    ->label('Изображение')
+                    ->collection('featured_image')
+                    ->conversion('thumb')
+                    ->imageWidth(80)
+                    ->imageHeight(50)
+                    ->defaultImageUrl(fn (Article $record): ?string => $record->effective_image_url)
+                    ->toggleable(),
+                CuratorColumn::make('curatorMedia')
+                    ->label('Editorial Image')
+                    ->size(60)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('title')
                     ->searchable(['title', 'slug', 'author', 'source_name'])
                     ->sortable()

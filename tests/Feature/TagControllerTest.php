@@ -60,6 +60,11 @@ it('supports trending and limit query parameters for tags', function () {
 
 it('shows tag details with article count', function () {
     $tag = Tag::factory()->create(['slug' => 'featured']);
+    $tag->seo()->update([
+        'title' => '#Featured SEO',
+        'description' => 'Featured tag SEO description',
+        'canonical_url' => 'https://news.example.test/tag/featured',
+    ]);
 
     $response = $this->getJson('/api/v1/tags/'.$tag->slug);
 
@@ -69,6 +74,8 @@ it('shows tag details with article count', function () {
 
     expect($payload['slug'])->toBe('featured')
         ->and($payload['id'])->toBe($tag->id)
+        ->and($payload['seo']['title'])->toBe('#Featured SEO')
+        ->and($payload['seo']['canonical_url'])->toBe('https://news.example.test/tag/featured')
         ->and($payload)->toHaveKey('article_count');
 });
 

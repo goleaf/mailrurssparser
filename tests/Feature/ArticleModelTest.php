@@ -7,7 +7,11 @@ use App\Models\RssFeed;
 use App\Models\Tag;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
+use App\Services\StorageDisk;
+use Awcodes\Curator\Models\Media as CuratorMedia;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     if (! trait_exists(Laravel\Scout\Searchable::class)) {
@@ -261,6 +265,82 @@ it('provides seo fallbacks and content accessors', function () {
         ->and($article->content)->toBe('<p>Full content</p>')
         ->and($seoData['canonical_url'])->toBe(route('articles.show', ['slug' => 'important-update']))
         ->and($seoData['structured_data'])->toBeArray();
+});
+
+it('prefers persisted seo relation overrides over imported article metadata', function () {
+    $article = Article::factory()->create([
+        'title' => 'Imported title',
+        'meta_title' => 'Imported meta title',
+        'meta_description' => 'Imported meta description',
+        'canonical_url' => 'https://source.example.test/imported-title',
+        'image_url' => 'https://cdn.example.test/imported.jpg',
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $article->seo()->update([
+        'title' => 'Editor controlled SEO title',
+        'description' => 'Editor controlled SEO description',
+        'image' => 'https://cdn.example.test/editor.jpg',
+        'robots' => 'noindex, follow',
+        'canonical_url' => 'https://news.example.test/articles/editor-controlled',
+    ]);
+
+    $seoData = $article->fresh()->getSeoData();
+
+    expect($seoData['title'])->toBe('Editor controlled SEO title')
+        ->and($seoData['description'])->toBe('Editor controlled SEO description')
+        ->and($seoData['image'])->toBe('https://cdn.example.test/editor.jpg')
+        ->and($seoData['robots'])->toBe('noindex, follow')
+        ->and($seoData['canonical_url'])->toBe('https://news.example.test/articles/editor-controlled');
+});
+
+it('prefers spatie media library uploads over curator and rss image urls', function () {
+    Storage::fake(StorageDisk::Public->value);
+
+    $category = Category::factory()->create();
+
+    Storage::disk(StorageDisk::Public->value)->put('curator/editorial-override.jpg', 'image-bytes');
+
+    $curatorMedia = CuratorMedia::query()->create([
+        'disk' => StorageDisk::Public->value,
+        'directory' => 'curator',
+        'visibility' => 'public',
+        'name' => 'editorial-override',
+        'path' => 'curator/editorial-override.jpg',
+        'width' => 1600,
+        'height' => 900,
+        'size' => 1024,
+        'type' => 'image',
+        'ext' => 'jpg',
+    ]);
+
+    $article = Article::factory()->create([
+        'category_id' => $category->id,
+        'image_url' => 'https://rss.example.test/imported.jpg',
+        'curator_media_id' => $curatorMedia->id,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $upload = UploadedFile::fake()->image('featured.jpg', 1600, 900);
+
+    $article
+        ->addMedia($upload->getRealPath())
+        ->usingFileName('featured.jpg')
+        ->usingName('featured')
+        ->toMediaCollection('featured_image', StorageDisk::Public->value);
+
+    $article = $article->fresh();
+    $featuredImage = $article->getFirstMedia('featured_image');
+
+    expect($featuredImage)->not->toBeNull()
+        ->and($article->effective_image_url)
+        ->toBe($featuredImage?->getAvailableUrl(['hero', 'card', 'thumb']))
+        ->and($article->effective_image_url)
+        ->not->toBe('https://rss.example.test/imported.jpg')
+        ->and($article->effective_image_url)
+        ->not->toBe(Storage::disk(StorageDisk::Public->value)->url('curator/editorial-override.jpg'));
 });
 
 it('recalculates reading time and last edited timestamp when content changes', function () {

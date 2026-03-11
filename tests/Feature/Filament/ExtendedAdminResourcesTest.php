@@ -12,6 +12,7 @@ use App\Filament\Resources\RssParseLogs\Pages\CreateRssParseLog;
 use App\Filament\Resources\RssParseLogs\RssParseLogResource;
 use App\Filament\Resources\SubCategories\Pages\CreateSubCategory;
 use App\Filament\Resources\SubCategories\Pages\ListSubCategories;
+use App\Filament\Resources\SubCategories\SubCategoryResource;
 use App\Models\Article;
 use App\Models\ArticleView;
 use App\Models\Bookmark;
@@ -19,6 +20,7 @@ use App\Models\Category;
 use App\Models\NewsletterSubscriber;
 use App\Models\RssFeed;
 use App\Models\SubCategory;
+use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 
 it('creates a subcategory with the page-based resource form', function () {
@@ -30,17 +32,52 @@ it('creates a subcategory with the page-based resource form', function () {
         ->fillForm([
             'category_id' => $category->id,
             'name' => 'Рынок труда',
+            'is_slug_manual' => true,
             'slug' => 'rynok-truda',
+            'color' => '#0EA5E9',
+            'icon' => '💼',
             'description' => 'Подрубрика для рынка труда.',
             'order' => 4,
             'is_active' => true,
+            'seo' => [
+                'title' => 'Рынок труда',
+                'description' => 'SEO описание подрубрики.',
+                'robots' => 'index, follow',
+                'image' => 'https://news.example.test/images/rynok-truda.jpg',
+                'canonical_url' => 'https://news.example.test/sub/rynok-truda',
+            ],
         ])
         ->call('create')
         ->assertHasNoFormErrors()
         ->assertNotified()
         ->assertRedirect();
 
-    expect(SubCategory::query()->where('slug', 'rynok-truda')->exists())->toBeTrue();
+    $subCategory = SubCategory::query()->where('slug', 'rynok-truda')->first();
+
+    expect($subCategory)
+        ->not()->toBeNull()
+        ->and($subCategory?->color)->toBe('#0EA5E9')
+        ->and($subCategory?->icon)->toBe('💼')
+        ->and($subCategory?->seo?->title)->toBe('Рынок труда')
+        ->and($subCategory?->seo?->description)->toBe('SEO описание подрубрики.')
+        ->and($subCategory?->seo?->canonical_url)->toBe('https://news.example.test/sub/rynok-truda');
+});
+
+it('exposes subcategory navigation badge and global search details', function () {
+    $category = Category::factory()->create([
+        'name' => 'Экономика',
+    ]);
+
+    $subCategory = SubCategory::factory()->forCategory($category)->create([
+        'name' => 'Рынки',
+        'slug' => 'rynki',
+    ]);
+
+    expect(SubCategoryResource::getNavigationBadge())->toBe('1')
+        ->and(SubCategoryResource::getGloballySearchableAttributes())->toBe(['name', 'slug'])
+        ->and(SubCategoryResource::getGlobalSearchResultDetails($subCategory->load('category')))->toBe([
+            'Рубрика' => 'Экономика',
+        ]);
 });
 
 it('sorts subcategories across the admin table columns', function () {
@@ -55,6 +92,7 @@ it('sorts subcategories across the admin table columns', function () {
         'slug' => 'zulu-topic',
         'order' => 30,
         'is_active' => false,
+        'created_at' => now()->subDays(6),
         'updated_at' => now()->subDays(3),
     ]);
 
@@ -63,6 +101,7 @@ it('sorts subcategories across the admin table columns', function () {
         'slug' => 'alpha-topic',
         'order' => 10,
         'is_active' => true,
+        'created_at' => now()->subDays(5),
         'updated_at' => now()->subDays(2),
     ]);
 
@@ -71,6 +110,7 @@ it('sorts subcategories across the admin table columns', function () {
         'slug' => 'echo-topic',
         'order' => 20,
         'is_active' => false,
+        'created_at' => now()->subDays(4),
         'updated_at' => now()->subDay(),
     ]);
 
@@ -78,12 +118,14 @@ it('sorts subcategories across the admin table columns', function () {
     Article::factory()->count(1)->forSubCategory($echoRecord)->create();
 
     Livewire::test(ListSubCategories::class)
+        ->assertTableColumnExists('color', fn ($column): bool => $column->isSortable())
         ->assertTableColumnExists('category.name', fn ($column): bool => $column->isSortable())
         ->assertTableColumnExists('name', fn ($column): bool => $column->isSortable())
         ->assertTableColumnExists('slug', fn ($column): bool => $column->isSortable())
         ->assertTableColumnExists('articles_count', fn ($column): bool => $column->isSortable())
         ->assertTableColumnExists('is_active', fn ($column): bool => $column->isSortable())
         ->assertTableColumnExists('order', fn ($column): bool => $column->isSortable())
+        ->assertTableColumnExists('created_at', fn ($column): bool => $column->isSortable())
         ->assertTableColumnExists('updated_at', fn ($column): bool => $column->isSortable())
         ->assertCanSeeTableRecords([$alphaRecord, $echoRecord, $zuluRecord], inOrder: true)
         ->sortTable('name', 'asc')
@@ -97,10 +139,32 @@ it('sorts subcategories across the admin table columns', function () {
         ->sortTable('order', 'asc')
         ->assertCanSeeTableRecords([$alphaRecord, $echoRecord, $zuluRecord], inOrder: true)
         ->toggleAllTableColumns()
+        ->sortTable('created_at', 'desc')
+        ->assertCanSeeTableRecords([$echoRecord, $alphaRecord, $zuluRecord], inOrder: true)
         ->sortTable('slug', 'asc')
         ->assertCanSeeTableRecords([$alphaRecord, $echoRecord, $zuluRecord], inOrder: true)
         ->sortTable('updated_at', 'desc')
         ->assertCanSeeTableRecords([$echoRecord, $alphaRecord, $zuluRecord], inOrder: true);
+});
+
+it('toggles selected subcategories from admin bulk actions', function () {
+    $this->actingAs(filamentAdminUser());
+
+    $records = SubCategory::factory()->count(2)->create([
+        'is_active' => false,
+    ]);
+
+    Livewire::test(ListSubCategories::class)
+        ->selectTableRecords($records->pluck('id')->all())
+        ->callAction(TestAction::make('activateSelected')->table()->bulk());
+
+    expect($records->every(fn (SubCategory $record): bool => $record->fresh()?->is_active === true))->toBeTrue();
+
+    Livewire::test(ListSubCategories::class)
+        ->selectTableRecords($records->pluck('id')->all())
+        ->callAction(TestAction::make('deactivateSelected')->table()->bulk());
+
+    expect($records->every(fn (SubCategory $record): bool => $record->fresh()?->is_active === false))->toBeTrue();
 });
 
 it('loads admin relations for article views and bookmarks', function () {

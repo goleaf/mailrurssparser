@@ -49,6 +49,8 @@ class CategorySeeder extends Seeder
                         [
                             'name' => $subCategoryName,
                             'description' => null,
+                            'color' => $category->color,
+                            'icon' => $category->icon,
                             'is_active' => true,
                             'order' => 0,
                         ],

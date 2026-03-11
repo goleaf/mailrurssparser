@@ -250,13 +250,22 @@ it('can fetch an article without tracking a new view and returns cache headers',
         'published_at' => now()->subHour(),
         'views_count' => 7,
     ]);
+    $article->seo()->update([
+        'title' => 'API SEO title',
+        'description' => 'API SEO description',
+        'image' => 'https://cdn.example.test/articles/api.jpg',
+        'canonical_url' => 'https://news.example.test/articles/api-seo-title',
+        'robots' => 'index, follow',
+    ]);
 
     $response = $this->getJson('/api/v1/articles/'.$article->slug.'?track=0');
 
     $response->assertSuccessful()
         ->assertHeaderContains('Cache-Control', 'public')
         ->assertHeaderContains('Cache-Control', 'max-age=60')
-        ->assertJsonPath('data.views_count', 7);
+        ->assertJsonPath('data.views_count', 7)
+        ->assertJsonPath('data.seo.title', 'API SEO title')
+        ->assertJsonPath('data.seo.canonical_url', 'https://news.example.test/articles/api-seo-title');
 
     expect($article->fresh()->views_count)->toBe(7);
 });

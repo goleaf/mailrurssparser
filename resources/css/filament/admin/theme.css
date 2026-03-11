@@ -1,5 +1,7 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import '../../../../vendor/awcodes/filament-curator/resources/css/plugin.css';
 @import '../../../../vendor/awcodes/filament-sticky-header/resources/css/plugin.css';
 
 @source '../../../../app/Filament/**/*';
+@source '../../../../vendor/awcodes/filament-curator/resources/**/*.blade.php';
 @source '../../../../resources/views/filament/**/*';

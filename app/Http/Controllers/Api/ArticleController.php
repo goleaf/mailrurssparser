@@ -43,7 +43,7 @@ class ArticleController extends Controller
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        $article = $this->resolvePublishedArticle($slug, ['category', 'tags', 'subCategory', 'rssFeed']);
+        $article = $this->resolvePublishedArticle($slug, ['category', 'tags', 'subCategory', 'rssFeed', 'seo']);
 
         if ($request->boolean('track', true)) {
             $location = $this->requestLocation->resolve($request);

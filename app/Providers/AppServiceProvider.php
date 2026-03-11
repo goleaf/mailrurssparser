@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Events\ArticleContentChanged;
 use App\Listeners\RebuildRelatedArticlesIndex;
 use App\Models\Article;
+use App\Models\SubCategory;
 use App\Observers\ArticleObserver;
+use App\Observers\SubCategoryObserver;
 use App\Services\ApiResponseMeta;
 use App\Services\PincrypFactory;
 use Attla\Pincryp\Config as PincrypConfig;
@@ -58,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureHttpClientResponseMacros();
 
         Article::observe(ArticleObserver::class);
+        SubCategory::observe(SubCategoryObserver::class);
         Event::listen(ArticleContentChanged::class, RebuildRelatedArticlesIndex::class);
     }
 

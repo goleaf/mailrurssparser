@@ -13,6 +13,7 @@ use App\Filament\Widgets\LatestArticlesWidget;
 use App\Filament\Widgets\ParseLogsWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
 use App\Filament\Widgets\ViewsChartWidget;
+use Awcodes\Curator\CuratorPlugin;
 use Awcodes\StickyHeader\StickyHeaderPlugin;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Actions\Action;
@@ -145,6 +146,14 @@ class AdminPanelProvider extends PanelProvider
                     ->navigationIcon(Heroicon::OutlinedShieldCheck),
                 StickyHeaderPlugin::make(),
                 FilamentApexChartsPlugin::make(),
+                CuratorPlugin::make()
+                    ->label('Media')
+                    ->pluralLabel('Media Library')
+                    ->navigationIcon('heroicon-o-photo')
+                    ->navigationGroup('Media')
+                    ->navigationSort(10)
+                    ->showBadge()
+                    ->registerNavigation(),
             ])
             ->authMiddleware([
                 Authenticate::class,

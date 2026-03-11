@@ -24,6 +24,7 @@ it('defines the requested category model contract', function () {
         'icon',
         'meta_title',
         'meta_description',
+        'curator_cover_id',
         'description',
         'order',
         'is_active',
@@ -47,6 +48,8 @@ it('defines the requested sub category model contract', function () {
         'name',
         'slug',
         'description',
+        'color',
+        'icon',
         'is_active',
         'order',
     ])
@@ -103,6 +106,7 @@ it('defines the requested rss feed model contract', function () {
 
     expect($rssFeed->getFillable())->toBe([
         'category_id',
+        'curator_logo_id',
         'title',
         'url',
         'source_name',

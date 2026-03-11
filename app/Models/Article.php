@@ -5,8 +5,10 @@ namespace App\Models;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
 use App\Services\MetricTracker;
+use App\Services\StorageDisk;
 use App\Services\TrackedMetric;
 use Attla\EncodedAttributes\HasEncodedAttributes;
+use Awcodes\Curator\Models\Media as CuratorMedia;
 use DateTimeInterface;
 use Filament\Forms\Components\RichEditor\MentionProvider;
 use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
@@ -27,14 +29,22 @@ use Illuminate\Support\Str;
 use Laravel\Scout\Attributes\SearchUsingFullText;
 use Laravel\Scout\Attributes\SearchUsingPrefix;
 use Laravel\Scout\Searchable;
+use RalphJSmit\Laravel\SEO\Support\HasSEO;
+use RalphJSmit\Laravel\SEO\Support\SEOData;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
-class Article extends Model implements HasRichContent
+class Article extends Model implements HasMedia, HasRichContent
 {
     use HasEncodedAttributes;
 
     /** @use HasFactory<\Database\Factories\ArticleFactory> */
     use HasFactory;
 
+    use HasSEO;
+    use InteractsWithMedia;
     use InteractsWithRichContent;
     use Searchable;
     use SoftDeletes;
@@ -62,6 +72,7 @@ class Article extends Model implements HasRichContent
      */
     protected $fillable = [
         'category_id',
+        'curator_media_id',
         'sub_category_id',
         'rss_feed_id',
         'editor_id',
@@ -101,6 +112,13 @@ class Article extends Model implements HasRichContent
     ];
 
     /**
+     * @var list<string>
+     */
+    protected $with = [
+        'curatorMedia',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -130,6 +148,11 @@ class Article extends Model implements HasRichContent
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function curatorMedia(): BelongsTo
+    {
+        return $this->belongsTo(CuratorMedia::class, 'curator_media_id');
     }
 
     public function subCategory(): BelongsTo
@@ -181,6 +204,54 @@ class Article extends Model implements HasRichContent
     public function metrics(): MorphMany
     {
         return $this->morphMany(Metric::class, 'measurable');
+    }
+
+    public function getEffectiveImageUrlAttribute(): ?string
+    {
+        $featuredImage = $this->getFirstMedia('featured_image');
+
+        if ($featuredImage instanceof SpatieMedia) {
+            return $featuredImage->getAvailableUrl(['hero', 'card', 'thumb']);
+        }
+
+        if ($this->curatorMedia instanceof CuratorMedia) {
+            return $this->curatorMedia->url;
+        }
+
+        return $this->{$this->getRssImageColumn()}
+            ?? config('rss.article.fallback_placeholder');
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('featured_image')
+            ->useDisk(StorageDisk::Public->value)
+            ->singleFile()
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+            ->withResponsiveImages();
+
+        $this->addMediaCollection('gallery')
+            ->useDisk(StorageDisk::Public->value)
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+    }
+
+    public function registerMediaConversions(?SpatieMedia $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->fit(Fit::Crop, 400, 250)
+            ->sharpen(5)
+            ->format('webp')
+            ->nonQueued();
+
+        $this->addMediaConversion('card')
+            ->fit(Fit::Crop, 800, 500)
+            ->format('webp')
+            ->queued();
+
+        $this->addMediaConversion('hero')
+            ->fit(Fit::Contain, 1280, 720)
+            ->format('webp')
+            ->queued();
     }
 
     public function scopePublished(Builder $query): Builder
@@ -443,6 +514,11 @@ class Article extends Model implements HasRichContent
         return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $term);
     }
 
+    private function getRssImageColumn(): string
+    {
+        return 'image_url';
+    }
+
     protected function sourceName(): Attribute
     {
         return Attribute::make(
@@ -648,13 +724,55 @@ class Article extends Model implements HasRichContent
      */
     public function getSeoData(): array
     {
+        $title = $this->seo?->title ?: $this->getRawOriginal('meta_title') ?: $this->title;
+        $description = $this->seo?->description ?: $this->getRawOriginal('meta_description') ?: $this->meta_description;
+        $image = $this->seo?->image ?: $this->image_url;
+        $canonicalUrl = $this->seo?->canonical_url ?: $this->getRawOriginal('canonical_url') ?: route('articles.show', ['slug' => $this->slug]);
+        $robots = $this->seo?->robots ?: config('seo.robots.default', 'index, follow');
+        $structuredData = $this->structured_data ?? $this->generateStructuredData();
+
         return [
-            'meta_title' => $this->meta_title,
-            'meta_description' => $this->meta_description,
-            'canonical_url' => $this->canonical_url ?: route('articles.show', ['slug' => $this->slug]),
-            'structured_data' => $this->structured_data ?? $this->generateStructuredData(),
-            'image_url' => $this->image_url,
+            'title' => $title,
+            'description' => $description,
+            'image' => $image,
+            'robots' => $robots,
+            'canonical_url' => $canonicalUrl,
+            'structured_data' => $structuredData,
+            'og_title' => $title,
+            'og_description' => $description,
+            'og_image' => $image,
+            'twitter_title' => $title,
+            'twitter_description' => $description,
+            'twitter_image' => $image,
+            'meta_title' => $title,
+            'meta_description' => $description,
+            'image_url' => $image,
         ];
+    }
+
+    public function getDynamicSEOData(): SEOData
+    {
+        $seoData = $this->getSeoData();
+
+        return new SEOData(
+            title: $seoData['title'],
+            description: $seoData['description'],
+            author: filled($this->author) ? $this->author : null,
+            image: $seoData['image'],
+            url: route('articles.show', ['slug' => $this->slug]),
+            published_time: $this->published_at,
+            modified_time: $this->updated_at,
+            articleBody: strip_tags((string) ($this->full_description ?? $this->rss_content ?? '')),
+            section: $this->category?->name,
+            tags: $this->relationLoaded('tags')
+                ? $this->tags->pluck('name')->all()
+                : $this->tags()->pluck('name')->all(),
+            type: 'article',
+            site_name: config('app.name'),
+            robots: $seoData['robots'],
+            canonical_url: $seoData['canonical_url'],
+            openGraphTitle: $seoData['og_title'],
+        );
     }
 
     /**

@@ -17,6 +17,13 @@ it('creates a tag with the cms form fields', function () {
             'description' => 'Тег для политических новостей.',
             'is_trending' => true,
             'is_featured' => true,
+            'seo' => [
+                'title' => '#Политика',
+                'description' => 'SEO описание для страницы тега.',
+                'robots' => 'index, follow',
+                'image' => 'https://cdn.example.test/tags/politika.jpg',
+                'canonical_url' => 'https://news.example.test/tag/politika',
+            ],
         ])
         ->call('create')
         ->assertHasNoFormErrors()
@@ -28,7 +35,10 @@ it('creates a tag with the cms form fields', function () {
     expect($tag)
         ->not()->toBeNull()
         ->and($tag?->is_trending)->toBeTrue()
-        ->and($tag?->is_featured)->toBeTrue();
+        ->and($tag?->is_featured)->toBeTrue()
+        ->and($tag?->seo?->title)->toBe('#Политика')
+        ->and($tag?->seo?->description)->toBe('SEO описание для страницы тега.')
+        ->and($tag?->seo?->canonical_url)->toBe('https://news.example.test/tag/politika');
 });
 
 it('recalculates tag usage counts from the header action', function () {

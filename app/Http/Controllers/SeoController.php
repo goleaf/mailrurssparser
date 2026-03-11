@@ -19,9 +19,15 @@ class SeoController extends Controller
             ),
         ];
 
-        Category::query()->get(['slug'])->each(function (Category $category) use (&$urls): void {
+        Category::query()->with('seo')->get(['id', 'slug'])->each(function (Category $category) use (&$urls): void {
+            $seoData = $category->getSeoData();
+
+            if ($this->containsNoindex((string) $seoData['robots'])) {
+                return;
+            }
+
             $urls[] = $this->urlTag(
-                loc: route('category.show', ['slug' => $category->slug]),
+                loc: (string) $seoData['canonical_url'],
                 changefreq: 'hourly',
                 priority: '0.7',
             );
@@ -29,13 +35,20 @@ class SeoController extends Controller
 
         Article::query()
             ->published()
-            ->select(['id', 'slug', 'published_at', 'updated_at'])
+            ->with('seo')
+            ->select(['id', 'slug', 'published_at', 'updated_at', 'canonical_url', 'meta_title', 'meta_description', 'structured_data', 'image_url'])
             ->orderBy('id')
             ->chunkById(500, function (Collection $articles) use (&$urls): void {
                 foreach ($articles as $article) {
+                    $seoData = $article->getSeoData();
+
+                    if ($this->containsNoindex((string) $seoData['robots'])) {
+                        continue;
+                    }
+
                     $lastModified = $article->updated_at?->toAtomString() ?? $article->published_at?->toAtomString();
                     $urls[] = $this->urlTag(
-                        loc: route('articles.show', ['slug' => $article->slug]),
+                        loc: (string) $seoData['canonical_url'],
                         lastmod: $lastModified,
                         priority: '0.8',
                     );
@@ -115,5 +128,10 @@ class SeoController extends Controller
     private function escapeXml(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
+    }
+
+    private function containsNoindex(string $robots): bool
+    {
+        return str_contains(strtolower(str_replace(' ', '', $robots)), 'noindex');
     }
 }

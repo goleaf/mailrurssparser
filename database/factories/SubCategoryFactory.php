@@ -25,6 +25,8 @@ class SubCategoryFactory extends Factory
             'name' => $name,
             'slug' => Str::slug($name),
             'description' => fake()->optional()->paragraph(),
+            'color' => '#3B82F6',
+            'icon' => fake()->boolean(20) ? fake()->randomElement(['🗂️', '📌', '📈']) : null,
             'is_active' => true,
             'order' => fake()->numberBetween(0, 20),
         ];
@@ -34,8 +36,16 @@ class SubCategoryFactory extends Factory
     {
         $categoryId = $category instanceof Category ? $category->getKey() : $category;
 
-        return $this->state(fn (): array => [
-            'category_id' => $categoryId,
-        ]);
+        return $this->state(function () use ($category, $categoryId): array {
+            $categoryRecord = $category instanceof Category
+                ? $category
+                : Category::query()->find($categoryId);
+
+            return [
+                'category_id' => $categoryId,
+                'color' => $categoryRecord?->color ?? '#3B82F6',
+                'icon' => $categoryRecord?->icon,
+            ];
+        });
     }
 }

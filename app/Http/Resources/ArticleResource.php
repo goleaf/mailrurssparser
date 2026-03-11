@@ -25,6 +25,10 @@ class ArticleResource extends ArticleListResource
                     return (string) ($this->rss_content ?? '');
                 },
             ),
+            'seo' => $this->when(
+                $isShowRoute,
+                fn (): array => $this->resource->getSeoData(),
+            ),
             'meta_title' => $this->when($isShowRoute, $this->meta_title),
             'meta_description' => $this->when($isShowRoute, $this->meta_description),
             'structured_data' => $this->when($isShowRoute, $this->structured_data ?? $this->generateStructuredData()),

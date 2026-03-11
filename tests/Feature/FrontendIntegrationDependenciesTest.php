@@ -35,7 +35,9 @@ it('keeps the blade and Mary UI frontend stack explicitly configured', function 
         ->and($viteConfig)->toContain(
             "import tailwindcss from '@tailwindcss/vite';",
             "import laravel from 'laravel-vite-plugin';",
-            "input: ['resources/css/app.css', 'resources/js/app.js']",
+            "'resources/css/app.css'",
+            "'resources/css/filament/admin/theme.css'",
+            "'resources/js/app.js'",
         )
         ->and($viteConfig)->not->toContain($legacyPluginKey)
         ->not->toContain($legacyCompilerCall)

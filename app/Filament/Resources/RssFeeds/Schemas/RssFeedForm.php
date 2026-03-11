@@ -6,10 +6,12 @@ use App\Filament\Support\AdminUiIconResolver;
 use App\Models\RssFeed;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -80,6 +82,54 @@ class RssFeedForm
                             ->helperText('Через сколько минут лента снова попадёт в очередь обработки.'),
                     ])
                     ->columns(2),
+                Section::make('Feed Logo')
+                    ->icon(AdminUiIconResolver::section('Feed Logo'))
+                    ->columnSpanFull()
+                    ->description('Logo or favicon displayed next to this feed in the admin and portal. Spatie Media Library uploads take priority over Curator-managed media.')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        SpatieMediaLibraryFileUpload::make('logo')
+                            ->collection('logo')
+                            ->label('Feed Logo / Favicon')
+                            ->helperText('Managed through Spatie Media Library and used as the primary feed logo.')
+                            ->disk('public')
+                            ->visibility('public')
+                            ->image()
+                            ->maxSize(2048)
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                                'image/svg+xml',
+                                'image/x-icon',
+                                'image/vnd.microsoft.icon',
+                            ])
+                            ->conversion('icon')
+                            ->columnSpanFull(),
+                        CuratorPicker::make('curator_logo_id')
+                            ->relationship('logoMedia', 'id')
+                            ->label('Curator Feed Logo')
+                            ->helperText('Legacy Curator-managed logo. Used only when no Spatie logo is attached.')
+                            ->disk('public')
+                            ->directory('curator')
+                            ->visibility('public')
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                                'image/gif',
+                                'image/svg+xml',
+                                'image/x-icon',
+                                'image/vnd.microsoft.icon',
+                            ])
+                            ->maxSize(10240)
+                            ->buttonLabel('Select or Upload Logo')
+                            ->color('primary')
+                            ->outlined(true)
+                            ->constrained(true)
+                            ->columnSpanFull(),
+                    ]),
                 Section::make('Переопределения ленты')
                     ->icon(AdminUiIconResolver::section('Переопределения ленты'))
                     ->columnSpanFull()

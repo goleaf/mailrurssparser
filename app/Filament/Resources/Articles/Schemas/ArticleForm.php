@@ -6,15 +6,18 @@ use App\Filament\Support\SlugGeneratorAction;
 use App\Models\Article;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
@@ -25,6 +28,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Support\Uri;
+use RalphJSmit\Filament\SEO\SEO;
 
 class ArticleForm
 {
@@ -134,58 +138,113 @@ class ArticleForm
         return Tab::make('Медиа и источник')
             ->icon(Heroicon::OutlinedPhoto)
             ->schema([
-                FileUpload::make('uploaded_image')
-                    ->label('Загрузить изображение')
-                    ->image()
-                    ->imageEditor()
-                    ->imageAspectRatio('16:9')
-                    ->automaticallyOpenImageEditorForAspectRatio()
-                    ->acceptedFileTypes([
-                        'image/jpeg',
-                        'image/png',
-                        'image/webp',
-                    ])
-                    ->maxSize(5120)
-                    ->disk('public')
-                    ->directory('article-images')
-                    ->visibility('public')
-                    ->saved(false)
-                    ->dehydrated()
-                    ->columnSpanFull()
-                    ->helperText('Загрузите локальное изображение 16:9 или оставьте поле пустым и используйте внешний URL ниже.'),
-                TextInput::make('image_url')
-                    ->url()
-                    ->nullable()
-                    ->columnSpanFull()
-                    ->live(onBlur: true),
-                Placeholder::make('image_preview')
-                    ->label('Предпросмотр изображения')
-                    ->columnSpanFull()
-                    ->hidden(fn (Get $get): bool => blank($get('image_url')))
-                    ->content(function (Get $get): HtmlString {
-                        $imageUrl = e((string) $get('image_url'));
-
-                        return new HtmlString(
-                            "<img src=\"{$imageUrl}\" alt=\"Preview\" class=\"max-h-64 rounded-xl border border-gray-200 object-cover shadow-sm\" />",
-                        );
-                    }),
-                Grid::make(2)
+                Section::make('RSS / Source Image')
+                    ->description('This keeps the original parser-managed image URL. Local uploads in this tab still write back to the same image field, so the RSS pipeline remains unchanged.')
                     ->schema([
-                        TextInput::make('image_caption')
-                            ->nullable()
-                            ->maxLength(255),
-                        TextInput::make('source_url')
+                        FileUpload::make('uploaded_image')
+                            ->label('Загрузить изображение')
+                            ->image()
+                            ->imageEditor()
+                            ->imageAspectRatio('16:9')
+                            ->automaticallyOpenImageEditorForAspectRatio()
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                            ])
+                            ->maxSize(5120)
+                            ->disk('public')
+                            ->directory('article-images')
+                            ->visibility('public')
+                            ->saved(false)
+                            ->dehydrated()
+                            ->columnSpanFull()
+                            ->helperText('Загрузите локальное изображение 16:9 или оставьте поле пустым и используйте внешний URL ниже.'),
+                        TextInput::make('image_url')
+                            ->label('RSS / source image URL')
+                            ->helperText('Автоимпорт RSS и локальная загрузка выше записывают в это строковое поле. Если ниже выбрано editorial image, оно будет показано вместо этого URL.')
                             ->url()
-                            ->nullable(),
-                        TextInput::make('source_name')
                             ->nullable()
-                            ->default((string) config('rss.source_name', '')),
-                        TextInput::make('author')
-                            ->nullable(),
-                        TextInput::make('author_url')
-                            ->url()
-                            ->nullable(),
+                            ->columnSpanFull()
+                            ->live(onBlur: true),
+                        Placeholder::make('image_preview')
+                            ->label('Предпросмотр изображения')
+                            ->columnSpanFull()
+                            ->hidden(fn (Get $get): bool => blank($get('image_url')))
+                            ->content(function (Get $get): HtmlString {
+                                $imageUrl = e((string) $get('image_url'));
+
+                                return new HtmlString(
+                                    "<img src=\"{$imageUrl}\" alt=\"Preview\" class=\"max-h-64 rounded-xl border border-gray-200 object-cover shadow-sm\" />",
+                                );
+                            }),
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('image_caption')
+                                    ->nullable()
+                                    ->maxLength(255),
+                                TextInput::make('source_url')
+                                    ->url()
+                                    ->nullable(),
+                                TextInput::make('source_name')
+                                    ->nullable()
+                                    ->default((string) config('rss.source_name', '')),
+                                TextInput::make('author')
+                                    ->nullable(),
+                                TextInput::make('author_url')
+                                    ->url()
+                                    ->nullable(),
+                            ]),
                     ]),
+                Section::make('Editorial Featured Image')
+                    ->description('Optionally override the imported source image with manually managed media. Spatie Media Library uploads take priority, then Curator, then the RSS/source image URL.')
+                    ->schema([
+                        SpatieMediaLibraryFileUpload::make('featured_image')
+                            ->collection('featured_image')
+                            ->label('Override Image')
+                            ->helperText('Uploads a managed image through Spatie Media Library. This takes priority over Curator and the RSS/source image URL.')
+                            ->disk('public')
+                            ->visibility('public')
+                            ->image()
+                            ->imageEditor()
+                            ->imageEditorAspectRatios(['16:9', '4:3', '1:1'])
+                            ->maxSize(10240)
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                                'image/gif',
+                            ])
+                            ->conversion('card')
+                            ->responsiveImages()
+                            ->columnSpanFull(),
+                        CuratorPicker::make('curator_media_id')
+                            ->relationship('curatorMedia', 'id')
+                            ->label('Curator Override Image')
+                            ->helperText('Legacy Curator-managed override. This is only used when no Spatie featured image is attached, and it never changes the RSS image column.')
+                            ->disk('public')
+                            ->directory('curator')
+                            ->visibility('public')
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                                'image/gif',
+                                'image/svg+xml',
+                                'image/x-icon',
+                                'image/vnd.microsoft.icon',
+                            ])
+                            ->maxSize(10240)
+                            ->buttonLabel('Select or Upload Image')
+                            ->color('primary')
+                            ->outlined(true)
+                            ->size('md')
+                            ->constrained(true)
+                            ->listDisplay(false)
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible()
+                    ->collapsed(fn (?Article $record): bool => ! $record?->hasMedia('featured_image') && $record?->curator_media_id === null),
                 Textarea::make('rss_content')
                     ->rows(5)
                     ->columnSpanFull()
@@ -291,35 +350,58 @@ class ArticleForm
         return Tab::make('SEO')
             ->icon(Heroicon::OutlinedMagnifyingGlass)
             ->schema([
-                TextInput::make('meta_title')
-                    ->nullable()
-                    ->maxLength(70)
-                    ->helperText('До 70 символов'),
-                Textarea::make('meta_description')
-                    ->nullable()
-                    ->rows(3)
-                    ->maxLength(160)
-                    ->helperText('До 160 символов'),
-                TextInput::make('canonical_url')
-                    ->url()
-                    ->nullable(),
+                Section::make('SEO & Meta')
+                    ->description('Переопределите поисковый заголовок, описание, robots, канонический адрес и изображение для соцсетей.')
+                    ->schema([
+                        SEO::make(['title', 'description', 'robots']),
+                        Grid::make(2)
+                            ->relationship('seo')
+                            ->schema([
+                                TextInput::make('image')
+                                    ->label('Social image URL')
+                                    ->url()
+                                    ->nullable()
+                                    ->helperText('Используется для Open Graph и Twitter Card. Если пусто, берётся основное изображение статьи.'),
+                                TextInput::make('canonical_url')
+                                    ->label('Canonical URL')
+                                    ->url()
+                                    ->nullable()
+                                    ->helperText('Оставьте пустым, чтобы использовать URL статьи на портале.'),
+                            ]),
+                        Textarea::make('structured_data')
+                            ->label('Structured data override')
+                            ->rows(8)
+                            ->nullable()
+                            ->columnSpanFull()
+                            ->helperText('JSON-LD. Оставьте пустым, чтобы использовать автоматически сгенерированный NewsArticle.')
+                            ->rule('json')
+                            ->formatStateUsing(function (mixed $state): ?string {
+                                if (is_array($state)) {
+                                    return json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                                }
+
+                                return is_string($state) ? $state : null;
+                            })
+                            ->dehydrateStateUsing(fn (?string $state): ?array => filled($state) ? json_decode($state, true) : null),
+                    ]),
                 Placeholder::make('seo_preview')
                     ->label('SEO Preview')
                     ->columnSpanFull()
                     ->content(function (Get $get): HtmlString {
-                        $title = e((string) ($get('meta_title') ?: $get('title') ?: 'Заголовок статьи'));
+                        $title = e((string) ($get('seo.title') ?: $get('title') ?: 'Заголовок статьи'));
                         $slug = e((string) ($get('slug') ?: 'article-slug'));
-                        $description = e(Str::limit((string) ($get('meta_description') ?: $get('short_description') ?: 'Описание статьи для поисковой выдачи.'), 160));
+                        $description = e(Str::limit((string) ($get('seo.description') ?: $get('short_description') ?: 'Описание статьи для поисковой выдачи.'), 160));
                         $authority = rescue(
                             fn (): string => Uri::of((string) config('app.url'))->authority(),
                             'portal.test',
                             false,
                         );
                         $host = e($authority);
+                        $canonicalUrl = e((string) ($get('seo.canonical_url') ?: 'https://'.$authority.'/articles/'.$slug));
 
                         return new HtmlString(
                             '<div class="space-y-1 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">'
-                            .'<div class="text-sm text-blue-700">'.$host.'/articles/'.$slug.'</div>'
+                            .'<div class="text-sm text-blue-700">'.$canonicalUrl.'</div>'
                             .'<div class="text-lg font-semibold text-blue-600">'.$title.'</div>'
                             .'<div class="text-sm text-gray-600">'.$description.'</div>'
                             .'</div>',

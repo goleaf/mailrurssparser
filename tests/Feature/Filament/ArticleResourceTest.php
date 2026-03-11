@@ -113,6 +113,13 @@ it('creates an article through the cms form tabs', function () {
                 'importance' => 8,
                 'tags' => [$tag->id],
                 'status' => 'draft',
+                'seo' => [
+                    'title' => 'CMS managed article SEO title',
+                    'description' => 'SEO описание для редакторской статьи.',
+                    'robots' => 'index, follow',
+                    'image' => 'https://cdn.example.test/articles/cms-managed-article.jpg',
+                    'canonical_url' => 'https://news.example.test/articles/cms-managed-article',
+                ],
             ])
             ->call('create')
             ->assertHasNoFormErrors()
@@ -132,5 +139,9 @@ it('creates an article through the cms form tabs', function () {
         ->and($article?->editor_id)->toBe($editor->id)
         ->and($article?->content_type)->toBe(ArticleContentType::Analysis)
         ->and($article?->importance)->toBe(8)
-        ->and($article?->tags()->pluck('tags.id')->all())->toBe([$tag->id]);
+        ->and($article?->tags()->pluck('tags.id')->all())->toBe([$tag->id])
+        ->and($article?->seo?->title)->toBe('CMS managed article SEO title')
+        ->and($article?->seo?->description)->toBe('SEO описание для редакторской статьи.')
+        ->and($article?->seo?->image)->toBe('https://cdn.example.test/articles/cms-managed-article.jpg')
+        ->and($article?->seo?->canonical_url)->toBe('https://news.example.test/articles/cms-managed-article');
 });

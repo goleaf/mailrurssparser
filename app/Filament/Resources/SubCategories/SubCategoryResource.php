@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\SubCategories;
 
-use BackedEnum;
 use App\Filament\Resources\SubCategories\Pages\CreateSubCategory;
 use App\Filament\Resources\SubCategories\Pages\EditSubCategory;
 use App\Filament\Resources\SubCategories\Pages\ListSubCategories;
@@ -12,16 +11,20 @@ use App\Filament\Resources\SubCategories\Schemas\SubCategoryInfolist;
 use App\Filament\Resources\SubCategories\Tables\SubCategoriesTable;
 use App\Filament\Support\AdminNavigationGroup;
 use App\Models\SubCategory;
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class SubCategoryResource extends Resource
 {
     protected static ?string $model = SubCategory::class;
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $modelLabel = 'подкатегория';
 
@@ -60,6 +63,28 @@ class SubCategoryResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->forAdminIndex();
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('category');
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'slug'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Рубрика' => $record->category?->name ?? '—',
+        ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getEloquentQuery()->count();
     }
 
     public static function getPages(): array

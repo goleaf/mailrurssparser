@@ -76,6 +76,11 @@ it('shows a category with feeds', function () {
         'slug' => 'economics',
         'name' => 'Economics',
     ]);
+    $category->seo()->update([
+        'title' => 'Economics SEO title',
+        'description' => 'Economics SEO description',
+        'canonical_url' => 'https://news.example.test/category/economics',
+    ]);
 
     $feed = RssFeed::factory()->create([
         'category_id' => $category->id,
@@ -90,6 +95,8 @@ it('shows a category with feeds', function () {
 
     expect($payload['slug'])->toBe('economics')
         ->and($payload['id'])->toBe($category->id)
+        ->and($payload['seo']['title'])->toBe('Economics SEO title')
+        ->and($payload['seo']['canonical_url'])->toBe('https://news.example.test/category/economics')
         ->and($payload['rss_feeds'])->toHaveCount(1)
         ->and($payload['rss_feeds'][0]['id'])->toBe($feed->id);
 });

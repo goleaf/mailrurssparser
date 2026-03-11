@@ -11,9 +11,13 @@ use App\Models\SubCategory;
 use App\Models\Tag;
 use App\Services\ArticleContentType;
 use App\Services\ArticleStatus;
+use App\Services\StorageDisk;
 use App\Support\Utf8Normalizer;
+use Awcodes\Curator\Models\Media;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     if (! trait_exists(Laravel\Scout\Searchable::class)) {
@@ -66,6 +70,13 @@ it('builds the article show resource payload', function () {
     ]);
 
     $article->tags()->attach($tag);
+    $article->seo()->update([
+        'title' => 'Resource SEO title',
+        'description' => 'Resource SEO description',
+        'image' => 'https://cdn.example.test/articles/resource.jpg',
+        'canonical_url' => 'https://news.example.test/articles/resource-seo-title',
+        'robots' => 'index, follow',
+    ]);
     $article->forceFill(['reading_time' => 5])->saveQuietly();
     $article->refresh();
     $article->setAttribute('related_ids', [10, 20]);
@@ -95,6 +106,9 @@ it('builds the article show resource payload', function () {
         ->and($resource['tags'])->toHaveCount(1)
         ->and($resource['tags'][0]['id'])->toBe($tag->id)
         ->and($resource['full_content'])->toBe('Full')
+        ->and($resource['seo']['title'])->toBe('Resource SEO title')
+        ->and($resource['seo']['description'])->toBe('Resource SEO description')
+        ->and($resource['seo']['image'])->toBe('https://cdn.example.test/articles/resource.jpg')
         ->and($resource['meta_title'])->toBe('Test Article')
         ->and($resource['meta_description'])->not->toBeNull()
         ->and($resource['structured_data'])->toBeArray()
@@ -134,6 +148,89 @@ it('builds the article list resource without show-only fields', function () {
         ->not->toHaveKey('related_articles')
         ->not->toHaveKey('similar_articles')
         ->not->toHaveKey('more_from_category');
+});
+
+it('prefers curator media urls over rss image urls in article list resources', function () {
+    Storage::fake(StorageDisk::Public->value);
+
+    $category = Category::factory()->create();
+
+    Storage::disk(StorageDisk::Public->value)->put('curator/editorial-override.jpg', 'image-bytes');
+
+    $media = Media::query()->create([
+        'disk' => StorageDisk::Public->value,
+        'directory' => 'curator',
+        'visibility' => 'public',
+        'name' => 'editorial-override',
+        'path' => 'curator/editorial-override.jpg',
+        'width' => 1600,
+        'height' => 900,
+        'size' => 1024,
+        'type' => 'image',
+        'ext' => 'jpg',
+    ]);
+
+    $article = Article::factory()->create([
+        'category_id' => $category->id,
+        'image_url' => 'https://rss.example.test/imported.jpg',
+        'curator_media_id' => $media->id,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $resource = (new ArticleListResource($article->fresh()->load('category', 'curatorMedia')))
+        ->toArray(Request::create('/articles', 'GET'));
+
+    expect($resource['image_url'])
+        ->toBe(Storage::disk(StorageDisk::Public->value)->url('curator/editorial-override.jpg'))
+        ->and($resource['image_url'])
+        ->not->toBe('https://rss.example.test/imported.jpg');
+});
+
+it('prefers spatie media library urls over curator and rss image urls in article list resources', function () {
+    Storage::fake(StorageDisk::Public->value);
+
+    $category = Category::factory()->create();
+
+    Storage::disk(StorageDisk::Public->value)->put('curator/editorial-override.jpg', 'image-bytes');
+
+    $curatorMedia = Media::query()->create([
+        'disk' => StorageDisk::Public->value,
+        'directory' => 'curator',
+        'visibility' => 'public',
+        'name' => 'editorial-override',
+        'path' => 'curator/editorial-override.jpg',
+        'width' => 1600,
+        'height' => 900,
+        'size' => 1024,
+        'type' => 'image',
+        'ext' => 'jpg',
+    ]);
+
+    $article = Article::factory()->create([
+        'category_id' => $category->id,
+        'image_url' => 'https://rss.example.test/imported.jpg',
+        'curator_media_id' => $curatorMedia->id,
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $upload = UploadedFile::fake()->image('featured.jpg', 1600, 900);
+
+    $article
+        ->addMedia($upload->getRealPath())
+        ->usingFileName('featured.jpg')
+        ->usingName('featured')
+        ->toMediaCollection('featured_image', StorageDisk::Public->value);
+
+    $article = $article->fresh()->load('category', 'curatorMedia');
+    $resource = (new ArticleListResource($article))->toArray(Request::create('/articles', 'GET'));
+    $featuredImage = $article->getFirstMedia('featured_image');
+
+    expect($featuredImage)->not->toBeNull()
+        ->and($resource['image_url'])->toBe($featuredImage?->getAvailableUrl(['hero', 'card', 'thumb']))
+        ->and($resource['image_url'])->not->toBe('https://rss.example.test/imported.jpg')
+        ->and($resource['image_url'])->not->toBe(Storage::disk(StorageDisk::Public->value)->url('curator/editorial-override.jpg'));
 });
 
 it('normalizes invalid utf-8 values before serializing article resources', function () {
@@ -208,6 +305,7 @@ it('builds the category resource payload', function () {
         'color' => $category->color,
         'icon' => $category->icon,
         'description' => $category->description,
+        'seo' => $category->getSeoData(),
         'articles_count_cache' => 12,
         'sub_categories' => [
             [
@@ -237,6 +335,7 @@ it('builds the tag resource payload', function () {
         'name' => 'Top',
         'slug' => 'top',
         'color' => '#111111',
+        'seo' => $tag->getSeoData(),
         'usage_count' => 44,
         'is_trending' => true,
         'is_featured' => false,

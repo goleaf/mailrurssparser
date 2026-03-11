@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Article;
+use App\Models\Category;
+
 it('renders the app shell with pwa meta tags', function () {
     $this->get('/')
         ->assertOk()
@@ -19,6 +22,33 @@ it('renders the app shell with pwa meta tags', function () {
         ->assertSee('rel="preconnect" href="https://fonts.googleapis.com"', false)
         ->assertSee('rel="preconnect" href="'.config('rss.feed_origin').'"', false)
         ->assertSee('type="application/ld+json"', false);
+});
+
+it('renders article pages with seo relation overrides', function () {
+    $category = Category::factory()->create(['slug' => 'politics']);
+    $article = Article::factory()->create([
+        'category_id' => $category->id,
+        'slug' => 'editor-controlled-seo',
+        'title' => 'Imported title',
+        'status' => 'published',
+        'published_at' => now()->subHour(),
+    ]);
+
+    $article->seo()->update([
+        'title' => 'Editor controlled SEO title',
+        'description' => 'Editor controlled SEO description',
+        'image' => 'https://cdn.example.test/articles/editor-controlled.jpg',
+        'robots' => 'noindex, follow',
+        'canonical_url' => 'https://news.example.test/articles/editor-controlled-seo',
+    ]);
+
+    $this->get(route('articles.show', ['slug' => $article->slug]))
+        ->assertOk()
+        ->assertSee('<title>Editor controlled SEO title</title>', false)
+        ->assertSee('name="robots" content="noindex, follow"', false)
+        ->assertSee('property="og:image" content="https://cdn.example.test/articles/editor-controlled.jpg"', false)
+        ->assertSee('name="twitter:title" content="Editor controlled SEO title"', false)
+        ->assertSee('rel="canonical" href="https://news.example.test/articles/editor-controlled-seo"', false);
 });
 
 it('renders the offline fallback page', function () {
